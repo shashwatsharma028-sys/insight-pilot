@@ -13,9 +13,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
 from agent.rules_engine import get_rules_for
+from agent.skills_loader import load_skill
 
 
-PLANNER_SYSTEM_PROMPT = """You are an expert data analyst AI. Your job is to create a structured analysis plan for a dataset.
+_DEFAULT_PLANNER_SYSTEM_PROMPT = """You are an expert data analyst AI. Your job is to create a structured analysis plan for a dataset.
 
 Given a dataset summary, generate a JSON array of analysis tasks. Each task must follow this exact schema:
 {
@@ -46,6 +47,10 @@ Rules:
 - Make task descriptions specific to this dataset — not generic.
 - Return ONLY the JSON array. No markdown. No explanation. No backticks.
 """
+
+# Loaded from skills/planner.md — falls back to embedded default if missing
+PLANNER_SYSTEM_PROMPT = load_skill("planner", fallback=_DEFAULT_PLANNER_SYSTEM_PROMPT)
+
 
 
 def _parse_plan(raw: str) -> list:

@@ -10,9 +10,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus, ErrorType
 from utils.llm import get_llm, get_text
 from agent.rules_engine import get_rules_for
+from agent.skills_loader import load_skill
 
 
-CODE_GEN_SYSTEM_PROMPT = """You are an expert Python data analyst. Generate clean, working Python code for data analysis tasks.
+_DEFAULT_CODE_GEN_SYSTEM_PROMPT = """You are an expert Python data analyst. Generate clean, working Python code for data analysis tasks.
 
 CRITICAL RULES:
 1. The DataFrame is ALREADY LOADED as `df`. Do NOT use pd.read_csv() or load any file.
@@ -25,6 +26,10 @@ CRITICAL RULES:
 8. Print clear, labeled summaries of findings (e.g., "Top region by sales: North ($2.1M)").
 9. RETURN ONLY THE PYTHON CODE. No explanation. No markdown fences. No comments outside the code.
 """
+
+# Loaded from skills/code_generator.md — falls back to embedded default if missing
+CODE_GEN_SYSTEM_PROMPT = load_skill("code_generator", fallback=_DEFAULT_CODE_GEN_SYSTEM_PROMPT)
+
 
 
 def _get_retry_instructions(error_type: ErrorType, error_message: str, prev_code: str) -> str:

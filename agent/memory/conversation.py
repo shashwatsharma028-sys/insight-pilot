@@ -7,15 +7,20 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, ConversationTurn
 from utils.llm import get_llm, get_text
+from agent.skills_loader import load_skill
 
 
-FOLLOWUP_SYSTEM_PROMPT = """You are a data analyst AI with memory of a completed analysis session.
+_DEFAULT_FOLLOWUP_SYSTEM_PROMPT = """You are a data analyst AI with memory of a completed analysis session.
 The user is asking a follow-up question about the dataset or analysis results.
 
 Answer conversationally and specifically, referencing the actual findings from the analysis.
 If the question requires a new analysis, say so clearly and describe what you would do.
 Keep responses concise — 2-4 sentences unless more detail is needed.
 """
+
+# Loaded from skills/followup_chat.md — falls back to embedded default if missing
+FOLLOWUP_SYSTEM_PROMPT = load_skill("followup_chat", fallback=_DEFAULT_FOLLOWUP_SYSTEM_PROMPT)
+
 
 
 def handle_followup_node(state: AgentState) -> AgentState:

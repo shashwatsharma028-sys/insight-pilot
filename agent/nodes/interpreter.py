@@ -12,9 +12,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
 from agent.rules_engine import get_rules_for
+from agent.skills_loader import load_skill
 
 
-INTERPRETER_SYSTEM_PROMPT = """You are a senior business data analyst. Your job is to interpret technical analysis results into clear, actionable business insights.
+_DEFAULT_INTERPRETER_SYSTEM_PROMPT = """You are a senior business data analyst. Your job is to interpret technical analysis results into clear, actionable business insights.
 
 Given the analysis output, produce a JSON response with exactly these fields:
 {
@@ -30,6 +31,10 @@ Rules:
 - Always state at least one assumption
 - Return ONLY the JSON object. No markdown. No explanation.
 """
+
+# Loaded from skills/business_insights.md — falls back to embedded default if missing
+INTERPRETER_SYSTEM_PROMPT = load_skill("business_insights", fallback=_DEFAULT_INTERPRETER_SYSTEM_PROMPT)
+
 
 
 def interpreter_node(state: AgentState) -> AgentState:
