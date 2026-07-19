@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
 from agent.rules_engine import get_rules_for
+from agent.reflection_engine import generate_lessons_for_task, save_lessons
 from agent.skills_loader import load_skill
 
 
@@ -144,9 +145,28 @@ Interpret these results and provide business insights in the required JSON forma
 
 
 def advance_task_node(state: AgentState) -> AgentState:
-    """Move to the next task in the plan."""
+    """Move to the next task — reflecting on the finished one first."""
+    idx = state.get("current_task_index", 0)
+    plan = state.get("analysis_plan", [])
+    execution_log = state.get("execution_log", [])
+
+    # ── Reflection (after every task): review execution, store lessons ──
+    if idx < len(plan):
+        finished_task = plan[idx]
+        lessons = generate_lessons_for_task(finished_task, state.get("dataset_name", ""))
+        if lessons:
+            total = save_lessons(lessons)
+            execution_log = execution_log + [{
+                "timestamp": datetime.now().isoformat(),
+                "node": "reflection",
+                "action": f"Recorded {len(lessons)} lesson(s) from '{finished_task.get('title', '')}'",
+                "status": "success",
+                "detail": f"Lesson store now holds {total} lesson(s)",
+            }]
+
     return {
         **state,
-        "current_task_index": state.get("current_task_index", 0) + 1,
+        "execution_log": execution_log,
+        "current_task_index": idx + 1,
         "next_action": "check_tasks"
     }

@@ -14,6 +14,10 @@ from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
 from agent.rules_engine import get_rules_for
 from agent.skills_loader import load_skill
+from agent.reflection_engine import (
+    load_relevant_lessons, format_lessons_for_prompt,
+    generate_lesson_for_user_correction, save_lessons,
+)
 
 
 _DEFAULT_PLANNER_SYSTEM_PROMPT = """You are an expert data analyst AI. Your job is to create a structured analysis plan for a dataset.
@@ -103,6 +107,17 @@ def planner_node(state: AgentState) -> AgentState:
 
     # Build the planning prompt
     user_edits = state.get("user_edits_to_plan", "")
+
+    # ── Reflection: a user correction is a lesson in itself ──
+    if user_edits:
+        save_lessons([generate_lesson_for_user_correction(
+            user_edits, state.get("dataset_name", "")
+        )])
+
+    # ── Reflection: load relevant stored lessons to improve this plan ──
+    lessons_block = format_lessons_for_prompt(
+        load_relevant_lessons(dataset_name=state.get("dataset_name", ""))
+    )
     current_message = state.get("current_user_message", "")
 
     if state.get("is_followup_query") and current_message:
@@ -153,7 +168,7 @@ DATA QUALITY NOTES:
 {json.dumps((state.get("data_quality_report") or {}).get("recommendations", []), indent=2)}
 
 Return ONLY the JSON array of analysis tasks.
-"""
+{lessons_block}"""
 
     try:
         messages = [
