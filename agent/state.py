@@ -93,6 +93,8 @@ class AgentState(TypedDict):
 
     # ── Conversation memory ────────────────────────────────────────
     conversation_history: List[ConversationTurn]
+    context_summary: Optional[str]        # Compressed older conversation
+    context_warning: Optional[bool]       # True when >80% and compression ran
     current_user_message: Optional[str]
     agent_response: Optional[str]
 

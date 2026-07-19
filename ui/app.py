@@ -17,6 +17,7 @@ from agent.graph import analyst_graph
 from agent.state import AgentState, AnalysisStatus
 from agent.memory.conversation import handle_followup_node
 from agent.token_monitor import monitor as token_monitor
+from agent.context_manager import measure_context, COMPRESSION_THRESHOLD
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -135,8 +136,24 @@ with st.sidebar:
             st.session_state[key] = None if key == "agent_state" else False if "complete" in key or "approval" in key else 0
         st.rerun()
 
-    # ── Token Usage panel (compact, read-only) ──
+    # ── Context usage panel ──
     st.divider()
+    with st.expander("🧠 Context Window", expanded=False):
+        _cstate = st.session_state.get("agent_state")
+        if not _cstate:
+            st.caption("No active session context yet.")
+        else:
+            _cm = measure_context(_cstate)
+            st.progress(min(_cm["pct"], 1.0),
+                        text=f"{_cm['tokens']:,} / {_cm['max_tokens']:,} tokens ({_cm['pct']:.0%})")
+            if _cm["pct"] > COMPRESSION_THRESHOLD:
+                st.warning("Context above 80% — older conversation is being summarized. "
+                           "Critical facts, rules, skills, and lessons are preserved.")
+            elif _cstate.get("context_summary"):
+                st.caption("Older conversation compressed earlier this session; "
+                           "summary in use, recent turns verbatim.")
+
+    # ── Token Usage panel (compact, read-only) ──
     with st.expander("🪙 Token Usage", expanded=False):
         _tm = token_monitor.summary()
         if _tm["calls"] == 0:

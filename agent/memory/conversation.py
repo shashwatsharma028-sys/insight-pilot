@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, ConversationTurn
 from utils.llm import get_llm, get_text
 from agent.skills_loader import load_skill
+from agent.context_manager import manage_context
 
 
 _DEFAULT_FOLLOWUP_SYSTEM_PROMPT = """You are a data analyst AI with memory of a completed analysis session.
@@ -36,6 +37,9 @@ def handle_followup_node(state: AgentState) -> AgentState:
         "action": f"Handling follow-up: {user_message[:60]}..."
     }
 
+    # ── Context management: measure, warn, compress if >80% ──
+    state = manage_context(state)
+
     llm = get_llm(temperature=0.3, skill="followup_chat")
 
     # Build context from completed analyses
@@ -46,11 +50,14 @@ def handle_followup_node(state: AgentState) -> AgentState:
         if t.get("interpretation")
     ])
 
-    # Build conversation history for context
+    # Build conversation history for context — compressed summary first
+    summary_block = state.get("context_summary") or ""
     history_str = "\n".join([
         f"{turn['role'].upper()}: {turn['message']}"
         for turn in state.get("conversation_history", [])[-6:]  # Last 3 turns
     ])
+    if summary_block:
+        history_str = f"[SUMMARY OF EARLIER CONVERSATION]\n{summary_block}\n[RECENT TURNS]\n{history_str}"
 
     prompt = f"""
 DATASET: {state['dataset_name']}
