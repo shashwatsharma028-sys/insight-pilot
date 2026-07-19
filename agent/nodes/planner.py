@@ -144,7 +144,7 @@ DATASET SUMMARY:
 {state['df_summary']}
 
 DATA QUALITY NOTES:
-{json.dumps(state.get("data_quality_report", {}).get("recommendations", []), indent=2)}
+{json.dumps((state.get("data_quality_report") or {}).get("recommendations", []), indent=2)}
 
 Return ONLY the JSON array of analysis tasks.
 """
