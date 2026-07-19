@@ -24,7 +24,10 @@ RULES_DIR = os.path.join(
 )
 
 # Maps a node/purpose to its rule file
+# Tier 1: runtime rules — govern agent behavior during a run
+# Tier 2: governance rules — govern the project itself (architecture, process)
 RULE_FILES = {
+    # Tier 1 (runtime)
     "sandbox_safety": "sandbox_safety.rules.md",
     "code_generation": "code_generation.rules.md",
     "planning": "planning.rules.md",
@@ -32,6 +35,12 @@ RULE_FILES = {
     "data_handling": "data_handling.rules.md",
     "retry_and_failure": "retry_and_failure.rules.md",
     "llm_usage": "llm_usage.rules.md",
+    # Tier 2 (governance)
+    "architecture": "architecture.md",
+    "coding": "coding.md",
+    "execution": "execution.md",
+    "safety": "safety.md",
+    "testing": "testing.md",
 }
 
 
@@ -64,8 +73,21 @@ def get_rules_for(purpose: str) -> str:
 def rules_available() -> bool:
     """True if the rules directory exists and has at least one rule file."""
     return os.path.isdir(RULES_DIR) and any(
-        f.endswith(".rules.md") for f in os.listdir(RULES_DIR)
+        f.endswith(".md") for f in os.listdir(RULES_DIR)
     )
+
+
+def load_all_rules() -> dict:
+    """
+    Preflight: load EVERY registered rule file (execution.md rule 1).
+    Called at graph entry and before each task's code generation.
+    Cached loads make repeat calls free. Returns {purpose: loaded_bool}
+    so callers can log which rules are active vs falling back.
+    """
+    status = {}
+    for purpose in RULE_FILES:
+        status[purpose] = bool(get_rules_for(purpose))
+    return status
 
 
 # ─────────────────────────────────────────────────────────────────────────────

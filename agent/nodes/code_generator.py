@@ -9,7 +9,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus, ErrorType
 from utils.llm import get_llm, get_text
-from agent.rules_engine import get_rules_for
+from agent.rules_engine import get_rules_for, load_all_rules
 from agent.skills_loader import load_skill
 
 
@@ -118,6 +118,7 @@ def code_generator_node(state: AgentState) -> AgentState:
         "retry": task["retry_count"]
     }
 
+    load_all_rules()  # Preflight before every task (cached — execution.md rule 1)
     llm = get_llm(temperature=0.05)  # Very low temp for code
 
     # Build prompt

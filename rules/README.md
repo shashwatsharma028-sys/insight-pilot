@@ -3,10 +3,11 @@
 This folder contains the governance rules for the InsightPilot agent. Each file
 defines the constraints and standards for one part of the system.
 
-**Status:** Defined but not yet integrated. Integration plan: rule files will be
-loaded at runtime and injected into the relevant node's system prompt
-(`code_generation.rules.md` → code generator node, etc.), with hard rules
-additionally enforced in code where possible.
+**Status:** INTEGRATED. All rules load before every agent task
+(preflight at graph entry + before each task's code generation). Runtime
+rules inject into node prompts; safety-critical rules are additionally
+enforced in code (AST gate in the sandbox). Skills declare their governing
+rules in frontmatter (`governed_by:`) and receive them at call time.
 
 ## Files
 
@@ -19,6 +20,20 @@ additionally enforced in code where possible.
 | `data_handling.rules.md` | Privacy and data hygiene | Ingestion node + prompts |
 | `retry_and_failure.rules.md` | Retry budgets and failure behavior | Executor node (code-level) |
 | `llm_usage.rules.md` | API call budgets and model policy | LLM client wrapper |
+
+### Tier 2 — Governance rules (govern the project itself)
+
+| File | Governs | Enforced by |
+|---|---|---|
+| `architecture.md` | Module boundaries, change control, feature preservation | Development process + user approval gate |
+| `coding.md` | Source-code standards for the project itself | Development process |
+| `execution.md` | Pipeline ordering, rules preflight, run guarantees | `load_all_rules()` preflight + graph contract |
+| `safety.md` | Top-level safety policy | Delegates to sandbox/data rules + AST gate |
+| `testing.md` | Test discipline: run after every change, never weaken | Development process |
+
+**Key process rules:** architecture changes require user approval before
+implementation; existing features are never removed; the full test suite
+runs after every code change.
 
 ## Rule levels
 

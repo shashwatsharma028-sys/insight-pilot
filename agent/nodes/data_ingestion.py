@@ -11,6 +11,7 @@ import numpy as np
 from datetime import datetime
 from agent.state import AgentState, DataQualityReport
 from utils.llm import get_llm
+from agent.rules_engine import load_all_rules
 
 
 def _detect_outliers(df: pd.DataFrame) -> list:
@@ -53,10 +54,14 @@ def _quality_score(df: pd.DataFrame, duplicate_rows: int, missing_vals: dict) ->
 def data_ingestion_node(state: AgentState) -> AgentState:
     """Load CSV, build summary, run quality checks."""
 
+    # ── Rules preflight (execution.md rule 1): all rules load before any task ──
+    rules_status = load_all_rules()
+    loaded = sum(rules_status.values())
+
     log_entry = {
         "timestamp": datetime.now().isoformat(),
         "node": "data_ingestion",
-        "action": "Loading and profiling dataset"
+        "action": f"Rules preflight ({loaded}/{len(rules_status)} rule files loaded) + profiling dataset"
     }
 
     try:
