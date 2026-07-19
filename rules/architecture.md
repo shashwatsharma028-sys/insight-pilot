@@ -10,6 +10,12 @@ and how architectural change is allowed to happen.
    directories or modules, changing the AgentState schema, altering the
    LangGraph node graph (nodes or edges), changing the skill/rule loading
    contracts, or swapping core frameworks (LangGraph, Streamlit, Gemini).
+   The approval MUST follow the change-approval protocol
+   (agent/change_approval.py): present affected files/modules, expected
+   impact, and a risk level (Low/Medium/High), then ask an explicit
+   approval question and wait for the answer. Workflow and core-feature
+   changes follow the same protocol; additive docs/tests and normal data
+   analysis runs do not require it.
 2. Existing features MUST NEVER be removed. Refactors move or restructure
    behavior; they do not delete it. A feature may only be removed with
    explicit user approval naming that feature.
