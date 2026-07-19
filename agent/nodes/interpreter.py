@@ -11,6 +11,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
+from agent.rules_engine import get_rules_for
 
 
 INTERPRETER_SYSTEM_PROMPT = """You are a senior business data analyst. Your job is to interpret technical analysis results into clear, actionable business insights.
@@ -72,7 +73,7 @@ Interpret these results and provide business insights in the required JSON forma
 
     try:
         messages = [
-            SystemMessage(content=INTERPRETER_SYSTEM_PROMPT),
+            SystemMessage(content=INTERPRETER_SYSTEM_PROMPT + get_rules_for("interpretation")),
             HumanMessage(content=prompt)
         ]
         response = llm.invoke(messages)

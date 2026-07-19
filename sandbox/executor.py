@@ -95,6 +95,14 @@ def execute_code(
         chart_path (str | None): Path to saved chart if any
         error_type (ErrorType): Classification of error if failed
     """
+    # ── Rule enforcement gate (sandbox_safety.rules.md, rules 3-6) ──
+    # Static AST scan blocks forbidden imports/calls BEFORE execution.
+    # Fail closed: violating code never runs.
+    from agent.rules_engine import scan_code_safety
+    violation = scan_code_safety(code)
+    if violation:
+        return False, violation, None, ErrorType.RUNTIME
+
     wrapped = wrap_code_safely(code, csv_path, task_id)
 
     # Write to temp file

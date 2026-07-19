@@ -9,6 +9,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus, ErrorType
 from utils.llm import get_llm, get_text
+from agent.rules_engine import get_rules_for
 
 
 CODE_GEN_SYSTEM_PROMPT = """You are an expert Python data analyst. Generate clean, working Python code for data analysis tasks.
@@ -152,7 +153,7 @@ Generate Python code to perform this analysis. Remember:
 
     try:
         messages = [
-            SystemMessage(content=CODE_GEN_SYSTEM_PROMPT),
+            SystemMessage(content=CODE_GEN_SYSTEM_PROMPT + get_rules_for("code_generation")),
             HumanMessage(content=user_prompt)
         ]
         response = llm.invoke(messages)

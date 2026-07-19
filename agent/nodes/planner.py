@@ -12,6 +12,7 @@ from datetime import datetime
 from langchain_core.messages import HumanMessage, SystemMessage
 from agent.state import AgentState, AnalysisTask, AnalysisStatus
 from utils.llm import get_llm, get_text
+from agent.rules_engine import get_rules_for
 
 
 PLANNER_SYSTEM_PROMPT = """You are an expert data analyst AI. Your job is to create a structured analysis plan for a dataset.
@@ -151,7 +152,7 @@ Return ONLY the JSON array of analysis tasks.
 
     try:
         messages = [
-            SystemMessage(content=PLANNER_SYSTEM_PROMPT),
+            SystemMessage(content=PLANNER_SYSTEM_PROMPT + get_rules_for("planning")),
             HumanMessage(content=prompt)
         ]
         response = llm.invoke(messages)

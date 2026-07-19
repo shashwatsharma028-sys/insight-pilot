@@ -29,7 +29,7 @@ def _detect_outliers(df: pd.DataFrame) -> list:
 def _detect_type_issues(df: pd.DataFrame) -> list:
     """Detect columns that look numeric but are stored as object."""
     issues = []
-    for col in df.select_dtypes(include=["object"]).columns:
+    for col in df.select_dtypes(include=["object", "str"]).columns:
         sample = df[col].dropna().head(50)
         numeric_count = sum(1 for v in sample if str(v).replace('.', '', 1).replace('-', '', 1).isdigit())
         if numeric_count > len(sample) * 0.8:
@@ -77,7 +77,7 @@ SAMPLE (first 5 rows):
 NUMERIC STATISTICS:
 {numeric_stats}
 
-CATEGORICAL COLUMNS: {list(df.select_dtypes(include=['object']).columns)}
+CATEGORICAL COLUMNS: {list(df.select_dtypes(include=['object', 'str']).columns)}
 DATE-LIKE COLUMNS: {[c for c in df.columns if 'date' in c.lower() or 'time' in c.lower() or 'month' in c.lower()]}
 """
 
