@@ -1,4 +1,4 @@
-# 🤖 Autonomous Data Analyst Agent
+# 🚀 InsightPilot — Autonomous Data Analyst Agent
 
 An agentic AI system that autonomously analyzes CSV datasets — planning its own investigation, writing and self-correcting Python code, and producing business insights with cited confidence scores.
 
@@ -96,8 +96,8 @@ CSV Upload
 
 ### 1. Clone and install
 ```bash
-git clone https://github.com/yourusername/autonomous-data-analyst.git
-cd autonomous-data-analyst
+git clone https://github.com/yourusername/insight-pilot.git
+cd insight-pilot
 pip install -r requirements.txt
 ```
 
