@@ -103,7 +103,7 @@ def planner_node(state: AgentState) -> AgentState:
         "action": "Generating analysis plan"
     }
 
-    llm = get_llm(temperature=0.2)
+    llm = get_llm(temperature=0.2, skill="planner")
 
     # Build the planning prompt
     user_edits = state.get("user_edits_to_plan", "")

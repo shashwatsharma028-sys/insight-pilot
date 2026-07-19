@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agent.graph import analyst_graph
 from agent.state import AgentState, AnalysisStatus
 from agent.memory.conversation import handle_followup_node
+from agent.token_monitor import monitor as token_monitor
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -133,6 +134,25 @@ with st.sidebar:
         for key in ["agent_state", "analysis_complete", "awaiting_approval", "run_count"]:
             st.session_state[key] = None if key == "agent_state" else False if "complete" in key or "approval" in key else 0
         st.rerun()
+
+    # ── Token Usage panel (compact, read-only) ──
+    st.divider()
+    with st.expander("🪙 Token Usage", expanded=False):
+        _tm = token_monitor.summary()
+        if _tm["calls"] == 0:
+            st.caption("No LLM calls yet this session.")
+        else:
+            tcol1, tcol2 = st.columns(2)
+            tcol1.metric("Input", f"{_tm['input_tokens']:,}")
+            tcol2.metric("Output", f"{_tm['output_tokens']:,}")
+            tcol1.metric("Total", f"{_tm['total_tokens']:,}")
+            tcol2.metric("Est. Cost", f"${_tm['estimated_cost_usd']:.4f}")
+            st.caption(f"{_tm['calls']} calls"
+                       + (f" · {_tm['estimated_calls']} estimated" if _tm['estimated_calls'] else ""))
+            if _tm["by_skill"]:
+                st.markdown("**By skill:**")
+                for _skill, _d in _tm["by_skill"].items():
+                    st.caption(f"`{_skill}` — {_d['total']:,} tok ({_d['calls']} calls)")
 
 
 # ── Main area ──────────────────────────────────────────────────────────────────

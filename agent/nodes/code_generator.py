@@ -119,7 +119,7 @@ def code_generator_node(state: AgentState) -> AgentState:
     }
 
     load_all_rules()  # Preflight before every task (cached — execution.md rule 1)
-    llm = get_llm(temperature=0.05)  # Very low temp for code
+    llm = get_llm(temperature=0.05, skill="code_generator")  # Very low temp for code
 
     # Build prompt
     is_retry = task["retry_count"] > 0

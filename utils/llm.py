@@ -39,20 +39,26 @@ def get_text(response) -> str:
 
 class RateLimitedLLM:
     """
-    Wraps the Gemini client with automatic retry-on-429.
+    Wraps the Gemini client with automatic retry-on-429 AND token monitoring.
     When the API says 'retry in Ns', we wait N+1 seconds and retry,
     up to MAX_RATE_LIMIT_RETRIES times. Daily-quota exhaustion still
     fails (waiting won't help), but per-minute limits self-heal.
+    Every successful call records its token usage to the session monitor,
+    attributed to the calling skill.
     """
 
-    def __init__(self, llm):
+    def __init__(self, llm, skill: str = "unknown"):
         self._llm = llm
+        self._skill = skill
 
     def invoke(self, *args, **kwargs):
+        from agent.token_monitor import monitor
         last_error = None
         for attempt in range(MAX_RATE_LIMIT_RETRIES + 1):
             try:
-                return self._llm.invoke(*args, **kwargs)
+                response = self._llm.invoke(*args, **kwargs)
+                monitor.record_from_response(self._skill, response, args)
+                return response
             except Exception as e:
                 msg = str(e)
                 if "429" not in msg and "RESOURCE_EXHAUSTED" not in msg:
@@ -80,11 +86,12 @@ class RateLimitedLLM:
         raise last_error
 
 
-def get_llm(temperature: float = 0.1) -> RateLimitedLLM:
+def get_llm(temperature: float = 0.1, skill: str = "unknown") -> RateLimitedLLM:
     """
-    Returns a rate-limit-protected Gemini model instance.
+    Returns a rate-limit-protected, token-monitored Gemini model instance.
     Low temperature (0.1) for code generation — we want determinism.
     Slightly higher (0.3) for interpretation/insights — we want fluency.
+    `skill` attributes this client's token usage in the session monitor.
     """
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -98,4 +105,4 @@ def get_llm(temperature: float = 0.1) -> RateLimitedLLM:
         temperature=temperature,
         convert_system_message_to_human=True
     )
-    return RateLimitedLLM(llm)
+    return RateLimitedLLM(llm, skill=skill)

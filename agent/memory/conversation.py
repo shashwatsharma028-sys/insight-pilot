@@ -36,7 +36,7 @@ def handle_followup_node(state: AgentState) -> AgentState:
         "action": f"Handling follow-up: {user_message[:60]}..."
     }
 
-    llm = get_llm(temperature=0.3)
+    llm = get_llm(temperature=0.3, skill="followup_chat")
 
     # Build context from completed analyses
     analysis_context = "\n\n".join([

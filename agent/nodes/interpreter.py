@@ -59,7 +59,7 @@ def interpreter_node(state: AgentState) -> AgentState:
         "task_id": task["id"]
     }
 
-    llm = get_llm(temperature=0.3)  # Slightly higher for natural language
+    llm = get_llm(temperature=0.3, skill="business_insights")  # Slightly higher for natural language
 
     prompt = f"""
 DATASET: {state['dataset_name']}
