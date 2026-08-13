@@ -1,1 +1,18 @@
+# Secrets — NEVER commit
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# Generated run outputs
+reports/charts/
+reports/*.md
+reports/*.pdf
+reports/*.ipynb
 lessons/lessons.json
