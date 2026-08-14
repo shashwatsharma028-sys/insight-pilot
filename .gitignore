@@ -16,3 +16,5 @@ reports/*.md
 reports/*.pdf
 reports/*.ipynb
 lessons/lessons.json
+.agents/
+.claude/
