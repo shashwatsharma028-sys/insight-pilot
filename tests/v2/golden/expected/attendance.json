@@ -1,0 +1,36 @@
+{
+  "answers": {
+    "gps_mismatch_count": 629,
+    "mean_hours_by_department": {
+      "Housekeeping": 8.095452,
+      "Maintenance": 8.038511,
+      "Reception": 8.086898,
+      "Security": 8.083987
+    },
+    "mean_hours_worked": 8.072377,
+    "present_rate": 0.845385,
+    "row_count": 15600,
+    "status_counts": {
+      "Absent": 1268,
+      "Late": 1144,
+      "Present": 13188
+    },
+    "top_department_by_mean_hours": "Housekeeping"
+  },
+  "dataset": "attendance",
+  "file": "attendance_data.csv",
+  "method": "python-stdlib (csv, statistics, math); independent of pandas",
+  "quality": {
+    "duplicate_rows": 0,
+    "missing_values": {
+      "gps_location_match": 1268,
+      "hours_worked": 312,
+      "punch_in": 1268,
+      "punch_out": 1268
+    },
+    "quality_score": 98.9,
+    "total_columns": 12,
+    "total_rows": 15600
+  },
+  "sha256": "2fe0b859f92219a49a5431ff2403a471356b00bb6f66187a6eec2874da8bd26e"
+}

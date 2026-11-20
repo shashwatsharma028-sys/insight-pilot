@@ -1,0 +1,22 @@
+{
+  "answers": {
+    "corr_visitors_revenue": 0.617609,
+    "mean_revenue_weekday": 1234.601077,
+    "mean_revenue_weekend": 1028.050238,
+    "row_count": 730,
+    "top_month_by_revenue": "2023-03",
+    "total_orders": 14243.0,
+    "total_revenue": 857883.11
+  },
+  "dataset": "ecommerce",
+  "file": "ecommerce_timeseries.csv",
+  "method": "python-stdlib (csv, statistics, math); independent of pandas",
+  "quality": {
+    "duplicate_rows": 0,
+    "missing_values": {},
+    "quality_score": 100.0,
+    "total_columns": 7,
+    "total_rows": 730
+  },
+  "sha256": "102eccf6775442efc96a94fda0436cfcc96901a5089cb07bf32ba9729e94b09a"
+}

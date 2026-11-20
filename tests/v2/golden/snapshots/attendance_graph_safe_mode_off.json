@@ -1,0 +1,117 @@
+{
+  "behavior": {
+    "business_insights_count": 3,
+    "chart_count": 2,
+    "completed_ids": [
+      "att_t1",
+      "att_t2",
+      "att_t3"
+    ],
+    "dataset_name": "Attendance Data",
+    "execution_log": [
+      [
+        "data_ingestion",
+        "success"
+      ],
+      [
+        "planner",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "report_generator",
+        "success"
+      ]
+    ],
+    "failed_ids": [],
+    "has_notebook": true,
+    "has_pdf": true,
+    "llm_calls_by_skill": {
+      "business_insights": 3,
+      "code_generator": 3,
+      "planner": 1
+    },
+    "quality_score": 98.9,
+    "report_headings": [
+      "# 📊 Autonomous Data Analysis Report",
+      "## 🔍 Data Quality Assessment",
+      "## 📈 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## 💡 Key Business Insights",
+      "## ⏱️ Execution Timeline"
+    ],
+    "safe_mode": false,
+    "tasks": [
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "att_t1",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Attendance Status Breakdown"
+      },
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "att_t2",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Hours Worked by Department"
+      },
+      {
+        "error_type": null,
+        "has_chart": false,
+        "has_interpretation": true,
+        "id": "att_t3",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "GPS Location Mismatches"
+      }
+    ]
+  },
+  "informational": {
+    "mock_estimated_input_tokens": 9616,
+    "mock_estimated_output_tokens": 719,
+    "mock_llm_calls": 7,
+    "note": "Mock-LLM character estimates. NOT provider tokens; never report as cost or savings."
+  }
+}

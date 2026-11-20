@@ -1,0 +1,177 @@
+{
+  "behavior": {
+    "business_insights_count": 3,
+    "chart_count": 2,
+    "completed_ids": [
+      "sales_t1",
+      "sales_t2",
+      "sales_t3"
+    ],
+    "dataset_name": "Sales Data",
+    "execution_log": [
+      [
+        "data_ingestion",
+        "success"
+      ],
+      [
+        "planner",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "retry"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "reflection",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "retry"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "retry"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "retry"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "failed"
+      ],
+      [
+        "reflection",
+        "success"
+      ],
+      [
+        "report_generator",
+        "success"
+      ]
+    ],
+    "failed_ids": [
+      "sales_t4"
+    ],
+    "has_notebook": true,
+    "has_pdf": true,
+    "llm_calls_by_skill": {
+      "business_insights": 3,
+      "code_generator": 8,
+      "planner": 1
+    },
+    "quality_score": 99.4,
+    "report_headings": [
+      "# 📊 Autonomous Data Analysis Report",
+      "## 🔍 Data Quality Assessment",
+      "## 📈 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## ⚠️ Failed Analyses",
+      "## 💡 Key Business Insights",
+      "## ⏱️ Execution Timeline"
+    ],
+    "safe_mode": true,
+    "tasks": [
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "sales_t1",
+        "retry_count": 1,
+        "status": "completed",
+        "title": "Sales Overview"
+      },
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "sales_t2",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Regional Sales Comparison"
+      },
+      {
+        "error_type": null,
+        "has_chart": false,
+        "has_interpretation": true,
+        "id": "sales_t3",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Target Attainment"
+      },
+      {
+        "error_type": "runtime_error",
+        "has_chart": false,
+        "has_interpretation": false,
+        "id": "sales_t4",
+        "retry_count": 4,
+        "status": "failed",
+        "title": "Filesystem Inventory"
+      }
+    ]
+  },
+  "informational": {
+    "mock_estimated_input_tokens": 18012,
+    "mock_estimated_output_tokens": 964,
+    "mock_llm_calls": 12,
+    "note": "Mock-LLM character estimates. NOT provider tokens; never report as cost or savings."
+  }
+}
