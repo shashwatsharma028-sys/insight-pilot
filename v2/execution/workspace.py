@@ -26,6 +26,17 @@ Per-execution workspace (P3.3).
   left in place and reported. It never touches another run or instance.
   Used as a context manager, cleanup runs on success, refusal and exceptions.
 
+Lifecycle (P3.3 correction):
+- create() removes a run directory on failure ONLY if this very call created
+  it; a colliding run id fails without touching the existing run. Creation
+  holds the lease's run-creation lock, so it cannot interleave with release.
+- Each workspace owns a duplicate of the runs-directory descriptor, so its
+  cleanup never depends on the lease still being held, and never falls back
+  to a path relative to the current directory.
+- cleanup() first closes the workspace to new input (permanently), then
+  deletes. `cleaned` becomes True only after the deletion is verified; a
+  failed deletion is raised and can be retried by calling cleanup() again.
+
 Platform: verified on Linux (P3.3 tests). No equivalent guarantee is
 claimed on macOS until tested there.
 """
@@ -49,42 +60,61 @@ _OPEN_DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _CREATE_INPUT = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
 
 
+def _new_run_id() -> str:
+    return secrets.token_hex(16)
+
+
 class JobWorkspace:
-    def __init__(self, *, lease, run_id, run_fd, input_fd, limits):
+    def __init__(self, *, lease, run_id, runs_fd, run_fd, input_fd, limits):
         self._lease = lease
         self.run_id = run_id
+        self._runs_fd = runs_fd          # owned duplicate of the lease's runs/ descriptor
         self._run_fd = run_fd
         self._input_fd = input_fd
         self.limits = limits
-        self.cleaned = False
+        self.closing = False             # set when cleanup starts; never cleared
+        self.cleaned = False             # set only after deletion is verified
 
     # ── creation ────────────────────────────────────────────────────────────
     @classmethod
     def create(cls, lease, limits: Limits = DEFAULT_LIMITS) -> "JobWorkspace":
-        if not lease.is_held():
-            raise SandboxUnavailableError("the instance lease is not held")
         if not isinstance(limits, Limits):
             raise TypeError("limits must be Limits")
-        run_id = secrets.token_hex(16)
+        run_id = _new_run_id()
         if not is_valid_run_id(run_id):                        # defensive
             raise SandboxUnavailableError("invalid run identifier")
-        run_fd = input_fd = None
-        try:
-            os.mkdir(run_id, 0o700, dir_fd=lease.runs_fd)      # exclusive
-            run_fd = open_private_dir(lease.runs_fd, run_id, create=False)
-            os.mkdir(INPUT_DIR, 0o700, dir_fd=run_fd)
-            input_fd = os.open(INPUT_DIR, _OPEN_DIR, dir_fd=run_fd)
-            st = os.fstat(input_fd)
-            if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.geteuid():
-                raise SandboxUnavailableError("the workspace input directory is not ours")
-            os.fchmod(input_fd, 0o755)
-        except BaseException:
-            for fd in (input_fd, run_fd):
-                if fd is not None:
-                    os.close(fd)
-            _remove_run_dir(lease.runs_fd, run_id)
-            raise
-        return cls(lease=lease, run_id=run_id, run_fd=run_fd, input_fd=input_fd, limits=limits)
+        with lease.hold_for_run_creation() as lease_runs_fd:   # refuses if released/releasing
+            runs_fd = os.dup(lease_runs_fd)
+            run_fd = input_fd = None
+            created = False                                    # did THIS call create runs/<run_id>?
+            try:
+                try:
+                    os.mkdir(run_id, 0o700, dir_fd=runs_fd)    # exclusive
+                except FileExistsError:
+                    raise SandboxUnavailableError(
+                        "run identifier collision; the existing run was left untouched") from None
+                created = True
+                run_fd = open_private_dir(runs_fd, run_id, create=False)
+                os.mkdir(INPUT_DIR, 0o700, dir_fd=run_fd)
+                input_fd = os.open(INPUT_DIR, _OPEN_DIR, dir_fd=run_fd)
+                st = os.fstat(input_fd)
+                if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.geteuid():
+                    raise SandboxUnavailableError("the workspace input directory is not ours")
+                os.fchmod(input_fd, 0o755)
+            except BaseException as exc:
+                for fd in (input_fd, run_fd):
+                    if fd is not None:
+                        os.close(fd)
+                try:
+                    if created:                                # only what this call created
+                        _remove_run_dir(runs_fd, run_id)
+                finally:
+                    os.close(runs_fd)
+                if isinstance(exc, OSError):
+                    raise SandboxUnavailableError(
+                        f"workspace could not be created ({type(exc).__name__}: {exc.strerror or exc})") from exc
+                raise
+        return cls(lease=lease, run_id=run_id, runs_fd=runs_fd, run_fd=run_fd, input_fd=input_fd, limits=limits)
 
     # ── paths (for a future read-only mount; never for generated source) ───
     @property
@@ -97,8 +127,8 @@ class JobWorkspace:
 
     # ── trusted host inputs ─────────────────────────────────────────────────
     def _require_open(self):
-        if self.cleaned:
-            raise SandboxUnavailableError("the workspace has been cleaned up")
+        if self.closing or self.cleaned or self._input_fd is None:
+            raise SandboxUnavailableError("the workspace is closed (cleanup has started)")
 
     @staticmethod
     def _check_name(name):
@@ -115,7 +145,7 @@ class JobWorkspace:
 
     def remove_input(self, name) -> None:
         self._check_name(name)
-        if self.cleaned:
+        if self._input_fd is None:           # closing or cleaned: the whole run is being removed
             return
         try:
             os.unlink(name, dir_fd=self._input_fd)
@@ -149,14 +179,27 @@ class JobWorkspace:
 
     # ── cleanup ─────────────────────────────────────────────────────────────
     def cleanup(self) -> None:
+        """
+        Remove this run. Raises if the deletion fails; the workspace then
+        stays closed to new input and cleanup() can be called again.
+        """
         if self.cleaned:
             return
-        for fd in (self._input_fd, self._run_fd):
+        self.closing = True                   # from here on no input can be written
+        for attr in ("_input_fd", "_run_fd"):
+            fd = getattr(self, attr)
+            setattr(self, attr, None)
             if fd is not None:
                 os.close(fd)
-        self._input_fd = self._run_fd = None
+        try:
+            _remove_run_dir(self._runs_fd, self.run_id, strict=True)
+        except OSError as exc:                # not cleaned; the runs/ descriptor is kept for a retry
+            raise SandboxUnavailableError(
+                f"workspace cleanup failed ({type(exc).__name__}: {exc.strerror or exc}); "
+                "call cleanup() again") from exc
+        os.close(self._runs_fd)
+        self._runs_fd = None
         self.cleaned = True
-        _remove_run_dir(self._lease.runs_fd, self.run_id, strict=True)
 
     def __enter__(self):
         return self
@@ -170,6 +213,9 @@ def _remove_run_dir(runs_fd, run_id, strict=False) -> None:
     """Remove runs/<run_id> relative to runs_fd; never follows symlinks."""
     if not is_valid_run_id(run_id):
         raise SandboxUnavailableError("refusing to remove a non-run-id path")
+    if not isinstance(runs_fd, int) or isinstance(runs_fd, bool):
+        # dir_fd=None would resolve relative to the current directory
+        raise SandboxUnavailableError("refusing to remove a run without its runs-directory descriptor")
     try:
         st = os.stat(run_id, dir_fd=runs_fd, follow_symlinks=False)
     except FileNotFoundError:

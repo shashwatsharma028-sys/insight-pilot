@@ -16,6 +16,17 @@ it): if another process can take the lock, the owner is gone. flock locks
 belong to an open file description, so even within one process a second
 lease is distinguishable.
 
+Lifecycle (P3.3 correction):
+- Run creation (JobWorkspace.create) and release() are serialised by a
+  per-lease lock. Once release() starts, the lease is "releasing" and no
+  new run can be created; a run whose creation finished first is reported
+  in remaining_runs and left in place.
+- release() always drops the flock and closes every descriptor it owns,
+  even when a removal step fails. A failed removal is reported
+  (removed=False, error=...), never as success. Removal order keeps
+  lease.json until the very last file, so an incomplete removal stays
+  inspectable.
+
 inspect_instances() only REPORTS: self / live / stale / indeterminate /
 orphan / unexpected. Nothing here deletes another instance's files, runs a
 broad startup cleanup, or touches containers. Destructive stale-instance
@@ -25,12 +36,14 @@ Platform: flock and descriptor-relative calls are verified on Linux. macOS
 provides them too, but no equivalent guarantee is claimed until tested.
 """
 
+import contextlib
 import fcntl
 import json
 import os
 import secrets
 import stat
 import tempfile
+import threading
 import time
 
 from v2.execution.errors import SandboxUnavailableError
@@ -108,6 +121,8 @@ class InstanceLease:
         self._instance_fd = instance_fd
         self._lock_fd = lock_fd
         self.runs_fd = runs_fd
+        self._state_lock = threading.Lock()
+        self._releasing = False
 
     @property
     def instance_path(self) -> str:
@@ -160,42 +175,73 @@ class InstanceLease:
                    instance_fd=instance_fd, lock_fd=lock_fd, runs_fd=runs_fd)
 
     def is_held(self) -> bool:
-        return self._lock_fd is not None
+        return self._lock_fd is not None and not self._releasing
 
     def active_runs(self) -> list:
         if self.runs_fd is None:
             return []
         return sorted(os.listdir(self.runs_fd))
 
+    @contextlib.contextmanager
+    def hold_for_run_creation(self):
+        """
+        Serialise run creation with release(). Yields the runs-directory
+        descriptor; refuses if the lease is released or releasing.
+        """
+        with self._state_lock:
+            if not self.is_held():
+                raise SandboxUnavailableError("the instance lease is not held (released or releasing)")
+            yield self.runs_fd
+
     def release(self) -> dict:
         """
-        Release the lock. Remove this instance's own directory only if it has
+        Release the lease. Remove this instance's own directory only if it has
         no runs left; otherwise leave everything in place and report it.
+        Always drops the flock and closes every owned descriptor.
         """
-        if not self.is_held():
-            return {"released": False, "removed": False, "remaining_runs": []}
-        remaining = self.active_runs()
-        removed = False
-        try:
-            if not remaining:
-                for name in (LEASE_INFO, LEASE_LOCK):
-                    try:
-                        os.unlink(name, dir_fd=self._instance_fd)
-                    except FileNotFoundError:
-                        pass
-                os.rmdir(RUNS, dir_fd=self._instance_fd)
-        finally:
-            fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
-            for fd in (self.runs_fd, self._lock_fd, self._instance_fd):
-                os.close(fd)
-            self.runs_fd = self._lock_fd = self._instance_fd = None
-        if not remaining:
-            os.rmdir(self.instance_id, dir_fd=self._instances_fd)
-            removed = True
-        os.close(self._instances_fd)
-        os.close(self._root_fd)
-        self._instances_fd = self._root_fd = None
-        return {"released": True, "removed": removed, "remaining_runs": remaining}
+        with self._state_lock:
+            if self._lock_fd is None:
+                return {"released": False, "removed": False, "remaining_runs": [], "error": None}
+            self._releasing = True            # no new runs from here on
+            remaining, removed, error = [], False, None
+            try:
+                remaining = self.active_runs()
+                if not remaining:
+                    self._remove_own_directory()
+                    removed = True
+            except OSError as exc:
+                error = f"{type(exc).__name__}: {exc.strerror or exc}"
+            finally:
+                self._teardown()
+            return {"released": True, "removed": removed, "remaining_runs": remaining, "error": error}
+
+    def _remove_own_directory(self) -> None:
+        """
+        Remove only this instance's directory, in an order that keeps it
+        inspectable if a step fails: runs/ first (fails if a run appeared,
+        removing nothing else), then the lock file, then lease.json, then the
+        directory itself.
+        """
+        os.rmdir(RUNS, dir_fd=self._instance_fd)
+        os.unlink(LEASE_LOCK, dir_fd=self._instance_fd)
+        os.unlink(LEASE_INFO, dir_fd=self._instance_fd)
+        os.rmdir(self.instance_id, dir_fd=self._instances_fd)
+
+    def _teardown(self) -> None:
+        """Drop the flock and close every owned descriptor; never raises."""
+        if self._lock_fd is not None:
+            try:
+                fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
+            except OSError:
+                pass                           # closing the descriptor releases it anyway
+        for attr in ("runs_fd", "_lock_fd", "_instance_fd", "_instances_fd", "_root_fd"):
+            fd = getattr(self, attr)
+            setattr(self, attr, None)
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
 
     def __enter__(self):
         return self
