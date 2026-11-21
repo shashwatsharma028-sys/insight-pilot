@@ -1,12 +1,13 @@
 # InsightPilot V2 feature flags
 
-Defined in `config/feature_flags.py`. **In P0 nothing in the application reads these flags.** The module exists so later phases share one strict, tested contract. With no `IP_*` variables set, the app behaves exactly like the examination build (`streamlit run ui/app.py`).
+Defined in `config/feature_flags.py`. **As of P3.1, nothing in the application reads these flags.** The module exists so later phases share one strict, tested contract. With no `IP_*` variables set, the app behaves exactly like the examination build (`streamlit run ui/app.py`).
 
 ## Rules
 
 - **Default off.** Every flag defaults to V1 behaviour.
 - **Strict parsing.** An invalid value (`IP_FF_TRACING=maybe`) or an unknown variable with a reserved prefix (`IP_FF_`, `IP_SANDBOX_`, `IP_HITL_`, for example the typo `IP_FF_VERIFER`) raises `FeatureFlagError`. Nothing silently falls back to a default.
-- **No unsafe fallback.** Once `IP_FF_SANDBOX_HARDENED=1` is set, `resolve_sandbox_backend()` raises `InsecureConfigurationError` if the requested backend is unavailable. It never returns the legacy executor. This applies in every profile.
+- **No unsafe fallback.** `IP_FF_SANDBOX_HARDENED=1` requires `IP_SANDBOX_BACKEND=container` in every profile; there is no hardened subprocess mode. Any other combination raises `InsecureConfigurationError`. If the container backend is unavailable, `resolve_sandbox_backend()` raises `InsecureConfigurationError`. It never returns the legacy executor.
+- **Launch command.** `streamlit run ui/app.py` is pure V1 and ignores every `IP_*` variable, now and after P3. The planned V2 launcher (`v2/launch_app.py`, P3.2, not yet implemented) will be the only entry point that honours these flags. See `docs/v2/P3_SECURE_EXECUTION_DESIGN.md`.
 - **Secure profile.** `IP_DEPLOYMENT_PROFILE=secure` only starts with OS/container isolation and enforced guardrails, and it rejects in-memory HITL checkpointing (which is for tests only).
 
 ## Flags
@@ -14,8 +15,8 @@ Defined in `config/feature_flags.py`. **In P0 nothing in the application reads t
 | Environment variable | Values (default **bold**) | Phase | Purpose |
 |---|---|---|---|
 | `IP_DEPLOYMENT_PROFILE` | **`exam`**, `secure` | all | `secure` enforces the isolation requirements below |
-| `IP_FF_SANDBOX_HARDENED` | **`0`**, `1` | P3 | Use the hardened executor instead of the V1 subprocess |
-| `IP_SANDBOX_BACKEND` | **`subprocess`**, `container` | P3 | `container` = OS/container-isolated backend (requires `IP_FF_SANDBOX_HARDENED=1`) |
+| `IP_FF_SANDBOX_HARDENED` | **`0`**, `1` | P3 | Use the rootless container executor; requires `IP_SANDBOX_BACKEND=container` |
+| `IP_SANDBOX_BACKEND` | **`subprocess`**, `container` | P3 | `subprocess` = unchanged V1 executor (only with hardening off); `container` = rootless OS isolation (requires `IP_FF_SANDBOX_HARDENED=1`) |
 | `IP_FF_GUARDRAILS` | **`off`**, `monitor`, `enforce` | P2 | Input/tool/output guardrails |
 | `IP_FF_TRACING` | **`0`**, `1` | P5 | Per-session, per-run tracing |
 | `IP_FF_VERIFIER` | **`off`**, `shadow`, `annotate`, `enforce` | P6 | Verification Agent |
