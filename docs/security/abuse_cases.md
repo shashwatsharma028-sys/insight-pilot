@@ -12,6 +12,16 @@ IDs `R-xx` / `F-xx` refer to [risk_register.md](risk_register.md). Example input
 
 **Evidence labels:** *Confirmed-test* (a P0 test observes it), *Confirmed-code* (traced in code, not executed), *Plausible* (depends on unvalidated runtime or model behaviour), *Future* (planned V2 architecture).
 
+The status labels map onto the register's three evidence classes:
+
+| Status label | Evidence class |
+|---|---|
+| *Confirmed-test* | **Tested vulnerability**: an existing P0 test observes it |
+| *Confirmed-code* or *Plausible* | **Code-supported risk**: from code or repository evidence, not executed. *Plausible* means exploitation also depends on unvalidated model or third-party behaviour |
+| *Future* | **Hypothetical future risk**: planned V2 architecture, not exploitable today |
+| *Not demonstrated* | Not established: an impact that would need a test that has not been run |
+
+
 ---
 
 ## AC-01: Indirect prompt injection through CSV values and headers
@@ -57,8 +67,9 @@ IDs `R-xx` / `F-xx` refer to [risk_register.md](risk_register.md). Example input
 
 - **Actor:** A3 (route 1); A1 / A4 (route 2).
 - **Route 1, repository history:**
-  - The public GitHub repository contains commit `ed13ea82` with a `.env` holding a 53-character `GOOGLE_API_KEY` value. It was deleted later (`34df73df`) but is still reachable from every branch.
-  - **V1 today:** confirmed present; validity unknown; value not used or printed.
+  - An early commit in the public repository's history added a `.env` file holding a `GOOGLE_API_KEY` value. A later commit deleted it, but the content is still reachable from the published branches. Exact commit identifiers are intentionally omitted; the owner holds them under the separate incident.
+  - **V1 today:** confirmed present (repository-history evidence, not tested); validity unknown; value not used, printed or recovered.
+  - Omitting the identifiers does **not** remove the exposure. Only revoking the credential does.
 - **Route 2, sandbox environment:**
   - The sandbox inherits `os.environ` (`sandbox/executor.py:120`), into which `utils/llm.py:13` loaded `.env`.
   - Generated code reaches it through a module the denylist doesn't cover (for example pandas' re-exported `os`), and can send it out over the network (AC-05).

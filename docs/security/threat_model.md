@@ -120,6 +120,15 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 
 ## 6. STRIDE analysis
 
+The status labels map onto the register's three evidence classes:
+
+| Status label | Evidence class |
+|---|---|
+| *Confirmed-test* | **Tested vulnerability**: an existing P0 test observes it |
+| *Confirmed-code* or *Plausible* | **Code-supported risk**: from code or repository evidence, not executed. *Plausible* means exploitation also depends on unvalidated model or third-party behaviour |
+| *Future* | **Hypothetical future risk**: planned V2 architecture, not exploitable today |
+| *Not demonstrated* | Not established: an impact that would need a test that has not been run |
+
 | Category | Threat | Component | Finding | Status |
 |---|---|---|---|---|
 | **S**poofing | Anyone on the network acts as the user (no authentication) | Streamlit server | R-18 | Confirmed-code |
@@ -132,7 +141,7 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 | T | User approves plan A, plan B runs | UI approval | R-09 | Confirmed-code |
 | **R**epudiation | No record of who approved what, when, for which plan | UI approval | R-09 | Confirmed-code |
 | R | Sandbox violations are not logged with the offending snippet, though the rules require it (`rules/sandbox_safety.rules.md:36-38`) | executor | R-24 | Confirmed-code |
-| **I**nformation disclosure | API key in public git history | repository | R-01 | Confirmed (presence) |
+| **I**nformation disclosure | API key in public git history | repository | R-01 | Confirmed-code (repository history; presence only, validity unknown) |
 | I | API key readable by generated code | sandbox | R-02 | Confirmed-test |
 | I | Arbitrary file read; network exfiltration | sandbox | R-04, R-05 | Confirmed-test |
 | I | Tracebacks, paths, data excerpts in UI and exports; samples sent to Gemini | UI, report | R-14 | Confirmed-code |
@@ -197,7 +206,7 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 > - **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
 > - **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
 >
-> Neither page could be retrieved from this session. Five attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment allowlist. Therefore:
+> Neither page could be retrieved from this session. Six attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment allowlist. Therefore:
 >
 > - **LLM Top 10 2026:** no identifiers or names are given. The column is left for verified values only. The 2025-edition IDs from the first P1 draft were removed so they cannot be mistaken for 2026 IDs.
 > - **Agentic Applications 2026:** the IDs and names shown are **recalled, not verified**, and each cell is marked *(pending)*.

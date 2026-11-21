@@ -18,6 +18,7 @@ Companion documents: [threat model](threat_model.md), [abuse cases](abuse_cases.
 | **Likelihood** | High: a normal user action or a single crafted input triggers it. Medium: needs a crafted file or model manipulation. Low: needs local access or unusual configuration. |
 | **Impact** | What the attacker gains: code execution, secret theft, integrity loss, disclosure or denial of service. |
 | **Exploitability** | Who can do it and with what. |
+| **Evidence class** | Exactly one of three, used throughout this register (split only where part of a finding is tested and part is not):<br>**Tested vulnerability**: an existing P0 test executes a probe and observes the insecure behaviour.<br>**Code-supported risk**: established by reading code, configuration, installed dependency sources or repository history. Not executed; where exploitation also depends on unvalidated model or third-party behaviour, that is stated in the finding.<br>**Hypothetical future risk**: concerns V2 architecture that does not exist yet (section F); not exploitable today. |
 | **Validation test** | **A proposed test name for the fixing phase; it does not exist yet.** The only tests that exist today are the P0 tests named under "Existing tests" and in [Coverage by existing P0 tests](#coverage-by-existing-p0-tests). |
 | **Evidence confidence** | **Confirmed-test**: an existing P0 test observes the insecure behaviour. **Confirmed-code**: a deterministic code path, read line by line, not executed in P1. **Plausible**: depends on runtime or third-party behaviour that has not been validated yet. **Future**: architectural risk for planned V2 features; not exploitable today. |
 
@@ -28,7 +29,7 @@ The reference frameworks are the two official 2026 editions, as specified by the
 - **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
 - **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
 
-Neither page could be retrieved from this session. All five attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment's network allowlist. So no identifier in this register has been checked against the official text.
+Neither page could be retrieved from this session. All six attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment's network allowlist. So no identifier in this register has been checked against the official text.
 
 - **LLM Top 10 2026:** no IDs or names are given; every mapping is **pending verification**. The 2025-edition IDs used in the first P1 draft have been removed, so a different edition cannot be mistaken for 2026.
 - **Agentic Applications 2026:** the `ASI01`–`ASI10` IDs and names shown are recalled, not verified. Each is marked **pending verification**.
@@ -37,34 +38,42 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ## Summary
 
-| ID | Title | Severity | Confidence | Phase |
-|---|---|---|---|---|
-| R-01 | API credential committed to public git history | **Critical** | Confirmed (presence); key validity unknown | Owner action now; P2 gate |
-| R-02 | Generated code can read the parent process environment, including `GOOGLE_API_KEY` | **Critical** | Confirmed-test | P3 |
-| R-03 | No OS-level isolation; AST denylist bypassable, so arbitrary code runs as the app user | **Critical** | Confirmed-test | P3 |
-| R-04 | Generated code can read and write files anywhere the app user can | **High** | Confirmed-test | P3 |
-| R-05 | Generated code has unrestricted network access | **High** | Confirmed-test | P3 |
-| R-06 | Dataset path interpolated into the unscanned wrapper (file-name code injection) | **High** | Confirmed-test (executor); Plausible (browser upload) | P3 (+P2) |
-| R-07 | Uploaded file name not sanitised: path traversal on upload save and report/notebook paths | **High** | Confirmed-code (not executed) | P2 |
-| R-08 | Approval enforced by the UI only; graph proceeds past `await_approval`; toggle removes gate | **High** | Confirmed-test | P8 |
-| R-09 | Approval scope gaps: edited plan and generated code run without review; no audit record | Medium | Confirmed-code | P8 |
-| R-10 | Indirect prompt injection from CSV values, headers and file name into planner/code-generator prompts | **High** | Confirmed-code (data flow); Plausible (model behaviour) | P2 (+P6) |
-| R-11 | Persistent memory poisoning through `lessons/lessons.json` | Medium | Confirmed-code | P2 (+P8) |
-| R-12 | Second-order injection: sandbox stdout/stderr reaches interpreter, retry prompts, insights and chat | Medium | Confirmed-code | P2 (+P6) |
-| R-13 | Unescaped insertion of untrusted content at 15 `unsafe_allow_html` sites (browser-executable XSS **not demonstrated**) | Medium | Confirmed-code (unescaped insertion); not verified (markup rendering); not demonstrated (script execution) | P2 |
-| R-14 | Sensitive-data disclosure through tracebacks, logs, reports, exports and provider prompts | Medium | Confirmed-code | P2 + P5 |
-| R-15 | Notebook export: `csv_path` in a quoted string (code injection on later run); exported code runs unsandboxed | Medium | Confirmed-code | P2 (+P3) |
-| R-16 | Unbounded consumption: no cap on plan size, prompt growth, run budget or provider back-off | Medium | Confirmed-code | P2 + P5 |
-| R-17 | No sandbox resource limits beyond 30 s wall clock | Medium | Confirmed-test (memory) | P3 |
-| R-18 | Unauthenticated server on all interfaces; process-global state shared across sessions | Medium (High on shared networks) | Confirmed-code | P3 + P5 |
-| R-19 | LLM-controlled task id used as chart file name (path traversal) | Medium | Confirmed-test | P2 + P3 |
-| R-20 | Chart path spoofable through a `CHART_SAVED:` line in generated stdout | Low | Confirmed-code | P3 |
-| R-21 | ReportLab markup injection in PDF export | Low | Plausible | P2 |
-| R-22 | Markdown rendering of sandbox output in progress status messages | Low | Plausible | P2 |
-| R-23 | Supply chain: unpinned dependencies, committed binary `venv/`, prompt files trusted without integrity checks | Low | Confirmed-code | P3 |
-| R-24 | Governance rules overstate enforced sandbox controls | Info | Confirmed-code | P3 |
+| ID | Title | Severity | Evidence class | Confidence | Phase |
+|---|---|---|---|---|---|
+| R-01 | API credential committed to public git history | **Critical** | Code-supported | Confirmed (presence); key validity unknown | Owner action now; P2 gate |
+| R-02 | Generated code can read the parent process environment, including `GOOGLE_API_KEY` | **Critical** | Tested | Confirmed-test | P3 |
+| R-03 | No OS-level isolation; AST denylist bypassable, so arbitrary code runs as the app user | **Critical** | Tested | Confirmed-test | P3 |
+| R-04 | Generated code can read and write files anywhere the app user can | **High** | Tested | Confirmed-test | P3 |
+| R-05 | Generated code has unrestricted network access | **High** | Tested | Confirmed-test | P3 |
+| R-06 | Dataset path interpolated into the unscanned wrapper (file-name code injection) | **High** | Tested + code-supported | Confirmed-test (executor); Plausible (browser upload) | P3 (+P2) |
+| R-07 | Uploaded file name not sanitised: path traversal on upload save and report/notebook paths | **High** | Code-supported | Confirmed-code (not executed) | P2 |
+| R-08 | Approval enforced by the UI only; graph proceeds past `await_approval`; toggle removes gate | **High** | Tested | Confirmed-test | P8 |
+| R-09 | Approval scope gaps: edited plan and generated code run without review; no audit record | Medium | Code-supported | Confirmed-code | P8 |
+| R-10 | Indirect prompt injection from CSV values, headers and file name into planner/code-generator prompts | **High** | Code-supported | Confirmed-code (data flow); Plausible (model behaviour) | P2 (+P6) |
+| R-11 | Persistent memory poisoning through `lessons/lessons.json` | Medium | Code-supported | Confirmed-code | P2 (+P8) |
+| R-12 | Second-order injection: sandbox stdout/stderr reaches interpreter, retry prompts, insights and chat | Medium | Code-supported | Confirmed-code | P2 (+P6) |
+| R-13 | Unescaped insertion of untrusted content at 15 `unsafe_allow_html` sites (browser-executable XSS **not demonstrated**) | Medium | Code-supported | Confirmed-code (unescaped insertion); not verified (markup rendering); not demonstrated (script execution) | P2 |
+| R-14 | Sensitive-data disclosure through tracebacks, logs, reports, exports and provider prompts | Medium | Code-supported | Confirmed-code | P2 + P5 |
+| R-15 | Notebook export: `csv_path` in a quoted string (code injection on later run); exported code runs unsandboxed | Medium | Code-supported | Confirmed-code | P2 (+P3) |
+| R-16 | Unbounded consumption: no cap on plan size, prompt growth, run budget or provider back-off | Medium | Code-supported | Confirmed-code | P2 + P5 |
+| R-17 | No sandbox resource limits beyond 30 s wall clock | Medium | Tested + code-supported | Confirmed-test (memory) | P3 |
+| R-18 | Unauthenticated server on all interfaces; process-global state shared across sessions | Medium (High on shared networks) | Code-supported | Confirmed-code | P3 + P5 |
+| R-19 | LLM-controlled task id used as chart file name (path traversal) | Medium | Tested | Confirmed-test | P2 + P3 |
+| R-20 | Chart path spoofable through a `CHART_SAVED:` line in generated stdout | Low | Code-supported | Confirmed-code | P3 |
+| R-21 | ReportLab markup injection in PDF export | Low | Code-supported | Plausible | P2 |
+| R-22 | Markdown rendering of sandbox output in progress status messages | Low | Code-supported | Plausible | P2 |
+| R-23 | Supply chain: unpinned dependencies, committed binary `venv/`, prompt files trusted without integrity checks | Low | Code-supported | Confirmed-code | P3 |
+| R-24 | Governance rules overstate enforced sandbox controls | Info | Code-supported | Confirmed-code | P3 |
 
-**Totals:** 3 Critical, 7 High, 9 Medium, 4 Low, 1 Info. 13 findings map to the 13 existing strict-xfail tests, which cover R-02, R-03, R-04, R-05, R-06, R-08, R-17 and R-19. Future architectural risks are listed separately in [§ F](#f-future-architectural-risks-not-currently-exploitable).
+**Totals by severity:** 3 Critical, 7 High, 9 Medium, 4 Low, 1 Info.
+
+**Totals by evidence class:**
+
+- **Tested vulnerabilities (8):** R-02, R-03, R-04, R-05, R-06, R-08, R-17, R-19. R-06 and R-17 are tested only in part; the untested part is code-supported.
+- **Code-supported risks (16):** R-01, R-07, R-09 to R-16, R-18, R-20 to R-24.
+- **Hypothetical future risks (8):** F-01 to F-08.
+
+The 13 existing strict-xfail tests cover the 8 tested findings: R-03 has 5 tests, R-04 has 2, and the other six have 1 each. Future architectural risks are listed separately in [§ F](#f-future-architectural-risks-not-currently-exploitable).
 
 ---
 
@@ -72,14 +81,18 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-01: API credential committed to public git history
 
+- **Evidence class:** Code-supported risk (repository-history evidence).
+
 - **Severity / likelihood / impact:** Critical / High / quota theft, billing abuse, impersonation of the project's Gemini usage.
 - **Exploitability:** anyone on the internet. The repository is **public** (GitHub API: `"visibility":"public"`).
-- **Evidence (Confirmed for presence):**
-  - Commit `ed13ea82` (2026-07-19) added `.env` with keys `GOOGLE_API_KEY` (53-character value, not a placeholder) and `LLM_MODEL`.
-  - Commit `34df73df` (2026-08-13) deleted the file, but the blob remains reachable from `origin/main`, `origin/exam-backup-2026-11-17`, `origin/feature/insightpilot-v2` and other branches.
-  - The value does not match the classic `AIza…` Google key format, so P1 cannot tell whether it is or was a live key. The value was **not** printed, used or tested.
+- **Evidence (Confirmed for presence, from repository-history inspection; not tested):**
+  - An early commit in the repository's history added a `.env` file containing a non-placeholder `GOOGLE_API_KEY` value.
+  - A later commit deleted the file. The historical content is still reachable from the published branches, including `main` and `exam-backup-2026-11-17`.
+  - P1 could not determine whether the value is or was a live credential. It was **not** printed, used, tested or recovered.
+  - Exact commit identifiers are intentionally omitted from this public document. The repository owner holds them as part of the separate incident.
   - The project's own rule `rules/safety.md:22-24` classifies a committed secret as "a sev-1 defect requiring immediate key rotation".
-- **Affected:** git history (`ed13ea82:.env`), `.gitignore:2` (added later), `utils/llm.py:13` (`load_dotenv()`).
+- **Important:** omitting the commit identifiers here does **not** reduce or remove the exposure. The value stays in the public git history, and earlier revisions of this document on this branch also name the commit. Only revoking the credential neutralises it. Rewriting the history of the protected branches is out of scope under `CLAUDE.md`.
+- **Affected:** repository git history (the historical `.env` blob), `.gitignore:2` (ignore rule added later), `utils/llm.py:13` (`load_dotenv()`).
 - **Existing tests:** none.
 - **Mitigation:**
   1. **Owner action, now:** revoke that key in Google AI Studio / Cloud Console, check its usage and billing history, and issue a new key. This needs no git history rewrite, so it is compatible with `CLAUDE.md`'s ban on rewriting `main` / the exam backup.
@@ -90,6 +103,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** immediate owner action; P2 (gate).
 
 ### R-02: Generated code can read the parent environment, including `GOOGLE_API_KEY`
+
+- **Evidence class:** Tested vulnerability.
 
 - **Severity / likelihood / impact:** Critical / Medium (needs injected or hallucinated malicious code, see R-10) / API-key theft.
 - **Exploitability:** anyone who can influence the generated code: a crafted CSV (R-10), poisoned lessons (R-11) or a compromised model response.
@@ -107,6 +122,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-03: No OS-level isolation; the AST denylist is bypassable
 
+- **Evidence class:** Tested vulnerability.
+
 - **Severity / likelihood / impact:** Critical / Medium / arbitrary code execution as the Streamlit user on the exam laptop.
 - **Exploitability:** as R-02.
 - **Evidence:**
@@ -123,6 +140,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-04: Unrestricted filesystem read/write from generated code
 
+- **Evidence class:** Tested vulnerability.
+
 - **Severity / likelihood / impact:** High / Medium / disclosure of any file readable by the user, and tampering with app code, `rules/`, `skills/`, `lessons/`, `data/` (persistence across sessions, damage to exam material).
 - **Evidence:**
   - No filesystem confinement in `sandbox/executor.py:106-121`.
@@ -135,6 +154,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-05: Unrestricted network egress from the sandbox
 
+- **Evidence class:** Tested vulnerability.
+
 - **Severity / likelihood / impact:** High / Medium / exfiltration of secrets (R-02), dataset contents and files (R-04); download of further payloads.
 - **Evidence:**
   - No network namespace or egress control in `sandbox/executor.py:115-121`.
@@ -146,6 +167,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P3.
 
 ### R-06: Dataset path interpolated into the unscanned wrapper
+
+- **Evidence class:** Tested vulnerability (executor level); code-supported risk (browser upload path).
 
 - **Severity / likelihood / impact:** High / Medium / code execution that **bypasses the AST scan entirely**, because the wrapper is never scanned.
 - **Exploitability:** a user, or anyone who can get a user to upload a file, with a file named, for example, `report" if 0 else (…) or r"x.csv`. Such names are legal on macOS and Linux.
@@ -164,6 +187,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-07: Upload file name not sanitised (path traversal)
 
+- **Evidence class:** Code-supported risk.
+
 - **Severity / likelihood / impact:** High / Low–Medium (a browser sends only a base name; a crafted multipart request is needed) / write of an attacker-chosen `.csv`-named file anywhere the user can write (for example overwriting `data/*.csv` demo datasets). Report and notebook written outside `reports/`.
 - **Exploitability:** anyone who can reach the Streamlit port (R-18); XSRF protection still applies.
 - **Evidence (Confirmed-code, not executed):**
@@ -181,6 +206,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-08: Approval enforced only by the UI
 
+- **Evidence class:** Tested vulnerability.
+
 - **Severity / likelihood / impact:** High / Medium (any non-UI caller, or the user switching the toggle off) / generated code runs with no human review.
 - **Evidence:**
   - `agent/graph.py:73` defines `await_approval` as a pass-through lambda.
@@ -195,6 +222,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P8.
 
 ### R-09: Approval scope gaps
+
+- **Evidence class:** Code-supported risk.
 
 - **Severity / likelihood / impact:** Medium / Medium / the user approves plan A but plan B (LLM-rewritten from their edit) runs. Generated code is never reviewed. No audit record exists.
 - **Evidence:**
@@ -211,6 +240,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P8.
 
 ### R-10: Indirect prompt injection from dataset content
+
+- **Evidence class:** Code-supported risk (model compliance unvalidated).
 
 - **Severity / likelihood / impact:** High / Medium / attacker-chosen analysis code, which chains into R-02 to R-05, plus manipulated plans and insights.
 - **Exploitability:** anyone who supplies a CSV to a user (cell values, header names, file name).
@@ -230,6 +261,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-11: Persistent memory poisoning through the lesson store
 
+- **Evidence class:** Code-supported risk (P0 tests show only the lesson write path, not poisoning).
+
 - **Severity / likelihood / impact:** Medium / Medium / persistent instructions injected into **every future planner prompt**, across datasets and sessions.
 - **Evidence:**
   - User plan-edit text (first 200 characters) is stored in the `cause` field (`agent/reflection_engine.py:104-116`, called from `agent/nodes/planner.py:112-115`).
@@ -248,6 +281,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-12: Second-order injection through sandbox output
 
+- **Evidence class:** Code-supported risk.
+
 - **Severity / likelihood / impact:** Medium / Medium / manipulated interpretations, insights and chat answers; injection into retry prompts and lessons.
 - **Evidence:**
   - Stdout goes to the interpreter prompt (`agent/nodes/interpreter.py:72-73`).
@@ -262,6 +297,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P2 (+P6).
 
 ### R-13: Unescaped insertion of untrusted content into UI HTML (XSS not demonstrated)
+
+- **Evidence class:** Code-supported risk (unescaped insertion; XSS not demonstrated).
 
 - **What is and is not established:**
 
@@ -292,6 +329,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-14: Sensitive-data disclosure through UI, logs, reports, exports and provider prompts
 
+- **Evidence class:** Code-supported risk.
+
 - **Severity / likelihood / impact:** Medium / High / paths, usernames, data samples and error text disclosed to viewers and recipients of exports.
 - **Evidence:**
   - Full tracebacks in the browser (`ui/app.py:973-974, 1103-1104`).
@@ -310,6 +349,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-15: Notebook export injection; exported code runs unsandboxed
 
+- **Evidence class:** Code-supported risk.
+
 - **Severity / likelihood / impact:** Medium / Low–Medium (the user must open and run the notebook) / code execution in the user's Jupyter with full privileges.
 - **Evidence:**
   - `agent/nodes/report_generator.py:127-131` builds `df = pd.read_csv('{csv_path}')` in single quotes, so a file name containing `'` breaks out of the string.
@@ -322,6 +363,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P2 (+P3).
 
 ### R-16: Unbounded consumption
+
+- **Evidence class:** Code-supported risk.
 
 - **Severity / likelihood / impact:** Medium / Medium / API cost, long hangs, UI unavailability.
 - **Evidence:**
@@ -340,6 +383,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-17: No sandbox resource limits beyond 30 s wall clock
 
+- **Evidence class:** Tested vulnerability (memory); code-supported risk (CPU, disk, process limits).
+
 - **Severity / likelihood / impact:** Medium / Medium / memory, disk or process exhaustion of the exam laptop.
 - **Evidence:** `sandbox/executor.py:17, 115-121`: only `timeout=30`; no memory, CPU, file-size or process limits (`rules/sandbox_safety.rules.md:26-27` lists them as SHOULD).
 - **Existing test:** `test_sandbox_memory_is_limited` (strict-xfail, 300 MB allocation succeeded).
@@ -348,6 +393,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P3.
 
 ### R-18: Unauthenticated server and shared cross-session state
+
+- **Evidence class:** Code-supported risk.
 
 - **Severity / likelihood / impact:** Medium (High on shared networks such as exam or college Wi-Fi) / Medium / quota abuse, cross-session data mixing and disclosure.
 - **Evidence:**
@@ -368,6 +415,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-19: LLM-controlled task id used as chart file name
 
+- **Evidence class:** Tested vulnerability.
+
 - **Severity / likelihood / impact:** Medium / Medium / chart written outside `reports/charts`, overwriting `.png` files the user can write.
 - **Evidence:** the planner keeps the LLM-supplied `id` (`agent/nodes/planner.py:76`), which is used in `os.path.join(CHARTS_DIR, f"{task_id}.png")` (`sandbox/executor.py:47, 134`).
 - **Existing test:** `test_task_id_cannot_escape_chart_dir` (strict-xfail).
@@ -379,6 +428,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-20: Chart path spoofable through generated stdout
 
+- **Evidence class:** Code-supported risk.
+
 - **Severity / likelihood / impact:** Low / Medium / display of an arbitrary existing local image in the UI; spoofed chart attribution.
 - **Evidence:** `sandbox/executor.py:128-131` takes the first `CHART_SAVED:(.+)` match from stdout without validation. The UI only checks `os.path.exists` (`ui/app.py:1179, 1408`), which blocks URLs but not other local files. The report uses only the basename under `reports/charts` (`report_generator.py:78-80, 198-203`).
 - **Existing tests:** none.
@@ -387,6 +438,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P3.
 
 ### R-21: ReportLab markup injection in the PDF export
+
+- **Evidence class:** Code-supported risk (ReportLab behaviour unvalidated).
 
 - **Severity / likelihood / impact:** Low / Medium / malformed markup aborts PDF generation (handled as "PDF generation failed"). ReportLab's paragraph markup may load local images or links from injected tags.
 - **Evidence:** `agent/nodes/report_generator.py` builds `Paragraph(...)` from report lines containing LLM, dataset and error text without XML escaping (Markdown is stripped, markup is not).
@@ -398,6 +451,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-22: Markdown rendering of sandbox output in progress status
 
+- **Evidence class:** Code-supported risk (Streamlit Markdown behaviour unvalidated).
+
 - **Severity / likelihood / impact:** Low / Medium / a remote image beacon through Markdown image syntax in progress messages.
 - **Evidence:** `ui/app.py:956` renders log `detail` (which contains stdout/stderr excerpts, `agent/nodes/executor.py:85, 108`) with `status_placeholder.info(...)`, which renders Markdown.
 - **Not yet validated:** whether Streamlit renders images in `st.info`.
@@ -407,6 +462,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 - **Phase:** P2.
 
 ### R-23: Supply chain
+
+- **Evidence class:** Code-supported risk.
 
 - **Severity / likelihood / impact:** Low / Low / compromised or drifting dependencies; unreviewable binaries.
 - **Evidence:**
@@ -423,6 +480,8 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ### R-24: Governance rules overstate enforced controls
 
+- **Evidence class:** Code-supported risk (documentation review).
+
 - **Severity:** Info.
 - **Evidence:**
   - `rules/sandbox_safety.rules.md:12-21` states "MUST NOT" network, file and subprocess access and lists an import *allowlist* (`:29-32`). Enforcement is only a denylist (R-03) and nothing for network or files.
@@ -435,7 +494,7 @@ All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framewor
 
 ## F. Future architectural risks (not currently exploitable)
 
-These concern V2 features that do not exist yet. They are design requirements, not confirmed vulnerabilities.
+**Evidence class for every row: Hypothetical future risk.** These concern V2 features that do not exist yet. They are design requirements, not confirmed vulnerabilities.
 
 | ID | Risk | Introduced by | Requirement / acceptance test |
 |---|---|---|---|
