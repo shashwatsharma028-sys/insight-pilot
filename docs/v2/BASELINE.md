@@ -17,7 +17,7 @@ P0 adds tests, fixtures, documentation and a feature-flag module that the app do
 |---|---|---|---|
 | **A** Linux container, latest dependencies from unpinned `requirements.txt` | 3.13.18 | langgraph 1.2.22, langchain 1.5.0, pandas 3.1.1, streamlit 1.67.0 | 200 existing: **200 passed**. Full suite: **270 passed, 13 xfailed, 0 failed** |
 | **B** Linux container, 100 packages pinned to the exact versions in the committed macOS `venv/` | 3.11.18 | langgraph 1.2.9, langchain 1.3.14, pandas 3.0.3, streamlit 1.59.2 | 200 existing: **200 passed**. Full suite: **270 passed, 13 xfailed, 0 failed** (1 visible harness warning, see below) |
-| **C** Examination MacBook, macOS Monterey, committed `venv/` | 3.11.9 (python.org framework build) | as B | **Not verified.** See the checklist at the end |
+| **C** macOS Monterey, separate V2 development checkout `~/Desktop/InsightPilot-V2` and its tracked `venv/` | 3.11.9 (python.org framework build) | as B | **Not verified.** See the macOS checklist at the end. The original examination folder is never used. |
 
 The 13 xfailed tests are deliberate: they are the confirmed V1 security gaps listed further down.
 
@@ -73,7 +73,13 @@ Token figures in the snapshots' `informational` section are character-based esti
 
 ## V1 security baseline (confirmed by real runs)
 
-Each row is a `strict=True, raises=AssertionError` xfail test, so it only counts when the insecure behaviour is actually observed. When a phase fixes a gap, the test passes unexpectedly, strict mode turns that into a failure, and the marker must be removed deliberately.
+Each row is a `strict=True, raises=AssertionError` xfail test, so it only counts when the insecure behaviour is actually observed.
+
+**These tests characterise the V1 execution path (all V2 flags off), and they stay as they are.** V2 security fixes arrive behind default-off flags, so the V1 path, and therefore these strict-xfail results, are expected to remain unchanged after P2, P3 and P8. Rules for later phases:
+
+- **Separate V2 tests.** A phase that fixes a gap must add its *own* tests that run the same probes against the hardened V2 path (flags on) and **pass**. Merging a fix requires that evidence. The V1 xfail staying xfail is not evidence of a fix, and neither is the V1 test passing.
+- **No silent edits to the V1 baseline.** It must not be weakened, deleted or re-marked without reviewer approval. Its 13 strict-xfail results remain the reference point that V2 is compared against.
+- **An XPASS means V1 changed.** If one of these tests ever passes unexpectedly, the V1 path itself has changed. Strict mode turns that into a failure, and the reviewer must investigate why before anything about the baseline is changed.
 
 | ID | Gap confirmed in V1 | Planned fix |
 |---|---|---|
@@ -91,7 +97,7 @@ V1 controls that do work and are kept passing: direct `import os/subprocess/sock
 
 ## Platform differences recorded
 
-1. **Streamlit test harness defect on 1.59.2 (exam version).** After **Approve and run** (which calls `st.rerun()`), AppTest keeps the approval page's un-keyed `text_area` and raises `KeyError('$$ID-…')` on the next run. The application state is correct. Streamlit 1.67.0 does not do this. `tests/v2/test_smoke_ui.py::_continue_session` handles exactly this error by restarting the harness with the same session state, and emits a `UserWarning`. A real browser on the exam Mac still needs to be checked (checklist item 4).
+1. **Streamlit test harness defect on 1.59.2 (exam version).** After **Approve and run** (which calls `st.rerun()`), AppTest keeps the approval page's un-keyed `text_area` and raises `KeyError('$$ID-…')` on the next run. The application state is correct. Streamlit 1.67.0 does not do this. `tests/v2/test_smoke_ui.py::_continue_session` handles exactly this error by restarting the harness with the same session state, and emits a `UserWarning`. **The workaround only covers the test harness. The approve flow on Streamlit 1.59.2 still has to be checked in a real browser; that is not done yet.** See "Open: real-browser verification" below.
 2. **Unpinned `requirements.txt`.** A fresh install today resolves to different versions than the exam `venv/` (for example streamlit 1.67.0 instead of 1.59.2). The app uses `use_container_width`, which Streamlit deprecates with removal announced "after 2025-12-31". **Do not reinstall dependencies on the exam machine.** Pinning is deferred to a reviewed phase; `requirements.txt` is unchanged.
 3. **LangGraph recursion limit.** Both 1.2.9 and 1.2.22 default to 10007 (older 0.2.x releases used 25). With safe mode off and many retries, an older LangGraph could stop the graph early. That's not a risk with the pinned versions.
 4. **Committed `venv/`.** It contains macOS binaries and a `pyvenv.cfg` pointing to a user home path. It cannot run on Linux, so environment B uses equivalent pins rather than the same files. Cleanup is deferred per review.
@@ -109,48 +115,88 @@ V1 controls that do work and are kept passing: direct `import os/subprocess/sock
 - Test payloads use a dummy secret value. `GOOGLE_API_KEY` is removed from the environment for every V2 test, including the sandbox subprocesses, which inherit it.
 - The real Gemini client class is replaced by one that raises, and in-process sockets may only reach loopback. This socket guard does not cover the sandbox subprocess; that isolation is part of P3.
 
-## Examination MacBook checklist (read-only)
+## Open: real-browser verification (Streamlit 1.59.2)
 
-Run this in a **separate worktree** so the presentation checkout is not touched. Use the existing venv's Python by absolute path, and **do not `pip install` anything**.
+The AppTest workaround (platform difference 1) proves nothing about real browsers. **The approve flow on Streamlit 1.59.2 is still unverified in a real browser.** It can't be done under the current constraints, because a real run plans and analyses through Gemini and the live-call budget is 0. It remains open until the reviewer approves one of these:
 
-`git fetch` and `git worktree` only update remote-tracking refs and the worktree list in `.git`; they don't touch the checked-out files or branches. Step 5 removes the worktree entry again.
+- **(a)** an offline launcher that starts the unmodified `ui/app.py` with the scripted mock LLM from `tests/v2` (new test tooling, needs approval), or
+- **(b)** a budgeted live demo.
 
-1. From inside the presentation checkout, remember its path and record its state:
+The examination demo itself is outside V2 work and is not covered here.
 
-   ```bash
-   EXAM_DIR="$(pwd)"
-   ```
+## macOS verification checklist (V2 development checkout only)
 
-   ```bash
-   git status --short --branch
-   ```
+Use **only** the separate development checkout `~/Desktop/InsightPilot-V2`, or an isolated worktree created from it. Rules:
 
-   ```bash
-   git rev-parse HEAD
-   ```
+- **Never** run anything in, `cd` into, or reference the original examination folder or its `venv/`.
+- **Do not** install or upgrade anything: no `pip`, `brew` or `python -m venv`.
+- **No live Gemini calls.** The commands force `GOOGLE_API_KEY` to be empty. Even if a `.env` exists, `python-dotenv` does not override a variable that is already set. The V2 tests also block the real client and outbound sockets, and the original tests mock the LLM.
+- **Do not run `streamlit run`** in this checklist (see the open item above).
 
-2. Create the separate worktree. This adds a new folder next to the checkout, about 850 MB because the tracked `venv/` is checked out too:
+### 1. Confirm the V2 checkout is separate from the examination project
 
-   ```bash
-   git fetch origin feature/v2-p0-baseline
-   ```
+```bash
+cd ~/Desktop/InsightPilot-V2 && pwd -P
+```
 
-   ```bash
-   git worktree add ../insight-pilot-v2-check origin/feature/v2-p0-baseline
-   ```
+```bash
+git rev-parse --show-toplevel
+```
 
-3. Run the suite from the worktree with the presentation venv:
+```bash
+git rev-parse --path-format=absolute --git-common-dir
+```
 
-   ```bash
-   cd ../insight-pilot-v2-check && PYTHONDONTWRITEBYTECODE=1 "$EXAM_DIR/venv/bin/python" -m pytest tests -q -p no:cacheprovider
-   ```
+The last two paths must both be inside `~/Desktop/InsightPilot-V2`. If the common directory points anywhere else, this checkout is a worktree of another repository, possibly the examination one. **Stop** and do not continue.
 
-   Record the pass, fail and xfail counts and any errors. Expected: 270 passed, 13 xfailed.
+```bash
+git status --short --branch
+```
 
-4. In the presentation checkout, run `streamlit run ui/app.py` and do one manual demo with a sample dataset: approve, view all pages, ask a follow-up. This confirms item 1 above in a real browser. It uses the real API key and makes a small number of real Gemini calls; do it only if you accept that.
+Note any local changes and leave them untouched.
 
-5. Go back to the presentation checkout, remove the worktree, then confirm `git status` and `HEAD` match step 1:
+### 2. Create an isolated worktree from the V2 checkout (recommended)
 
-   ```bash
-   cd "$EXAM_DIR" && git worktree remove ../insight-pilot-v2-check
-   ```
+This leaves whatever the V2 checkout currently has checked out untouched. The new folder is about 850 MB, because the tracked `venv/` is checked out too.
+
+```bash
+git fetch origin feature/v2-p0-baseline
+```
+
+```bash
+git worktree add ~/Desktop/InsightPilot-V2-p0check origin/feature/v2-p0-baseline
+```
+
+Alternative: if `git status` in step 1 was clean, check out the branch in the V2 checkout itself with `git switch feature/v2-p0-baseline`, and run step 3 from `~/Desktop/InsightPilot-V2`.
+
+### 3. Run the suite with the V2 checkout's own Python environment
+
+This uses the tracked `venv/` inside `~/Desktop/InsightPilot-V2`, by absolute path, with nothing installed:
+
+```bash
+cd ~/Desktop/InsightPilot-V2-p0check && GOOGLE_API_KEY= PYTHONDONTWRITEBYTECODE=1 ~/Desktop/InsightPilot-V2/venv/bin/python -m pytest tests -q -p no:cacheprovider -rxXfE
+```
+
+Expected: **270 passed, 13 xfailed**, plus 1 `UserWarning` from the AppTest workaround.
+
+Report the exact counts. If any of these happen, **stop and report; do not fix or install anything**:
+
+- an import fails (for example the tracked `venv/` is incomplete or doesn't match this Mac);
+- any test fails;
+- any test XPASSes (which would be a macOS-specific difference in V1 behaviour).
+
+Also record:
+
+```bash
+~/Desktop/InsightPilot-V2/venv/bin/python -c "import sys, platform; print(sys.version); print(platform.mac_ver())"
+```
+
+### 4. Clean up
+
+Remove the worktree, then confirm `git status` in the V2 checkout matches step 1:
+
+```bash
+cd ~/Desktop/InsightPilot-V2 && git worktree remove ~/Desktop/InsightPilot-V2-p0check
+```
+
+The original tests write a few git-ignored files into the worktree's `reports/` folder; they are removed with the worktree.

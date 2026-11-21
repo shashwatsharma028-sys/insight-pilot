@@ -1,13 +1,17 @@
 """
 P0: V1 security baseline (characterisation, offline, benign payloads only).
 
-Each test asserts the SECURE behaviour that later phases must deliver and is
-marked xfail(strict=True) because V1 does not provide it yet. That records the
-baseline honestly:
-- today these report as "xfailed" (known gap, confirmed by a real run);
-- when a phase closes a gap the test XPASSes, strict mode turns that into a
-  failure, and the reviewer must consciously remove the xfail marker and
-  update docs/v2/BASELINE.md. Gaps cannot be closed or reopened silently.
+Each test asserts the SECURE behaviour and is marked xfail(strict=True)
+because the V1 execution path (all V2 flags off) does not provide it. These
+tests characterise V1 only:
+- they report "xfailed" (known gap, confirmed by a real run) and are expected
+  to KEEP doing so after V2 fixes land, because V2 fixes are flag-gated and the
+  V1 path stays available unchanged;
+- a fix is proven only by SEPARATE tests for the hardened V2 path that pass;
+  this file is never edited to show a fix;
+- an unexpected XPASS means the V1 path itself changed: strict mode fails the
+  run and the reviewer must investigate. Do not weaken, delete or re-mark
+  these tests without reviewer approval (see docs/v2/BASELINE.md).
 
 Payloads only print markers, read a temp file the test created, write inside
 the test's temp dir or connect to a listener on 127.0.0.1 owned by the test.
