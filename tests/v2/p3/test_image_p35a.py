@@ -490,20 +490,14 @@ def _fake_root(tmp_path):
     return root
 
 
-def _evaluate(root, process=None):
-    rep = inspector.add_forbidden(inspector.inspect(str(root)), str(root), inspector.FORBIDDEN_PATHS)
-    if process is not None:
-        rep["process"] = process
+def _evaluate(root):
+    img = inspector.inspect_image(str(root))
     lock_versions = {n: e["version"] for n, e in INVENTORY["packages"].items()}
-    return inspector.evaluate(rep, EXPECT, lock_versions)
-
-
-GOOD_PROCESS = {"uid": 10001, "gid": 10001, "euid": 10001, "groups": [10001], "env_names": ["HOME", "PATH"],
-                "no_new_privs": "1", "cap_eff": "0000000000000000"}
+    return inspector.evaluate_image(img, EXPECT, lock_versions)
 
 
 def test_inspector_accepts_a_root_that_matches_the_expectations(tmp_path):
-    assert _evaluate(_fake_root(tmp_path), GOOD_PROCESS) == []
+    assert _evaluate(_fake_root(tmp_path)) == []
 
 
 @pytest.mark.parametrize("defect,expected", [
@@ -512,12 +506,10 @@ def test_inspector_accepts_a_root_that_matches_the_expectations(tmp_path):
     ("extra_dist", "distributions differ"), ("wrong_version", "distributions differ"),
     ("missing_dist", "distributions differ"), ("extra_opt", "/opt/ip files"),
     ("world_writable", "world-writable"), ("ssh_key", "secret-like files"),
-    ("root_process", "not running as 10001"), ("secret_env", "secret-like environment"),
 ])
 def test_inspector_detects_each_defect(tmp_path, defect, expected):
     root = _fake_root(tmp_path)
     site = root / inspector.SITE
-    proc = dict(GOOD_PROCESS)
     if defect == "setuid":
         p = root / "usr" / "bin" / "su"
         p.write_text("x")
@@ -548,12 +540,8 @@ def test_inspector_detects_each_defect(tmp_path, defect, expected):
         os.chmod(p, 0o666)
     elif defect == "ssh_key":
         (root / "opt" / "id_ed25519").write_text("x")
-    elif defect == "root_process":
-        proc.update(uid=0, euid=0)
-    elif defect == "secret_env":
-        proc["env_names"] = ["PATH", "GOOGLE_API_KEY"]
-    problems = _evaluate(root, proc)
-    assert any(expected in p for p in problems), problems
+    problems = _evaluate(root)
+    assert any(expected in p for p in problems) and all(p.startswith("IMAGE: ") for p in problems), problems
 
 
 def test_inspector_never_imports_or_executes_what_it_finds():
@@ -570,22 +558,17 @@ def test_inspector_skips_virtual_filesystems(tmp_path):
     root = _fake_root(tmp_path)
     (root / "proc" / "1").mkdir(parents=True)
     (root / "proc" / "1" / ".env").write_text("x")
-    assert _evaluate(root, GOOD_PROCESS) == []
+    assert _evaluate(root) == []
 
 
 # ── 8. real isolation tests need rootless Linux with cgroup v2 ──────────────
 
-@pytest.mark.parametrize("script", ["build_image.sh", "verify_image.sh"])
-def test_scripts_refuse_root_and_require_rootless_podman(script):
+@pytest.mark.parametrize("script,sub", [("build_image.sh", "build"), ("verify_image.sh", "verify")])
+def test_scripts_refuse_root_and_delegate_to_the_tested_driver(script, sub):
     text = _read(os.path.join(SCRIPTS, script))
     assert '[ "$(id -u)" != "0" ] || die' in text
-    assert "{{.Host.Security.Rootless}}" in text and "docker " not in text and "sudo" not in text
-    if script == "verify_image.sh":
-        assert "cgroup2fs" in text and "--network=none" in text and "--read-only" in text
-        assert "--cap-drop=ALL" in text and "no-new-privileges" in text and "--user 10001:10001" in text
-    else:
-        assert "--network=none" in text and "--pull=never" in text and "--no-cache" in text
-        assert "DOCKER_HOST" in text and "ServiceIsRemote" in text
+    assert f'rootless.py" {sub} "$@"' in text
+    assert "docker " not in text and "sudo" not in text and "podman " not in text   # all podman use is in rootless.py
 
 
 @pytest.mark.skipif(os.geteuid() != 0, reason="checks the refusal path, which needs uid 0")
@@ -600,8 +583,8 @@ def test_scripts_refuse_to_run_as_root_here(tmp_path, script, args):
 
 
 def test_host_check_reports_this_environment_as_unsuitable_when_it_is():
-    out = subprocess.run(["bash", os.path.join(SCRIPTS, "build_image.sh"), "--check-host"], capture_output=True,
-                         text=True, timeout=60)
+    out = subprocess.run([sys.executable, "-I", "-B", os.path.join(SCRIPTS, "rootless.py"), "check-host"],
+                         capture_output=True, text=True, timeout=120)
     rootless_cgroup2 = os.geteuid() != 0 and shutil.which("podman") and \
         os.path.exists("/sys/fs/cgroup/cgroup.controllers")
     if not rootless_cgroup2:
