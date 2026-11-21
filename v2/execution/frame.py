@@ -234,8 +234,10 @@ def _validate_header(header, run_id, limits: Limits) -> dict:
     elif chart["sha256"] is not None:
         _fail("an empty chart section must have sha256 null")
     reason = chart["reject_reason"]
-    if reason is not None and reason not in ARTIFACT_REJECT_REASONS:
-        _fail("sections.chart.reject_reason is not a known reason code")
+    # Type first: an untrusted array/object is unhashable, so a bare membership
+    # test would raise TypeError instead of a protocol error.
+    if reason is not None and (type(reason) is not str or reason not in ARTIFACT_REJECT_REASONS):
+        _fail("sections.chart.reject_reason must be null or a known reason code")
     if chart_length and reason is not None:
         _fail("a chart cannot be both present and rejected")
     if (chart_length or reason is not None) and exit_code != 0:
