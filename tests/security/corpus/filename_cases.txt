@@ -1,0 +1,24 @@
+Crafted dataset file names (AC-06; R-06, R-07, R-15, R-19). Inert text.
+Never create these as real files in the repository.
+
+Quote injection into the sandbox wrapper (R-06): a name containing a double quote
+followed by Python syntax, ending in .csv. Marker used by the V1 test:
+  INJECTED_MARKER  (see test_dataset_path_cannot_inject_code)
+
+Single-quote break-out in the exported notebook (R-15): a name containing a
+single quote, ending in .csv, e.g.  report'CANARY-P1-AC06-NB.csv
+
+Upload path traversal (R-07), only possible through a hand-crafted multipart
+request, not a normal browser upload:
+  ../../CANARY-P1-AC06-TRAVERSAL.csv
+  ..%2F..%2FCANARY-P1-AC06-ENCODED.csv   (expect: rejected or neutralised)
+
+HTML in the displayed file name (R-13):
+  <b>CANARY-P1-AC06-NAME</b>.csv
+
+Unsafe task ids from the model (R-19):
+  ../escaped    /abs/path    task id with spaces    a-very-long-id-over-forty-characters-xxxxx
+
+Expected secure behaviour (future tests): uploads stored under a generated name
+inside a per-session directory; report and notebook paths stay in reports/;
+notebook setup cell parses as one string literal; unsafe task ids rejected.
