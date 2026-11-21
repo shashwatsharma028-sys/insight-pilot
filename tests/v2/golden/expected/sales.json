@@ -1,0 +1,30 @@
+{
+  "answers": {
+    "mean_customer_satisfaction": 4.051916,
+    "row_count": 293,
+    "sales_by_region": {
+      "East": 3541525.0,
+      "North": 3850817.0,
+      "South": 2885889.0,
+      "West": 3295698.0
+    },
+    "target_attainment_pct": 93.137979,
+    "top_region": "North",
+    "total_returns": 1799.0,
+    "total_sales_amount": 13573929.0
+  },
+  "dataset": "sales",
+  "file": "sales_data.csv",
+  "method": "python-stdlib (csv, statistics, math); independent of pandas",
+  "quality": {
+    "duplicate_rows": 5,
+    "missing_values": {
+      "customer_satisfaction": 6,
+      "sales_rep": 3
+    },
+    "quality_score": 99.4,
+    "total_columns": 12,
+    "total_rows": 293
+  },
+  "sha256": "c5ac406600fe86e5a929e5132af87e4737c7185c167adb5d7b15d8d2d5894563"
+}

@@ -1,0 +1,117 @@
+{
+  "behavior": {
+    "business_insights_count": 3,
+    "chart_count": 2,
+    "completed_ids": [
+      "stu_t1",
+      "stu_t2",
+      "stu_t3"
+    ],
+    "dataset_name": "Student Performance",
+    "execution_log": [
+      [
+        "data_ingestion",
+        "success"
+      ],
+      [
+        "planner",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "code_generator",
+        "success"
+      ],
+      [
+        "executor",
+        "success"
+      ],
+      [
+        "interpreter",
+        "success"
+      ],
+      [
+        "report_generator",
+        "success"
+      ]
+    ],
+    "failed_ids": [],
+    "has_notebook": true,
+    "has_pdf": true,
+    "llm_calls_by_skill": {
+      "business_insights": 3,
+      "code_generator": 3,
+      "planner": 1
+    },
+    "quality_score": 99.9,
+    "report_headings": [
+      "# 📊 Autonomous Data Analysis Report",
+      "## 🔍 Data Quality Assessment",
+      "## 📈 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## 💡 Key Business Insights",
+      "## ⏱️ Execution Timeline"
+    ],
+    "safe_mode": false,
+    "tasks": [
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "stu_t1",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Score Overview"
+      },
+      {
+        "error_type": null,
+        "has_chart": false,
+        "has_interpretation": true,
+        "id": "stu_t2",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Scores by Subject"
+      },
+      {
+        "error_type": null,
+        "has_chart": true,
+        "has_interpretation": true,
+        "id": "stu_t3",
+        "retry_count": 0,
+        "status": "completed",
+        "title": "Study Hours vs Score"
+      }
+    ]
+  },
+  "informational": {
+    "mock_estimated_input_tokens": 9414,
+    "mock_estimated_output_tokens": 694,
+    "mock_llm_calls": 7,
+    "note": "Mock-LLM character estimates. NOT provider tokens; never report as cost or savings."
+  }
+}

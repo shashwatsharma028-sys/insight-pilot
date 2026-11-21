@@ -1,0 +1,35 @@
+{
+  "answers": {
+    "corr_study_hours_score": 0.734985,
+    "grade_letter_counts": {
+      "A": 1108,
+      "B": 941,
+      "C": 420,
+      "D": 31
+    },
+    "mean_score": 77.903209,
+    "mean_score_by_subject": {
+      "Computer_Science": 77.930769,
+      "English": 81.304481,
+      "History": 85.338289,
+      "Math": 70.646076,
+      "Science": 74.370552
+    },
+    "pass_rate": 1.0,
+    "row_count": 2500,
+    "top_subject_by_mean_score": "History"
+  },
+  "dataset": "student",
+  "file": "student_data.csv",
+  "method": "python-stdlib (csv, statistics, math); independent of pandas",
+  "quality": {
+    "duplicate_rows": 0,
+    "missing_values": {
+      "score": 38
+    },
+    "quality_score": 99.9,
+    "total_columns": 8,
+    "total_rows": 2500
+  },
+  "sha256": "3259adb09dbbedeafd91802f2285dcf3a89cde407088387e495d7dea99b4fc7f"
+}
