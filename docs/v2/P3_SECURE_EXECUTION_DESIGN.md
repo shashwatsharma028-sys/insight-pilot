@@ -653,13 +653,22 @@ The host compares this with the expected values. Any mismatch raises `SandboxUna
 - **Not wired in:** the production dispatcher does not call it yet, and `ExecutionRequest` still carries no dataset.
 - **Platform:** verified on Linux (descriptor-relative `open`, `mkdir` and `unlink`; `O_NOFOLLOW`, `O_DIRECTORY`, `O_CLOEXEC`). macOS offers the same calls, but **no equivalent guarantee is claimed until it is tested there**.
 - **Ownership checks:** the demo files and the data directory must belong to the user running the app. A checkout owned by another account is refused, which is fail closed.
-- **REQUIRES VALIDATION UNDER A NON-ROOT LINUX USER.** Every P3.3 filesystem test ran as **uid 0** in the cloud test container. Root bypasses discretionary access control, so these tests prove the descriptor-relative logic, the symlink, type and link-count refusals, and the ownership comparisons, but **not** the permission-denied behaviour that protects a real deployment. That behaviour includes:
-  - another account being unable to read or enter the `0700` workspace and instance directories;
-  - refusal of foreign-owned files and directories as seen by an unprivileged process;
-  - `umask` effects on created modes;
-  - creating the default root under a shared sticky `/tmp` that another user tries to pre-create.
+- **Non-root validation — partly done in the cloud test container (P3.3 correction); still MANDATORY on VE-2.**
+  - **What root-only tests can show.** The main suite runs as **uid 0**, and root bypasses discretionary access control. Those runs prove the descriptor-relative logic and the symlink, file-type, link-count and ownership comparisons. They do **not** establish permission-denied behaviour.
+  - **What was run unprivileged** (2026-11-21, cloud test container; no account created; a throw-away pytest-only virtualenv, removed afterwards):
+    - The three P3.3 test files ran as the pre-existing system account `nobody` (uid 65534) via `setpriv --reuid=65534 --regid=65534 --clear-groups`, with `--noconftest`.
+    - Result: **104 passed, 3 skipped (root-only fixtures), 13 failed**.
+    - **All 13 failures are the same deliberate fail-closed refusal**: "the approved data directory is not owned by this user". The repository's `data/` belongs to root, and the authoriser requires the running user to own the demo data. Two of the 13 surface as a different assertion, because that refusal pre-empts the oversize check and the concurrency check.
+  - **Cross-account probe** with two unprivileged identities: the owner as uid 65534, and an intruder as uid 65533, an unnamed uid reached via `setpriv` with no account created.
+    - **Under a hostile `umask 000`, the owner** authorised a demo dataset from its own copy, and the modes were exact: root, instance and run `0700`; `in/` `0755`; `code.py` and `dataset.csv` `0644`.
+    - **The intruder** got `EACCES` listing the owner's root, entering the run directory and reading `code.py`. `inspect_instances()` and `InstanceLease.acquire()` on the owner's root were refused.
+    - **A root pre-created ("squatted") by the intruder was refused by the owner.**
+  - **Still required on VE-2:**
+    - the real `ipval`/`ipprobe` accounts on a reproducible Ubuntu VM, running the **full** suite as `ipval`;
+    - unprivileged equivalents for the root-only fixtures (device node, foreign owner);
+    - the default root under the real shared `/tmp`.
 
-  These must be re-run as an unprivileged user (the VE-2 `ipval` account, with `ipprobe` as the second account; §12) before any of these properties is claimed. The two root-only fixtures (device node, foreign owner) also need an unprivileged equivalent (for example a file pre-created by `ipprobe`).
+    The cloud-container results are early evidence, not the evidence of record.
 
 ### 9.1 Principle
 
@@ -751,9 +760,13 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
   - `lease.lock` (`0600`, exclusive create) is held with `flock(LOCK_EX)` for the lease's lifetime;
   - `lease.json` (`0600`) holds only `schema`, `instance_id`, `pid`, `boot_id`, `created_unix`: no credentials, no environment, no paths;
   - `runs/` (`0700`).
-- **`release()`:**
-  - It unlocks.
-  - It removes **its own** instance directory only if no runs remain. Otherwise it leaves everything in place and reports the remaining runs.
+- **`release()`** (corrected in the P3.3 security correction):
+  - **Serialised with run creation** by a per-lease lock.
+    - Once `release()` starts, the lease is "releasing" and `JobWorkspace.create()` is refused.
+    - A creation already in progress finishes first; its run is reported in `remaining_runs` and left in place.
+  - It removes **its own** instance directory only if no runs remain, in this order: `runs/` (fails, removing nothing else, if a run exists), `lease.lock`, `lease.json`, the directory. So `lease.json` survives until the last file, and an incomplete removal stays inspectable.
+  - It **always** drops the flock and closes all five owned descriptors (root, `instances/`, instance, lock, `runs/`), even when a removal step or the unlock fails.
+  - **A failed removal is reported, never as success:** `{"released": True, "removed": False, "error": "<type>: <message>", ...}`.
   - It never touches another instance.
 - **`inspect_instances()`: report only.** It never deletes, never blocks, and never touches containers.
   - It tries a **non-blocking** lock on each other instance's `lease.lock`.
@@ -774,17 +787,33 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
   - `runs/<run_id>/` (`0700`, exclusive) holds `in/` (`0755`) with exactly two possible inputs, `code.py` and `dataset.csv` (`0644`, `O_CREAT|O_EXCL|O_NOFOLLOW` relative to the `in/` descriptor).
   - Generated code is size-checked **before** anything is written, then written verbatim.
   - There is **no output directory**: untrusted container output will never land on the host filesystem (§8.5).
-  - `cleanup()` removes exactly `runs/<run_id>` relative to the lease's runs descriptor, using `shutil.rmtree`'s symlink-attack-resistant descriptor implementation (`avoids_symlink_attacks` is True on this Linux). Symlinks inside are unlinked, not followed. A run directory replaced by a symlink is removed as an entry only, and an error is raised.
+  - `create()` removes a run directory on failure **only if this very call created it**. A run-id collision raises "run identifier collision; the existing run was left untouched" (correction).
+  - Each workspace owns a **duplicate of the `runs/` descriptor**, so its cleanup works after the lease is released and never resolves a path relative to the current directory. `_remove_run_dir` refuses a missing descriptor (correction).
+  - `cleanup()` removes exactly `runs/<run_id>` relative to that descriptor, using `shutil.rmtree`'s symlink-attack-resistant descriptor implementation (`avoids_symlink_attacks` is True on this Linux). Symlinks inside are unlinked, not followed. A run directory replaced by a symlink is removed as an entry only, and an error is raised.
+  - **Retryable (correction):**
+    - When cleanup starts, the workspace becomes `closing` permanently, so no input can be written again.
+    - `cleaned` becomes True only after the deletion is verified.
+    - A failed deletion raises `SandboxUnavailableError("workspace cleanup failed …; call cleanup() again")` and keeps the `runs/` descriptor for the retry.
+    - Repeated successful cleanup is a no-op.
   - On platforms without the safe `rmtree`, only the known names are removed; anything unexpected is left in place and reported.
   - As a context manager it cleans up on success, refusal and exceptions.
 
-- **REQUIRES VALIDATION UNDER A NON-ROOT LINUX USER.** Every P3.3 filesystem test ran as **uid 0** in the cloud test container. Root bypasses discretionary access control, so these tests prove the descriptor-relative logic, the symlink, type and link-count refusals, and the ownership comparisons, but **not** the permission-denied behaviour that protects a real deployment. That behaviour includes:
-  - another account being unable to read or enter the `0700` workspace and instance directories;
-  - refusal of foreign-owned files and directories as seen by an unprivileged process;
-  - `umask` effects on created modes;
-  - creating the default root under a shared sticky `/tmp` that another user tries to pre-create.
+- **Non-root validation — partly done in the cloud test container (P3.3 correction); still MANDATORY on VE-2.**
+  - **What root-only tests can show.** The main suite runs as **uid 0**, and root bypasses discretionary access control. Those runs prove the descriptor-relative logic and the symlink, file-type, link-count and ownership comparisons. They do **not** establish permission-denied behaviour.
+  - **What was run unprivileged** (2026-11-21, cloud test container; no account created; a throw-away pytest-only virtualenv, removed afterwards):
+    - The three P3.3 test files ran as the pre-existing system account `nobody` (uid 65534) via `setpriv --reuid=65534 --regid=65534 --clear-groups`, with `--noconftest`.
+    - Result: **104 passed, 3 skipped (root-only fixtures), 13 failed**.
+    - **All 13 failures are the same deliberate fail-closed refusal**: "the approved data directory is not owned by this user". The repository's `data/` belongs to root, and the authoriser requires the running user to own the demo data. Two of the 13 surface as a different assertion, because that refusal pre-empts the oversize check and the concurrency check.
+  - **Cross-account probe** with two unprivileged identities: the owner as uid 65534, and an intruder as uid 65533, an unnamed uid reached via `setpriv` with no account created.
+    - **Under a hostile `umask 000`, the owner** authorised a demo dataset from its own copy, and the modes were exact: root, instance and run `0700`; `in/` `0755`; `code.py` and `dataset.csv` `0644`.
+    - **The intruder** got `EACCES` listing the owner's root, entering the run directory and reading `code.py`. `inspect_instances()` and `InstanceLease.acquire()` on the owner's root were refused.
+    - **A root pre-created ("squatted") by the intruder was refused by the owner.**
+  - **Still required on VE-2:**
+    - the real `ipval`/`ipprobe` accounts on a reproducible Ubuntu VM, running the **full** suite as `ipval`;
+    - unprivileged equivalents for the root-only fixtures (device node, foreign owner);
+    - the default root under the real shared `/tmp`.
 
-  These must be re-run as an unprivileged user (the VE-2 `ipval` account, with `ipprobe` as the second account; §12) before any of these properties is claimed. The two root-only fixtures (device node, foreign owner) also need an unprivileged equivalent (for example a file pre-created by `ipprobe`).
+    The cloud-container results are early evidence, not the evidence of record.
 
 Original plan text (kept for the later container stages):
 
@@ -851,7 +880,7 @@ Original plan text (kept for the later container stages):
 | `kill(-1, SIGKILL)` from PID 1 removes every child, including `setsid` daemons | I-11 |
 | `podman --timeout` and `--rm` remove containers after an app crash | C-06 |
 | Rootless Docker equivalents for every row above | the same tests with the Docker adapter |
-| P3.3 host filesystem protections (0700 workspace and instance directories, owner checks, private root under a shared `/tmp`, `umask`) hold for an **unprivileged** user against a second unprivileged account; so far tested only as root | the P3.3 suite re-run as VE-2 `ipval`, plus cross-account probes from `ipprobe` |
+| P3.3 host filesystem protections (0700 workspace and instance directories, owner checks, private root under a shared `/tmp`, `umask`) hold for an **unprivileged** user against a second unprivileged account. **Early evidence in the cloud test container** (uid 65534/65533, see §9 and §11); not yet on VE-2 | the full suite re-run as VE-2 `ipval`, plus cross-account probes from `ipprobe` (mandatory) |
 
 ---
 
@@ -1030,6 +1059,18 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Full suite after P3.3 | **662 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (558 + 60 + 44); 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test). Run as **uid 0**; see the non-root validation requirement in §9 and §11 |
 | The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
+**P3.3 security-correction results** (same environment):
+
+| Run | Result |
+|---|---|
+| Base `78355f3e` (P3.3, before changes) | 662 passed, 13 xfailed, 0 failed, 0 skipped |
+| New `tests/v2/p3/test_lifecycle_p33.py` | 16 passed (3 consecutive runs) |
+| Existing P3.3 tests | 104 passed. 3 assertions narrowly updated: the release report gained an `error` field; deletions moved to `_remove_own_directory` |
+| Mutation checks (throw-away copies) | pre-fix unconditional removal on failed creation → 1 failure; `cleaned` set before deletion → 2; teardown only on success → 5; creation not serialised with release → 1; failed removal reported as success → 6 |
+| Non-root (cloud container, uid 65534) | 104 passed, 3 skipped (root-only), 13 failed, all the deliberate refusal of the root-owned `data/`. The cross-account probe with uid 65533 was denied everywhere (§9, §11) |
+| Full suite after the correction (uid 0) | **678 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (662 + 16); 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
 ---
 
 ## 18. Rollback
@@ -1168,3 +1209,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.2a | Launcher flags-off boundary implemented (§7.1–7.1b); **correction:** Streamlit magic always inserts one unused import, and wraps nothing in `ui/app.py` (§2.2 item 9, L-03); `sys.path` mirroring of `streamlit run ui/app.py`; `Limits.cpus` finiteness; AppTest limitations and the real-browser proposal |
 | rev. 2.1 + P3.2b | Bootstrap, binding, tripwire, dispatcher and runtime interface implemented (§7.1c, §7.2, §7.5); deployment boundary documented (§7.4); leak guard; **plan refinements:** flags are frozen per process and compared on every run (a mismatch is a sticky refusal, never a mode switch); a `FAILED` state reached from `HARDENED` keeps the binding installed |
 | rev. 2.1 + P3.3 | Demo-only `DatasetAuthorizer`, `JobWorkspace` and `InstanceLease` implemented and documented (§9, §11); not wired into production; destructive stale reconciliation disabled; Linux-only claims |
+| rev. 2.1 + P3.3 correction | Run-id collision never deletes an existing run; retryable workspace cleanup (`closing`/`cleaned`); exception-safe lease release with reported failures, metadata-preserving removal order and release/creation serialisation; workspaces own their `runs/` descriptor; early non-root and cross-account evidence (uid 65534/65533); VE-2 non-root run still mandatory |
