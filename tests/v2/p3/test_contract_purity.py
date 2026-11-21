@@ -66,6 +66,9 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/bootstrap.py",     # P3.2b
     "v2/execution/binding.py",       # P3.2b
     "v2/execution/dispatch.py",      # P3.2b
+    "v2/execution/datasets.py",      # P3.3 (not wired into production yet)
+    "v2/execution/workspace.py",     # P3.3 (not wired into production yet)
+    "v2/execution/lease.py",         # P3.3 (not wired into production yet)
 ]
 
 
@@ -86,8 +89,9 @@ def test_importing_contracts_loads_no_process_network_llm_or_v1_modules():
         "import v2.execution\n"
         "new = set(sys.modules) - before\n"
         "assert 'v2.launch_app' not in new, 'contracts must not import the launcher'\n"
-        "assert not new & {'v2.execution.bootstrap', 'v2.execution.binding', 'v2.execution.dispatch'}, "
-        "'contracts must not import the bootstrap, binding or dispatcher'\n"
+        "assert not new & {'v2.execution.bootstrap', 'v2.execution.binding', 'v2.execution.dispatch', "
+        "'v2.execution.datasets', 'v2.execution.workspace', 'v2.execution.lease'}, "
+        "'contracts must not import the bootstrap, binding, dispatcher, datasets, workspace or lease'\n"
         "roots = {m.split('.')[0] for m in new}\n"
         "print(','.join(sorted(roots)))"
     ) % ROOT
