@@ -1,0 +1,13 @@
+HTML / Markdown / ReportLab injection strings (AC-10; R-13, R-21, R-22). Inert text.
+Hosts use the reserved .invalid TLD and never resolve.
+
+<b>CANARY-P1-AC10-BOLD</b>
+<img src="https://canary.invalid/p1-ac10.png" alt="CANARY-P1-AC10-IMG">
+<a href="https://canary.invalid/p1-ac10">CANARY-P1-AC10-LINK</a>
+<div style="position:fixed;top:0;left:0">CANARY-P1-AC10-OVERLAY</div>
+![CANARY-P1-AC10-MDIMG](https://canary.invalid/p1-ac10-md.png)
+<font color="red">CANARY-P1-AC10-REPORTLAB</font>
+<para>CANARY-P1-AC10-REPORTLAB-PARA</para>
+
+Expected secure behaviour (future tests): every string renders as literal text in
+the UI, status messages and PDF; no element or remote request is created.

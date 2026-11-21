@@ -1,0 +1,15 @@
+AST denylist bypass shapes (AC-04, R-03). Descriptions only; not runnable.
+The runnable V1 probes are in tests/v2/test_v1_security_baseline.py (BYPASSES)
+and must stay unchanged.
+
+1. pandas_reexported_os   - reach the os module through an attribute chain on pandas.
+2. getattr_builtin_eval   - look up a builtin through getattr with a computed name.
+3. dunder_subclasses      - walk object.__subclasses__() from a literal.
+4. pathlib_read           - use pathlib, which is not on the denylist.
+5. builtins_module        - import the builtins module and use open through it.
+Additional shapes to cover in P3: io / glob / tempfile modules; pandas read_* and
+to_* with absolute paths; pandas URL helpers for network access.
+
+Expected secure behaviour (future test): under the hardened backend each shape
+fails to read the dummy secret, read or write outside its allowed paths, or open
+a socket. The assertion is on the effect, not on the scanner verdict.
