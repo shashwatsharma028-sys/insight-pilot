@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a and P3.2b (all accepted after review) and P3.3 are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction (all accepted after review) and P3.4 are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -573,6 +573,17 @@ All values are provisional and are the same as `v2.execution.limits.DEFAULT_LIMI
 
 ### 8.4 PID 1 and the extraction protocol
 
+**P3.4 status:** the *pure* helpers are IMPLEMENTED in `v2/execution/supervisor_helpers.py`:
+
+- `BoundedCollector` (stdout head) and `HeadTailCollector` (stderr head + tail);
+- `signal_plan()`, data only, giving every catchable signal `default` except `SIGCHLD` (`handle`) and `SIGPIPE` (`ignore`). Nothing is installed;
+- `termination_from_wait_status()` for an already-obtained status;
+- `parse_proc_status`, `parse_writable_mounts` and `parse_cgroup_limit`, which take file contents as text, and `build_attestation()`;
+- `classify_out_entry()` from stat fields;
+- `assemble_frame()`, which drops the chart for any run that did not succeed.
+
+**Not implemented, and deferred to the validated container stage:** starting the child, executing generated code, installing signal handlers, `prctl`, `kill(-1, …)`, reaping, and reading `/proc` or `/sys`. A static test forbids those calls and imports in every P3.4 module.
+
 See also §20 Q4.
 
 1. **Supervisor start (before the child):**
@@ -592,6 +603,32 @@ See also §20 Q4.
 
 ### 8.5 Result frame and byte budgets
 
+**P3.4 status: IMPLEMENTED** in `v2/execution/frame.py`; encoder and decoder share one validator; not wired into the dispatcher.
+
+**Header (schema 1)** with exact key sets at every level:
+
+- `{schema, run_id, status{child_exit, child_signal, timed_out, oom_killed}, attestation{…14 keys…}, sections{stdout{length, sha256, truncated}, stderr{length, sha256, truncated}, chart{length, sha256, reject_reason}}, out_other_entries}`.
+- The design's "OOM count" is carried as the boolean `oom_killed`, derived by `assemble_frame` from the cgroup `oom_kill` events and a `SIGKILL` termination.
+
+**The decoder:**
+
+- **Bounded reading:**
+  - reads at most `8 + max_frame_bytes + 1` bytes, incrementally, and handles short reads;
+  - refuses a stream that returns more than requested;
+  - checks the header length (1…`frame_header_bytes`) before reading the header, and every section length against its own cap before reading any payload.
+- **Strict JSON:** UTF-8, no BOM, no duplicate keys, no floats, NaN or Infinity, and exact types (`bool` is never an `int`).
+- **Status consistency:**
+  - schema 1 only; the run id must match;
+  - exactly one of exit code and signal;
+  - timeout or OOM requires `SIGKILL`, and they are mutually exclusive;
+  - a chart (or a reject reason) only after exit 0;
+  - a chart sha256 only when it has bytes;
+  - a truncated section must be exactly its cap.
+- **Payload integrity:** per-section SHA-256; no trailing bytes.
+- **Errors:** every violation raises `SandboxProtocolError`. A well-formed but different attestation raises plain `SandboxUnavailableError` (`verify_attestation`).
+- **No code-like content:** nothing is evaluated or deserialised into objects.
+- `display_text()` drops `CHART_SAVED` lines and control characters; a marker is never a path.
+
 See also §20 Q3.
 
 - **Two streams, never mixed:**
@@ -607,6 +644,8 @@ See also §20 Q3.
 - **Memory:** the supervisor never holds more than the caps, because it caps while collecting, not when framing.
 
 ### 8.6 Per-run attestation
+
+**P3.4 status:** the shape validation, the expected policy (`expected_attestation(limits)`, for example `cpu_max = "100000 100000"` for one CPU) and the comparison are IMPLEMENTED (`frame.py`), as is parsing from file contents (`supervisor_helpers.py`). Obtaining the real values inside a container remains P3.5/P3.6 and **REQUIRES RUNTIME VALIDATION**.
 
 Recorded by the supervisor **before** the child starts:
 
@@ -707,7 +746,34 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
 
 ---
 
-## 10. Artifact validation — PLANNED (P3.4 host side, P3.5 in-container)
+## 10. Artifact validation — host side IMPLEMENTED (P3.4); in-container stage A PLANNED (P3.5)
+
+**P3.4 implementation** (`v2/execution/artifacts.py`, `v2/execution/chart_store.py`; not wired into the dispatcher):
+
+- **Stage B as designed below, with these concrete rules:**
+  - the size cap applies before parsing;
+  - every chunk length is checked against the remaining bytes and 2³¹−1;
+  - CRC on every chunk;
+  - at most `MAX_CHUNKS` = 4096 chunks;
+  - anything after `IEND` is `trailing_data`;
+  - inflation proceeds in 64 KiB steps capped at expected+1 bytes and keeps no pixel data, only checking each row's filter byte;
+  - Pillow is used only as `Image.open(..., formats=("PNG",))` with `DecompressionBombWarning` raised as an error. Its global settings are never changed, and the decode refuses to run if `LOAD_TRUNCATED_IMAGES` was enabled elsewhere;
+  - the pixels are re-encoded by the host and the re-encoded bytes are validated again.
+- **Contract extension:** two reason codes, `truncated` and `too_many_chunks`, were added to `ARTIFACT_REJECT_REASONS`.
+- **Store, a deliberate deviation from step 5 below:**
+  - The name is `<stem>-<full 128-bit run_id>.png`, not `run8`.
+  - Publication uses **`os.link(tmp, final)`, not `os.replace`**. `link` never replaces an existing name, so a collision, even a concurrent one, cannot overwrite another chart. `replace` would.
+  - Without hard-link support, publication fails closed.
+  - The charts directory is opened with `O_NOFOLLOW` and must be owned by this user and not group- or world-writable.
+  - The store only accepts a `TrustedChart` and has no path parameter.
+  - No stale-chart fallback.
+- **RESIDUAL RISK, stated plainly:**
+  - Passing validation does **not** make host PNG decoding risk-free.
+  - zlib still inflates attacker data, within bounds.
+  - Pillow's decoder still runs on attacker-chosen pixel content after the structure has been proven canonical. A memory-safety bug in zlib or Pillow could still be reachable from a compromised container's frame.
+  - Mitigations: in-container stage-A canonicalisation (P3.5), patched Pillow and zlib, and the size, dimension and pixel caps.
+
+Original plan text:
 
 **Stage A, in the container, after every untrusted process is dead:**
 
@@ -974,7 +1040,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | S-03 ★ | Writes to `/`, `/in`, `/var/tmp`, `/run`, `/dev/shm`, `/dev` fail | VE | PLANNED |
 | S-04 ★ | Fill tmpfs + allocate 950 MiB → OOM | VE | PLANNED |
 | S-05 ★ | Exhaustion run: host free space changes < 1 MiB beyond host-written inputs; no log growth | VE | PLANNED |
-| S-06 ★ | 100 MB stdout flood; oversized or forged frame → host bounded, `SandboxProtocolError` | VE / C | PLANNED |
+| S-06 ★ | 100 MB stdout flood; oversized or forged frame → host bounded, `SandboxProtocolError` | VE / C | **Decoder part IMPLEMENTED (P3.4)** (bounded reads with endless trailing garbage, oversized frames, header and section lengths checked before reading). The flood inside a container waits for P3.6 |
 | **I-01** ★ | Dummy `GOOGLE_API_KEY` and proxy variables in parent: absent in the container; environment ⊆ allowlist | VE | PLANNED |
 | I-02 ★ | The 5 P0 bypass shapes are contained | VE | PLANNED |
 | I-03/04/05 ★ | Host files, repository, host `/proc/*/environ` unreadable; writes outside fail; repository hashes unchanged | VE | PLANNED |
@@ -983,11 +1049,13 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | I-09 | Rootful runtime, euid 0, cgroup v1, missing controllers → preflight refuses | C | PLANNED |
 | I-10 ★ | Child sends SIGINT, SIGTERM, SIGHUP, SIGUSR1, SIGKILL, SIGSTOP to PID 1; ptrace(1); `/proc/1/mem`; `/proc/1/fd/1` → no effect; frame intact (B-2) | VE | PLANNED |
 | I-11 ★ | Background daemon outliving the child is killed before extraction; `/proc` shows only PID 1 | VE | PLANNED |
-| I-12 | Attestation mismatch → `SandboxUnavailableError` | C | PLANNED |
+| I-12 | Attestation mismatch → `SandboxUnavailableError` | C | **IMPLEMENTED (P3.4)** (`verify_attestation`, 13 weakened-isolation cases) |
 | I-13 ★ | keyctl, unshare, mount denied | VE | PLANNED |
 | I-14 | Host stop: `kill -s TERM` has no effect; `kill -s KILL` stops; zombie reaping under a 50-grandchild churn leaves `pids.current` back at baseline | VE | PLANNED |
 | **R-01…06** ★ | Memory OOM message; PID limit; CPU loop → V1-identical timeout message; SIGTERM-ignoring child; `nofile`; fork bomb | VE | PLANNED |
-| **A-01…21** | Artifact corpus: valid chart through stage A; wrong magic; renamed JPEG/SVG; bad CRC; tEXt, iCCP, zTXt, eXIf; APNG; interlaced; 16-bit; palette; dimensions over cap; pixel bomb; zlib bomb; truncated IDAT; trailing data and polyglot; double IHDR; empty; over size; symlink, hardlink, FIFO or directory `chart.png` (VE); atomic unique store and safe stem; raw Matplotlib PNG at stage B rejected (B-6) | C / VE | PLANNED |
+| **A-01…21** | Artifact corpus: valid chart through stage A; wrong magic; renamed JPEG/SVG; bad CRC; tEXt, iCCP, zTXt, eXIf; APNG; interlaced; 16-bit; palette; dimensions over cap; pixel bomb; zlib bomb; truncated IDAT; trailing data and polyglot; double IHDR; empty; over size; symlink, hardlink, FIFO or directory `chart.png` (VE); atomic unique store and safe stem; raw Matplotlib PNG at stage B rejected (B-6) | C / VE | **Host side IMPLEMENTED (P3.4)**; the in-container `/out` entry cases are covered by `classify_out_entry` and wait for the container (VE) |
+| FR-01…12 | Frame protocol: round trips (one-byte reads), wrong magic, header length checked before reading, section lengths checked before payload, bounded reads, more-than-requested streams, malformed and duplicate-key and float and NaN headers, missing and unexpected fields, invalid values, wrong SHA-256, truncation at every region, trailing bytes, status and chart consistency, exact truncation boundaries, attestation shape vs policy | C | **IMPLEMENTED (P3.4)** |
+| SH-01…08 | Pure helpers: collector boundaries (randomised chunking), signal plan installs nothing, wait-status decoding, attestation parsing (good, weakened, malformed), `/out` entry classification, frame assembly drops charts on failure; static no-exec/no-spawn/no-signal/no-network checks; not wired into production; contracts unchanged | C | **IMPLEMENTED (P3.4)** |
 | **C-01…08** | Exact-name cleanup; live instance B untouched by A's reconcile; stale instance cleaned up via flock even with PID reuse; orphan reported but not removed; crash → self-termination; changed `boot_id` → stale; 8 dispatches with limit 2 | VE / C | Host-side detection IMPLEMENTED (P3.3, see LS-xx). Container cleanup, and any destructive stale cleanup, PLANNED and disabled |
 | **G-01** | Full suite, flags off | C + VE | **IMPLEMENTED for P3.1: see §17** |
 | G-02 | Golden snapshots byte-identical (`git diff --exit-code tests/v2/golden`) | C | **IMPLEMENTED (checked for P3.1)** |
@@ -1010,7 +1078,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | **P3.2a** | Launcher flags-off compatibility boundary: `prepare_sys_path`, strict flag check (only V1 defaults start), `runpy` execution of the unchanged `ui/app.py`; equivalence and parity tests; `Limits.cpus` finiteness | C | **IMPLEMENTED** |
 | **P3.2b** | Bootstrap (process-wide mode, fail closed), executor binding, V1 tripwire, dispatcher, runtime interface, file-watcher enforcement, secure-profile gate, leak guard; FakeRuntime wiring tests. Container always unavailable, so production fails closed. | C | **IMPLEMENTED** (deployment-unit checks wait for Q1) |
 | **P3.3** | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` (not wired into the production dispatcher; destructive reconciliation disabled) | C | **IMPLEMENTED** |
-| P3.4 | Frame protocol, strict decoder, host PNG validator, re-encode and store; pure supervisor, runner and canonicaliser functions (no backend) | C | PLANNED |
+| **P3.4** | Frame protocol, strict decoder, host PNG validator, re-encode and atomic no-overwrite store; pure supervisor helpers (no operational supervisor, runner or backend) | C | **IMPLEMENTED** (not wired into the dispatcher) |
 | P3.5 | Runtime image: Containerfile, hash lock, staged build, verification. **Dependency review gate.** | VE | PLANNED |
 | P3.6 | Container backend: detection, argv builder, run/kill/remove, preflight self-test, reconcile, dispatcher. **Sandbox-permission review gate.** | C (unit) + VE | PLANNED |
 | P3.7 | Resource and storage limit enforcement; optional custom seccomp | VE | PLANNED |
@@ -1071,6 +1139,29 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Full suite after the correction (uid 0) | **678 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (662 + 16); 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
 | The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
+**P3.4 results** (same environment, uid 0):
+
+| Run | Result |
+|---|---|
+| Base `1324afce` (before changes) | 678 passed, 13 xfailed, 0 failed, 0 skipped |
+| New `test_frame_p34.py` / `test_artifacts_p34.py` / `test_supervisor_helpers_p34.py` | 112 / 96 / 59 passed |
+| All P3 tests | 675 passed |
+| Mutation checks (throw-away copies) | per-section length caps removed → 5 failures; header length not checked before reading → 2; SHA-256 check skipped → 3; trailing bytes accepted → 2; PNG CRC check skipped → 1; extra PNG chunks allowed → 14; unbounded decompression → 1; dimension limits removed → 1; publication via `os.replace` → 19 |
+| Full suite after P3.4 | **945 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (678 + 267); 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
+**P3.4 performance and memory** (MEASURED in this cloud container, CPython 3.11.18, Pillow 12.3.0, one run each; not gating):
+
+| Case | Result |
+|---|---|
+| Maximum frame (11.25 MiB: header + 1 MiB stdout + 256 KiB stderr + 10 MiB chart) | decoded and verified in 24.5 ms, peak RSS +44 MiB |
+| 1200×720 RGBA incompressible chart (3.3 MiB) | structure check 3 ms; validate + decode + re-encode 221 ms, peak RSS +9 MiB |
+| 4096×4096 RGBA (maximum pixels, chart-like, 0.29 MiB file) | structure check 39 ms with no measurable RSS growth (streamed); full decode + re-encode 821 ms, peak RSS +69 MiB (the decoded pixels) |
+| Decompression bomb (1 MiB file inflating to 1 GiB, declaring 4096×4096) | rejected in 143 ms |
+| Unit test | peak traced Python allocation < 2 MiB while rejecting a 200 MiB bomb |
+
+*ESTIMATED, not measured:* an incompressible 4096×4096 RGBA image is about 64 MiB and is refused by the 10 MiB size cap before parsing, so the worst decode cost is bounded by the pixel cap (16.8 Mpx × 4 B ≈ 64 MiB plus encoder buffers). Container start-up costs are still unmeasured (P3.6).
+
 ---
 
 ## 18. Rollback
@@ -1089,14 +1180,17 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 1. **Shared kernel.** A kernel exploit escapes the namespaces.
 2. **The direct `ui/app.py` launch bypasses V2** (§20 Q1).
 3. **The supervisor shares uid 10001 with the child.** Separation relies on PID-namespace-init semantics and non-dumpability, which must be proven (I-10).
-4. **The host parses untrusted bytes** (frame, text, PNG): bounded and structurally validated first; a residual Pillow or zlib risk remains.
+4. **The host parses untrusted bytes** (frame, text, PNG). P3.4 bounds and structurally validates all of them first, but passing validation does not make decoding risk-free: zlib inflation and Pillow's PNG decoder still process attacker-influenced data, so a memory-safety bug there could be reachable. Stage-A canonicalisation in the container (P3.5) and patched libraries remain required.
 5. **Uploads are unsupported in hardened mode** until approved. V1 upload writing is unchanged (P2).
 6. **`CHARTS_DIR` is shared across sessions** (R-18): unique names prevent overwrites but not visibility (P5).
 7. **Runtime configuration drift** is caught by attestation only for the attested properties.
 8. **Supply chain:** public base image and wheels, hash-pinned.
 9. **Unauthenticated Streamlit server** (R-18).
 10. **VE-1 may prove unsuitable.**
-11. **Performance unmeasured.**
+11. **Performance partly measured:** host frame and PNG costs were measured in P3.4 (§17). Container start-up and end-to-end costs are unmeasured.
+13. **Lease teardown suppresses descriptor-close errors.** `InstanceLease._teardown()` ignores `OSError` from `flock(LOCK_UN)` and `os.close` so that release always completes. A close failure is not reported (the descriptor is still released by the kernel on process exit).
+14. **Automated stale-instance reconciliation is disabled** (`reconcile_stale_instances()` raises). Stale and orphan instances are only reported. Enabling it needs a separate review.
+15. **Non-root validation on VE-2 is still mandatory.** Cloud-container evidence (uid 65534/65533) exists only for P3.3. P3.4's chart-store ownership checks were also only exercised as root.
 12. **Streamlit version drift** could affect the `runpy` equivalence (L-01, L-03).
 
 **Non-goals for P3:**
@@ -1183,7 +1277,7 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | D5 | tmpfs-only storage, `--read-only-tmpfs=false`, `--ipc=none`, no logs, frame-only extraction | Conditionally accepted |
 | D6 | Custom PID-1 supervisor, same uid, non-dumpable, signals reset (B-2); custom seccomp optional | Conditionally accepted; requires runtime validation |
 | D7 | Datasets: **demo-only first**; uploader observer only after separate approval | **IMPLEMENTED (P3.3, demo-only)**; uploader observer not implemented |
-| D8 | Unique chart names `<stem>-<run8>.png` | Conditionally accepted |
+| D8 | Unique chart names | **IMPLEMENTED (P3.4)** as `<stem>-<full run_id>.png` with no-overwrite `os.link` publication |
 | D9 | Provisional limits (`DEFAULT_LIMITS`) | Contract IMPLEMENTED; values provisional |
 | D10 | Two concurrent containers per instance; 120 s queue wait | Conditionally accepted |
 | D11 | VE-1 probe first, plus the VE-2 VM definition; who runs VE-2 | **Open** |
@@ -1210,3 +1304,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.2b | Bootstrap, binding, tripwire, dispatcher and runtime interface implemented (§7.1c, §7.2, §7.5); deployment boundary documented (§7.4); leak guard; **plan refinements:** flags are frozen per process and compared on every run (a mismatch is a sticky refusal, never a mode switch); a `FAILED` state reached from `HARDENED` keeps the binding installed |
 | rev. 2.1 + P3.3 | Demo-only `DatasetAuthorizer`, `JobWorkspace` and `InstanceLease` implemented and documented (§9, §11); not wired into production; destructive stale reconciliation disabled; Linux-only claims |
 | rev. 2.1 + P3.3 correction | Run-id collision never deletes an existing run; retryable workspace cleanup (`closing`/`cleaned`); exception-safe lease release with reported failures, metadata-preserving removal order and release/creation serialisation; workspaces own their `runs/` descriptor; early non-root and cross-account evidence (uid 65534/65533); VE-2 non-root run still mandatory |
+| rev. 2.1 + P3.4 | IPX1 frame protocol and strict decoder; attestation policy; host PNG validator with bounded inflate and host re-encode; atomic no-overwrite chart store (`os.link`, full run id); pure supervisor helpers; two new reason codes; residual parser/Pillow risks, lease-teardown error suppression and disabled reconciliation documented; measured host costs |
