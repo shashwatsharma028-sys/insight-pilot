@@ -122,45 +122,40 @@ class ChartStore:
         - ChartPublishedWithCleanupError: the chart WAS published, complete and
           canonical, at exc.path, but a later step failed (the temporary file
           could not be removed: exc.leftover_temp; or the directory could not
-          be synced: exc.directory_synced is False). The final chart is never
-          deleted or replaced in this case.
+          be synced: exc.directory_synced is False; or the directory descriptor
+          could not be closed: exc.directory_closed is False). The final chart
+          is never deleted or replaced in this case.
+
+        Closing the directory descriptor is part of the outcome, not an
+        afterthought: a close failure after publication is reported as
+        ChartPublishedWithCleanupError, and a close failure after a
+        pre-publication error is added to that SandboxUnavailableError's
+        message. It never surfaces as a bare OSError. close() is never
+        retried (see _close_once).
         """
         self._check_chart(chart)
         final = chart_filename(task_id, run_id)
         tmp = f".tmp-{secrets.token_hex(16)}.png"
         dir_fd = self._open_dir()
         try:
-            created = False
-            try:
-                fd = os.open(tmp, _CREATE_TMP, 0o644, dir_fd=dir_fd)
-                created = True
-                try:
-                    os.fchmod(fd, 0o644)
-                    view = memoryview(chart.png)
-                    while view:
-                        view = view[os.write(fd, view):]
-                    os.fsync(fd)
-                finally:
-                    os.close(fd)
-            except OSError as exc:
-                note = _discard_note(dir_fd, tmp) if created else ""
+            path = self._link_new(dir_fd, chart, final, tmp)
+        except Exception as exc:
+            # Nothing was published. A close failure must not replace that outcome
+            # with an unexplained OSError, nor be silently dropped.
+            closed = _close_once(dir_fd)
+            if closed is not None:
                 raise SandboxUnavailableError(
-                    f"chart publication failed before publishing ({exc.strerror or exc}){note}") from exc
+                    f"{exc}; nothing was published; the charts directory descriptor could not "
+                    f"be closed ({closed})") from exc
+            raise
+        except BaseException:
+            _close_once(dir_fd)                  # interrupts propagate unchanged
+            raise
 
-            try:
-                os.link(tmp, final, src_dir_fd=dir_fd, dst_dir_fd=dir_fd, follow_symlinks=False)
-            except FileExistsError:
-                note = _discard_note(dir_fd, tmp)
-                raise SandboxUnavailableError(
-                    f"a chart with this name already exists; it was not overwritten{note}") from None
-            except OSError as exc:
-                note = _discard_note(dir_fd, tmp)
-                raise SandboxUnavailableError(
-                    f"atomic no-overwrite publication is not possible here ({exc.strerror}){note}") from exc
-
-            # Published. From here on the final chart is never removed or replaced.
-            path = os.path.join(self.charts_dir, final)
-            problems, leftover, synced = [], None, True
+        # Published. From here on the final chart is never removed or replaced,
+        # and every later failure is reported as ChartPublishedWithCleanupError.
+        problems, leftover, synced = [], None, True
+        try:
             if not _discard(dir_fd, tmp, attempts=2):
                 leftover = tmp
                 problems.append(f"the temporary file {tmp} could not be removed")
@@ -169,12 +164,47 @@ class ChartStore:
             except OSError as exc:
                 synced = False
                 problems.append(f"the charts directory could not be synced ({exc.strerror or exc})")
-            if problems:
-                raise ChartPublishedWithCleanupError(path, leftover_temp=leftover, directory_synced=synced,
-                                                     detail="; ".join(problems))
-            return path
         finally:
-            os.close(dir_fd)
+            closed = _close_once(dir_fd)
+        if closed is not None:
+            problems.append(f"the charts directory descriptor could not be closed ({closed})")
+        if problems:
+            raise ChartPublishedWithCleanupError(path, leftover_temp=leftover, directory_synced=synced,
+                                                 directory_closed=closed is None,
+                                                 detail="; ".join(problems))
+        return path
+
+    def _link_new(self, dir_fd, chart, final, tmp) -> str:
+        """Write the temporary file and link it to the final name. Raises only if NOTHING was published."""
+        created = False
+        try:
+            fd = os.open(tmp, _CREATE_TMP, 0o644, dir_fd=dir_fd)
+            created = True
+            try:
+                os.fchmod(fd, 0o644)
+                view = memoryview(chart.png)
+                while view:
+                    view = view[os.write(fd, view):]
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            note = _discard_note(dir_fd, tmp) if created else ""
+            raise SandboxUnavailableError(
+                f"chart publication failed before publishing ({exc.strerror or exc}){note}") from exc
+
+        try:
+            os.link(tmp, final, src_dir_fd=dir_fd, dst_dir_fd=dir_fd, follow_symlinks=False)
+        except FileExistsError:
+            note = _discard_note(dir_fd, tmp)
+            raise SandboxUnavailableError(
+                f"a chart with this name already exists; it was not overwritten{note}") from None
+        except OSError as exc:
+            note = _discard_note(dir_fd, tmp)
+            raise SandboxUnavailableError(
+                f"atomic no-overwrite publication is not possible here ({exc.strerror}){note}") from exc
+
+        return os.path.join(self.charts_dir, final)
 
 
 class ChartPublishedWithCleanupError(SandboxUnavailableError):
@@ -186,10 +216,11 @@ class ChartPublishedWithCleanupError(SandboxUnavailableError):
     may be removed by an operator.
     """
 
-    def __init__(self, path, *, leftover_temp, directory_synced, detail):
+    def __init__(self, path, *, leftover_temp, directory_synced, detail, directory_closed=True):
         self.path = path
         self.leftover_temp = leftover_temp
         self.directory_synced = directory_synced
+        self.directory_closed = directory_closed
         self.published = True
         super().__init__(f"chart published at {os.path.basename(path)}, but cleanup failed: {detail}")
 
@@ -205,6 +236,19 @@ def _discard(dir_fd, tmp, attempts=1) -> bool:
         except OSError:
             continue
     return False
+
+
+def _close_once(fd):
+    """
+    Close `fd` exactly once; return None, or the error text. Never retried: on
+    Linux the descriptor is released even when close() reports an error, and
+    a retry could close a descriptor another thread has since been given.
+    """
+    try:
+        os.close(fd)
+        return None
+    except OSError as exc:
+        return exc.strerror or str(exc)
 
 
 def _discard_note(dir_fd, tmp) -> str:
