@@ -1,0 +1,63 @@
+# InsightPilot V2 sandbox runtime image: P3.5a FOUNDATION ONLY.
+#
+# The entrypoint is INERT. It never executes generated code, and no
+# supervisor or runner is installed in this stage.
+#
+# Build ONLY with scripts/p3/build_image.sh: rootless Podman or Buildah,
+# --network=none, from a context staged by scripts/p3/image_tool.py stage.
+# That context holds exactly this file, requirements.lock,
+# inert_entrypoint.py and the hash-verified wheels for one architecture.
+# It is never the repository root, so .env, .git and venv/ cannot reach the
+# image.
+#
+# This file does NOT implement network isolation, seccomp, cgroup limits,
+# capability dropping, a read-only root filesystem or mount restrictions.
+# The future container launcher (P3.6/P3.7) must enforce all of them at run
+# time (design §8.1, §8.7a).
+#
+# Base: python:3.11.18-slim-bookworm. The multi-arch index digest was
+# verified against the registry, and the evidence is in base/
+# (sha256(base/index.json) == the pinned digest).
+
+FROM docker.io/library/python:3.11.18-slim-bookworm@sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39 AS build
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 SOURCE_DATE_EPOCH=0
+COPY requirements.lock /build/requirements.lock
+COPY wheels/ /build/wheels/
+RUN set -eu; \
+    python -I -m pip install --require-hashes --no-deps --only-binary=:all: --no-index \
+        --find-links /build/wheels --target /stage/site-packages -r /build/requirements.lock; \
+    rm -rf /stage/site-packages/bin /stage/site-packages/share; \
+    python -I -m compileall -q -j 0 --invalidation-mode checked-hash \
+        -s /stage/site-packages -p /usr/local/lib/python3.11/site-packages /stage/site-packages
+
+FROM docker.io/library/python:3.11.18-slim-bookworm@sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39 AS runtime
+RUN set -eu; \
+    python -I -m pip uninstall --yes --no-input pip setuptools wheel packaging; \
+    rm -rf /usr/local/lib/python3.11/ensurepip /usr/local/lib/python3.11/site-packages/_distutils_hack \
+        /usr/local/lib/python3.11/site-packages/distutils-precedence.pth \
+        /usr/local/lib/python3.11/site-packages/pkg_resources \
+        /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.11 /usr/local/bin/wheel \
+        /usr/local/bin/idle /usr/local/bin/idle3 /usr/local/bin/idle3.11 \
+        /usr/local/bin/pydoc /usr/local/bin/pydoc3 /usr/local/bin/pydoc3.11 \
+        /usr/local/bin/2to3 /usr/local/bin/2to3-3.11 \
+        /usr/local/bin/python-config /usr/local/bin/python3-config /usr/local/bin/python3.11-config; \
+    groupadd --gid 10001 ipsandbox; \
+    useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin ipsandbox; \
+    find / -xdev -type f -perm /6000 -exec chmod a-s {} +; \
+    mkdir -p /opt/ip; \
+    rm -rf /root/.cache /tmp/* /var/tmp/*
+COPY --from=build /stage/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --chmod=0444 inert_entrypoint.py /opt/ip/inert_entrypoint.py
+
+LABEL org.opencontainers.image.title="insightpilot-sandbox" \
+      org.opencontainers.image.base.name="docker.io/library/python:3.11.18-slim-bookworm" \
+      org.opencontainers.image.base.digest="sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39" \
+      io.insightpilot.stage="P3.5a-inert" \
+      io.insightpilot.lock.sha256="9a355dd6e120ba38d9d91e41bcd52921f3070b5749954cc08635e496aa45e053"
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONNOUSERSITE=1 \
+    MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib HOME=/nonexistent
+WORKDIR /
+USER 10001:10001
+ENTRYPOINT ["/usr/local/bin/python3", "-I", "-B", "/opt/ip/inert_entrypoint.py"]
+CMD []
