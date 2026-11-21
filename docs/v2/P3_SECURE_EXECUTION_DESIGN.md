@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections were accepted; **P3.5a (image foundation and dependency review: inputs only, no image built) is implemented and awaits review.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections were accepted; P3.5a (image foundation and dependency review) was accepted. **P3.5b is INCOMPLETE: Phase A (tool corrections) is implemented; the validation-environment gate failed in this session, so no image has been built (Phases C–E pending on VE-2, docs/v2/P3_VALIDATION_ENVIRONMENT.md).** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -712,17 +712,43 @@ The host compares this with the expected values. Any mismatch raises `SandboxUna
 - `image_tool.py stage` copies exactly `Containerfile`, `requirements.lock`, `inert_entrypoint.py` and the wheels for one architecture. Each wheel is re-hashed against the inventory, and symlinks, wrong sizes and non-empty output directories are refused.
 - It never reads the repository root, so `.env`, `.git`, `venv/` (tracked in this repository) and caches cannot reach the image. Staged twice, the context tarball was identical: x86_64 `0026e45b…0791`, aarch64 `646960b0…4a35`.
 
-**Build procedure (P3.5b):**
-1. `image_tool.py fetch-wheels --arch <a> --cache <dir>`.
-2. `build_image.sh --check-host`.
-3. `build_image.sh --wheel-cache <dir>`, which:
-   - refuses uid 0, non-rootless Podman, a remote service, `DOCKER_HOST` and a lock/label mismatch;
-   - pulls the base by digest;
-   - runs `podman build --pull=never --network=none --no-cache --timestamp 0`.
-4. `verify_image.sh <image>`, which additionally requires cgroup v2. It checks:
-   - the image config: user, entrypoint, cmd, ports, volumes, environment names and labels;
-   - the image contents, with `image_inspect.py` run inside `--read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --user 10001:10001`: setid files, world-writable files, secret-like and repository files, virtual environments, forbidden tools, the exact distribution set and the `/opt/ip` file list;
-   - the inert exit status.
+**Build and validation procedure (P3.5b Phase A; run steps in docs/v2/P3_VALIDATION_ENVIRONMENT.md).** All podman arguments and checks live in `scripts/p3/rootless.py`; `build_image.sh` and `verify_image.sh` are thin wrappers that also refuse uid 0.
+
+- **Native architecture only.** `uname -m` selects the architecture, and a different `--arch` is refused, because no emulation has been verified. Four things must agree:
+  1. the wheel architecture (staging);
+  2. the pulled base (`podman pull --platform=linux/<oci>`, then the pulled image's `Id` must equal the verified per-platform config digest in `base/base-image.json`, with the matching architecture);
+  3. the build (`podman build --platform=linux/<oci>`);
+  4. the final image (`Architecture` and `Os` checked after the build).
+- **Host gate before any container work.** The host must be all of these:
+  - non-root, with no `CONTAINER_HOST`, `DOCKER_HOST` or `CONTAINER_CONNECTION`;
+  - `podman info` reports `rootless=true`, `serviceIsRemote=false`, `seccompEnabled=true`, cgroup `v2` with the `systemd` manager, controllers ⊇ {cpu, memory, pids}, and host os/arch matching the machine;
+  - `/sys/fs/cgroup` is cgroup2, and `user@<uid>.service` delegates cpu, memory and pids;
+  - `/etc/subuid` and `/etc/subgid` each have a range of at least 65536;
+  - newuidmap and newgidmap are present;
+  - user namespaces are enabled;
+  - `podman info` id mappings have at least two entries, with container root mapped to this user and container 10001 mapped into a subordinate range;
+  - Podman ≥ 4.4.
+- **Enforcement probe, not a printed status.** Before building, a real container from the pinned base runs the inspector with the production options. It must report every runtime property as enforced (listed below), and it must pass before `podman build` is called.
+- **No inherited proxies or credentials.**
+  - Every podman process gets a minimal environment (PATH, HOME, XDG_*, LANG, USER, LOGNAME). Proxy variables are added only for the registry pull, and secret-named variables never.
+  - Every container gets `--http-proxy=false --env-host=false`. The build gets `--http-proxy=false --network=none --pull=never --no-cache --timestamp 0 --identity-label=false` (the last so that Buildah adds no unreviewed label).
+- **Image properties vs runtime-enforced properties.** `image_inspect.py` reports them in separate sections, and `evaluate` labels every problem `IMAGE:` or `RUNTIME:`.
+  - **Image properties** hold however the image is started: config, contents, distributions, setid and forbidden files.
+  - **Runtime-enforced properties** hold only for containers started with `container_run_argv`'s options. Each is verified, and an absent value is a failure. They are:
+    - uid, gid, euid and egid of 10001, with no other groups;
+    - NoNewPrivs=1;
+    - CapInh, CapPrm, CapEff, CapBnd and CapAmb all zero;
+    - seccomp mode 2;
+    - network interfaces exactly `lo`, with no IPv4 routes;
+    - a read-only root;
+    - `/tmp` tmpfs `rw,nosuid,nodev,noexec`, size-bounded;
+    - only allowlisted mount points, and no writable mounts outside the allowlist;
+    - write probes: only `/tmp` writable;
+    - existing files such as `/etc/passwd` and `/etc/hosts` cannot be opened for writing;
+    - cgroup `memory.max` 268435456, `memory.swap.max` 0, `pids.max` 64, `cpu.max` `100000 100000`;
+    - no proxy, secret-like or unexpected environment variables;
+    - uid 10001 mapped into a subordinate range, never to host root or this user.
+- **Further commands:** `measure-startup` (warm and cold sample counts, median, p95), `golden` (hash-pinned fixtures, read-only dataset copies, bounded noexec `/out` tmpfs), `os-packages` (isolated `dpkg-query`).
 
 **What the image does NOT do:** network isolation, seccomp, cgroup limits, capability dropping, a read-only root filesystem, tmpfs mounts and mount restrictions are **run-time controls of the future launcher** (§8.1, P3.6/P3.7). The Containerfile only avoids undermining them: no setid bits, a non-root default user, no ports, no volumes. Deployment **requires** `--read-only` with tmpfs `/tmp`, because `MPLCONFIGDIR` must be writable or Matplotlib falls back to a temporary directory and warns.
 
@@ -1070,6 +1096,7 @@ Original plan text (kept for the later container stages):
   - optional Docker-rootless profile.
   - It runs on a reviewer-controlled Linux host: never the examination laptop, never the cloud design session.
 - **`scripts/p3_validate.sh`** (planned) writes JUnit XML plus `evidence.json`: git SHA, kernel, runtime and version, rootless and cgroup facts, image id, lock hash, per-test outcomes with skip counts.
+- **P3.5b:** the VE-2 setup and run guide, with two unprivileged accounts (`ipval`, `ipprobe`) and reproducible commands, is `docs/v2/P3_VALIDATION_ENVIRONMENT.md`. Not yet executed.
 - **Claim rule:** "P3 isolation verified" requires an evidence report in which every `@container` test **executed and passed, with 0 skips** (`IP_TEST_REQUIRE_CONTAINER=1` turns a missing runtime into a failure). **Skipped tests are not proof.**
 
 ---
@@ -1237,7 +1264,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | **P3.3** | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` (not wired into the production dispatcher; destructive reconciliation disabled) | C | **IMPLEMENTED** |
 | **P3.4** | Frame protocol, strict decoder, host PNG validator, re-encode and atomic no-overwrite store; pure supervisor helpers (no operational supervisor, runner or backend) | C | **IMPLEMENTED** (not wired into the dispatcher) |
 | **P3.5a** | Image foundation: verified base digest, hash lock and dependency review, Containerfile with inert entrypoint, staged context, build and verify scripts, offline supply-chain tests; Task A publication close fix. No image built. | C | **IMPLEMENTED** (awaits review) |
-| P3.5b | Build on rootless Podman with cgroup v2; `verify_image.sh`; image size and start-up measured; golden workloads in the image; stage-A canonicaliser and supervisor files (with P3.6). **Dependency review gate.** | VE | PLANNED |
+| P3.5b | Phase A, tool corrections (native platform agreement, strengthened host gate with an enforcement probe, proxy and environment stripping, runtime-property verification, startup/golden/os-packages tooling): **IMPLEMENTED**. Phase B gate: **FAILED here** (uid 0, cgroup v1, no Podman); VE-2 guide written. Phases C–E (build, reproducibility, start-up, golden in the image, OS vulnerability review): **PENDING on VE-2** | C (Phase A) / VE | **INCOMPLETE** |
 | P3.6 | Container backend: detection, argv builder, run/kill/remove, preflight self-test, reconcile, dispatcher. **Sandbox-permission review gate.** | C (unit) + VE | PLANNED |
 | P3.7 | Resource and storage limit enforcement; optional custom seccomp | VE | PLANNED |
 | P3.8 | Integration: golden end-to-end and UI through the launcher; real browser; benchmark; R-24 alignment in docs; handoff. **Senior review before merging into `feature/insightpilot-v2`.** | VE + C | PLANNED |
@@ -1354,6 +1381,29 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Image build reproducibility (package set / digest) | **PENDING** (P3.5b) |
 | Image start-up overhead | **PENDING** (P3.5b; not safely obtainable here) |
 
+**P3.5b results** (same environment, uid 0; base `f1cd46c4`):
+
+| Run | Result |
+|---|---|
+| Base `f1cd46c4` (before changes) | 1118 passed, 13 xfailed, 0 failed (P3.5a final run) |
+| `test_rootless_p35b.py` | 122 passed (29 host defects; platform selection and cross-architecture refusal; pulled-base and built-image checks; required and forbidden run flags; proxy and credential stripping; 36 runtime-isolation defects; mounts; id mapping; inert output; fake-podman orchestration: probe before build, refusals before any podman call; startup statistics; golden fixture pinning and mounts; os-packages; CLI refusal here) |
+| `test_image_p35a.py` | 64 passed: the 2 process-level cases moved to the stricter runtime tests |
+| Live negative control | this host's real `/proc` data (NoNewPrivs 0, full capabilities, seccomp 0, eth0 with routes) fails the runtime evaluation |
+| Mutation checks (throw-away copies; each killed) | build without `--platform`; run without `--platform`; remote service accepted; remote env ignored; proxy inherited by containers; host env passed to podman; NoNewPrivs ignored; capabilities ignored; seccomp ignored; cross-architecture allowed; cgroup v1 accepted; single id map accepted; read-write root accepted; unexpected mounts accepted; pulled base config not checked; golden dataset mounted writable; build before probe; cgroup limits not verified; proxy env in container accepted; `--env-host` enabled (20/20) |
+| Environment gate here | `rootless.py check-host`: NO (root; cgroup tmpfs/v1; no delegated controllers; no subuid/subgid; no newuidmap/newgidmap; no podman). `build`, `verify`, `measure-startup`, `golden` and `os-packages` all exit 2 (REFUSED) before any container work |
+| Full suite after P3.5b Phase A | **1238 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (1118 − 2 moved + 122 new) at `63392bd9`, exit 0; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
+**Not obtained (no validated host):**
+- actual image digest and size;
+- two-build reproducibility;
+- cold and warm start-up (n, median, p95);
+- golden results and charts inside the image;
+- Matplotlib with a read-only root and a tmpfs `MPLCONFIGDIR`;
+- OS package inventory and vulnerability findings.
+
+All are **PENDING (P3.5b on VE-2)**. The image has **not** been declared vulnerability-free.
+
 **Build environment status:** this environment cannot build or verify. It runs as uid 0, with a Docker CLI but no daemon, no podman, buildah or newuidmap, no `/etc/subuid` entry, cgroup v1, and `max_user_namespaces` 64272. `build_image.sh --check-host` reports it unsuitable, and both scripts refuse to run here. No rootful runtime was used as a substitute.
 
 *ESTIMATED, not measured:* an incompressible 4096×4096 RGBA image is about 64 MiB and is refused by the 10 MiB size cap before parsing, so the worst decode cost is bounded by the pixel cap (16.8 Mpx × 4 B ≈ 64 MiB plus encoder buffers). Container start-up costs are still unmeasured (P3.6).
@@ -1389,6 +1439,9 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 15. **Non-root validation on VE-2 is still mandatory.** Cloud-container evidence (uid 65534/65533) exists only for P3.3. P3.4's chart-store ownership checks were also only exercised as root.
 16. **Chart provenance is not proven at publication** (§10). The store proves that the content is canonical and bounded and that the metadata is consistent. Any in-process code can still construct a `TrustedChart` that skipped the host Pillow re-encode.
 17. **A post-publication cleanup failure can leave a `.tmp-*.png` hard link** to a published chart. It is reported (`ChartPublishedWithCleanupError.leftover_temp`), never reused, and safe to delete. Callers must handle that exception once the store is wired in (P3.6). The failure paths were exercised only by deterministic injection, not by real I/O errors.
+22. **P3.5b's runtime expectations have not met a real Podman yet.** The mount allowlist, the runtime-added environment names (`HOME`, `HOSTNAME`, `container`), the `podman info` JSON field names and the cgroup file values follow Podman 4.x documentation and behaviour. The first VE-2 run may show differences. Each one must be reviewed and justified, never silently allowed.
+23. **The AppArmor user-namespace restriction on Ubuntu 24.04** depends on the podman package's AppArmor profile. A probe failure there must be reported, not worked around.
+24. **Cold start-up excludes the page cache.** A rootless user cannot drop it, so "cold" means after `rmi` plus `load`.
 18. **The host validator still uses Pillow 12.3.0** (58 advisory records) because `streamlit==1.59.2` pins `pillow<13`. Its exposure is limited to the PNG plugin on structurally canonical input, but it is not removed. A host Streamlit/Pillow upgrade needs its own review (exam baseline).
 19. **No image has been built or verified.** The Containerfile's runtime behaviour has not been observed: the pip uninstall, setid stripping, user creation and final distribution set have not been checked inside a built image. Neither have Matplotlib's behaviour with `MPLCONFIGDIR` on tmpfs or the start-up cost (P3.5b on VE-1/VE-2).
 20. **The base image's Debian packages were not vulnerability-scanned.** No scanner or OSV access was available. Tag `3.11.18-slim-bookworm` will receive rebuilds, and the digest pin deliberately freezes this one, so updates need a reviewed re-pin.
@@ -1509,3 +1562,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.4 | IPX1 frame protocol and strict decoder; attestation policy; host PNG validator with bounded inflate and host re-encode; atomic no-overwrite chart store (`os.link`, full run id); pure supervisor helpers; two new reason codes; residual parser/Pillow risks, lease-teardown error suppression and disabled reconciliation documented; measured host costs |
 | rev. 2.1 + P3.4 corrections | **FIX 1:** `reject_reason` is type-checked before the membership test, so untrusted arrays, objects, numbers and booleans raise `SandboxProtocolError`, not `TypeError`. **FIX 2:** `ChartStore.publish` re-validates field types, digest, strict PNG structure under the store's limits, and declared dimensions; content is validated, provenance is not proven. **FIX 3:** explicit `ChartPublishedWithCleanupError` after a successful link, the final chart is never removed or replaced, one temp-removal retry, directory-fsync failures reported. 97 tests, 12 mutation checks (§10, §17, §19) |
 | rev. 2.1 + P3.5a | **Task A:** the directory-descriptor close can no longer mask the publication outcome (`directory_closed`, never retried). **Image foundation:** verified base digest with offline evidence; hash-locked 18-package runtime set; dependency review (Pillow 12.3.0 → 13.0.0; host Streamlit conflict documented; host advisories listed); multi-stage Containerfile with inert entrypoint; staged allowlisted context; rootless-only build and verify scripts; offline supply-chain tests; golden compatibility of the lock set (§8.7, §8.7a, §15, §16, §17, §19). No image built |
+| rev. 2.1 + P3.5b (Phase A) | Native-architecture agreement (wheels, pulled base config, `--platform`, final image); strengthened rootless host gate with a real enforcement probe before any build; proxy and credential stripping for podman and containers (`--http-proxy=false`, `--env-host=false`); inspector split into image vs runtime-enforced properties, with every runtime field verified; startup, golden and os-packages tooling; VE-2 guide. **Environment gate failed in this session: no image built; Phases C–E pending** (§8.7, §12, §17, §19) |
