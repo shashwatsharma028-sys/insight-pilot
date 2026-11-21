@@ -73,6 +73,7 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/artifacts.py",     # P3.4 (not wired into production yet)
     "v2/execution/chart_store.py",   # P3.4 (not wired into production yet)
     "v2/execution/supervisor_helpers.py",  # P3.4 pure helpers only
+    "v2/execution/image/inert_entrypoint.py",  # P3.5a image entrypoint; inert (test_image_p35a.py)
 ]
 
 
