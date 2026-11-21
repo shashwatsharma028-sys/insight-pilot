@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections are implemented and await review.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections were accepted; **P3.5a (image foundation and dependency review: inputs only, no image built) is implemented and awaits review.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -658,20 +658,156 @@ Recorded by the supervisor **before** the child starts:
 
 The host compares this with the expected values. Any mismatch raises `SandboxUnavailableError`. This catches drift in `containers.conf` or the runtime on **every** run.
 
-### 8.7 Runtime image (PLANNED P3.5)
+### 8.7 Runtime image — P3.5a inputs IMPLEMENTED (not built); build and verification PLANNED (P3.5b)
 
-- **Base:** `python:3.11-slim-bookworm@sha256:<digest>`.
-- **Packages:** only the rules allowlist (pandas, numpy, matplotlib, seaborn, scipy, scikit-learn) at environment-B versions, installed from `requirements.lock` with `pip --require-hashes`.
-- **Final stage:**
-  - no pip, setuptools, compilers, setuid bits or `VOLUME` directives;
-  - user 10001;
-  - a pre-built read-only matplotlib font cache;
-  - supervisor, runner and canonicaliser at `/opt/ip/`.
-- **Build context:** staged by `scripts/p3_build_image.sh` from an explicit file list (`v2/execution/sandbox_side/`, `v2/execution/image/`). It is never the repository root, so `.env` can never reach the image.
-- **Provenance:** the image carries a label with the lock hash; the backend refuses a mismatch; the image id is recorded in every run.
-- **Claims:** inputs are pinned and a rebuild yields an identical package set. A bit-identical image digest is **not** claimed.
+**Files:**
+- `v2/execution/image/`:
+  - `Containerfile`;
+  - `requirements.lock`;
+  - `dependency-inventory.json`;
+  - `image-expectations.json`;
+  - `inert_entrypoint.py`;
+  - `base/` (the verified base-image evidence).
+- `scripts/p3/`:
+  - `image_tool.py`: lock, check-lock, fetch-wheels, stage;
+  - `build_image.sh`;
+  - `verify_image.sh`;
+  - `image_inspect.py`;
+  - `workload_compat.py`.
+- `tests/v2/p3/test_image_p35a.py`.
 
----
+**Base, VERIFIED:** `docker.io/library/python:3.11.18-slim-bookworm@sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39`.
+- **How:** the multi-arch index was fetched from `registry-1.docker.io` with an anonymous token on 2026-11-21. The `Docker-Content-Digest` header equalled the SHA-256 of the body. The floating tag `3.11-slim-bookworm` resolved to the same digest.
+- **Per-platform:** the amd64 and arm64 manifests and configs were fetched by digest, and each SHA-256 matched. Both builds were created on 2026-11-05 and set `PYTHON_VERSION=3.11.18`, the same version as environment B.
+- **Offline re-check:** the verified bytes are committed in `base/`, so the tests re-check the whole digest chain offline (index → manifest → config).
+- **Base contents:** the four amd64 layers were downloaded and verified by digest. Their tar member lists were inspected without extracting anything. They show:
+  - 11 setuid/setgid files (`chage`, `chfn`, `chsh`, `expiry`, `gpasswd`, `mount`, `newgrp`, `passwd`, `su`, `umount`, `unix_chkpwd`);
+  - pip 24.0, setuptools 79.0.1, wheel 0.46.3 and **packaging 26.3** in the system site-packages;
+  - the ensurepip bundles;
+  - no `gcc`, `cc`, `make`, `curl` or `wget`;
+  - the default config: user root, `CMD ["python3"]`, no ports or volumes.
+
+**Containerfile (multi-stage):**
+- **`build` stage:**
+  - copies only `requirements.lock` and the staged `wheels/`;
+  - `pip install --require-hashes --no-deps --only-binary=:all: --no-index --find-links /build/wheels --target /stage/site-packages`;
+  - removes `bin/` and `share/`;
+  - compiles bytecode deterministically with `compileall --invalidation-mode checked-hash`, recording the in-image path.
+- **`runtime` stage:**
+  - uninstalls pip, setuptools, wheel and the base's packaging 26.3 (the locked 26.2 replaces it);
+  - deletes ensurepip, `pkg_resources`, `_distutils_hack` and the pip, wheel, idle, pydoc, 2to3 and `*-config` launchers;
+  - creates group and user 10001 `ipsandbox` (no home, `nologin`);
+  - strips every setuid/setgid bit (`find / -xdev -perm /6000 -exec chmod a-s`);
+  - copies the site-packages from `build` and `inert_entrypoint.py` (mode 0444, root-owned).
+- **Image metadata:**
+  - labels for the base digest and the lock SHA-256;
+  - `ENV MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib HOME=/nonexistent PYTHONNOUSERSITE=1 PYTHONDONTWRITEBYTECODE=1`;
+  - `USER 10001:10001`;
+  - `ENTRYPOINT ["/usr/local/bin/python3","-I","-B","/opt/ip/inert_entrypoint.py"]`, `CMD []`.
+- **Not used:** `ARG`, `ADD`, `EXPOSE`, `VOLUME`, `HEALTHCHECK`, secret mounts and network fetches.
+
+**Inert entrypoint:** it imports only `sys`. It reads no arguments, stdin, files or environment, writes one fixed line to stderr and exits 78. An image built at this stage cannot execute generated code through its entrypoint. The supervisor, runner and canonicaliser of §8.4 are **not** installed (P3.5b/P3.6).
+
+**Build context:**
+- `image_tool.py stage` copies exactly `Containerfile`, `requirements.lock`, `inert_entrypoint.py` and the wheels for one architecture. Each wheel is re-hashed against the inventory, and symlinks, wrong sizes and non-empty output directories are refused.
+- It never reads the repository root, so `.env`, `.git`, `venv/` (tracked in this repository) and caches cannot reach the image. Staged twice, the context tarball was identical: x86_64 `0026e45b…0791`, aarch64 `646960b0…4a35`.
+
+**Build procedure (P3.5b):**
+1. `image_tool.py fetch-wheels --arch <a> --cache <dir>`.
+2. `build_image.sh --check-host`.
+3. `build_image.sh --wheel-cache <dir>`, which:
+   - refuses uid 0, non-rootless Podman, a remote service, `DOCKER_HOST` and a lock/label mismatch;
+   - pulls the base by digest;
+   - runs `podman build --pull=never --network=none --no-cache --timestamp 0`.
+4. `verify_image.sh <image>`, which additionally requires cgroup v2. It checks:
+   - the image config: user, entrypoint, cmd, ports, volumes, environment names and labels;
+   - the image contents, with `image_inspect.py` run inside `--read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --user 10001:10001`: setid files, world-writable files, secret-like and repository files, virtual environments, forbidden tools, the exact distribution set and the `/opt/ip` file list;
+   - the inert exit status.
+
+**What the image does NOT do:** network isolation, seccomp, cgroup limits, capability dropping, a read-only root filesystem, tmpfs mounts and mount restrictions are **run-time controls of the future launcher** (§8.1, P3.6/P3.7). The Containerfile only avoids undermining them: no setid bits, a non-root default user, no ports, no volumes. Deployment **requires** `--read-only` with tmpfs `/tmp`, because `MPLCONFIGDIR` must be writable or Matplotlib falls back to a temporary directory and warns.
+
+**Claims:** the inputs are pinned and hash-verified, the build context is reproducible, and a rebuild uses an identical package set. A bit-identical image digest is **not** claimed. No image has been built.
+
+### 8.7a Dependency review (P3.5a)
+
+**Required packages.** The V1 prelude (`sandbox/executor.py wrap_code_safely`) imports pandas, numpy, matplotlib (`pyplot`, `ticker`; style `seaborn-v0_8-darkgrid`) and seaborn. The sandbox allowlist (`rules/sandbox_safety.rules.md`) and the code-generation prompt add scipy and sklearn; everything else is standard library. Their dependency closure, computed from the recorded `requires_dist` with markers evaluated for Linux/CPython 3.11 on both architectures, gives **18 runtime packages**:
+
+| Package | Version | Note |
+|---|---|---|
+| contourpy | 1.3.3 | |
+| cycler | 0.12.1 | |
+| fonttools | 4.63.0 | |
+| joblib | 1.5.3 | |
+| kiwisolver | 1.5.0 | |
+| matplotlib | 3.11.1 | |
+| narwhals | 2.24.0 | |
+| numpy | 2.4.6 | |
+| packaging | 26.2 | |
+| pandas | 3.0.3 | |
+| **pillow** | **13.0.0** | replaces 12.3.0; see below |
+| pyparsing | 3.3.2 | |
+| python-dateutil | 2.9.0.post0 | |
+| scikit-learn | 1.9.0 | |
+| scipy | 1.17.1 | |
+| seaborn | 0.13.2 | |
+| six | 1.17.0 | |
+| threadpoolctl | 3.6.0 | |
+
+All 18 support Python 3.11.18 (`requires_python`), and `pip check` reports no broken requirements.
+
+**Runtime, development and test dependencies:**
+- **Runtime (image only):** the 18 packages above.
+- **Build-time only:** the base image's pip 24.0, used in the `build` stage and removed from `runtime`.
+- **Development and test (host only):**
+  - `packaging` (for `image_tool.py lock`);
+  - pytest 9.1.1, pytest-mock 3.15.1, iniconfig and pluggy;
+  - uv;
+  - the other environment-B packages.
+- **Host application:** langgraph, langchain, streamlit, plotly, reportlab, python-dotenv and the rest of environment B (`docs/v2/ENV_B_PINS.txt`). These never enter the image. The host `requirements.txt` is unchanged.
+
+**Versions and hashes:**
+- **Source of the pins:** environment-B versions (`docs/v2/ENV_B_PINS.txt`), so the golden workloads stay comparable.
+- **Wheel selection:** one cp311 wheel per architecture (x86_64 and aarch64, manylinux with glibc ≤ 2.36), chosen in pip's tag order. There are no source distributions.
+- **Where the digests come from:** each SHA-256 is the one published by the PyPI JSON API.
+- **Independent checks:**
+  - `check-lock` regenerated byte-identical files;
+  - all 36 wheels were downloaded from files.pythonhosted.org, and their SHA-256 and size matched;
+  - `pip install --require-hashes` succeeded from them and refused a wheel with one flipped byte.
+
+**Vulnerability review** (PyPI advisory data, as published on 2026-11-21; OSV was not reachable from this environment):
+- **The decision:**
+  - **Pillow 12.3.0**, the environment-B version, has 58 non-withdrawn advisory records (42 unique advisories), all fixed in 13.0.0 (released 2026-10-16).
+  - Most are in decoders that the image's analysis never needs: TIFF, GIF, PDF, JPEG/FlashPix, EPS, PSD, PCX and ICNS.
+  - Several touch PNG/APNG, eXIf, zlib or encode paths, for example APNG disposal allocating before the bomb check and the PNG eXIf quadratic parse.
+  - **Decision: the image uses Pillow 13.0.0.**
+- **Evidence for the replacement:**
+  - matplotlib 3.11.1 requires `pillow>=9`, and seaborn has no Pillow constraint;
+  - the golden workloads give identical results and identical chart pixels (below);
+  - the P3.4 validator, frame and store tests pass with 13.0.0 (315/315).
+- **The other 17 locked versions:** no advisories.
+- **Conflict (host only, unresolved here):** `streamlit==1.59.2` requires `pillow<13`, so the **host** cannot move to 13.0.0 without a Streamlit upgrade. The examination baseline forbids that upgrade (BASELINE.md).
+  - The host-side P3.4 validator therefore still runs on Pillow 12.3.0.
+  - Its exposure is narrowed: only the PNG plugin is used, and only after stage-B has proven the structure canonical. APNG and eXIf chunks are rejected before Pillow sees them. The residual is recorded in §19.
+- **Other environment-B (host-only) packages with advisories, for P2/P8 (no change here):**
+
+  | Package | Records | Fixed in |
+  |---|---|---|
+  | certifi 2026.6.17 | 2 | 2026.10.18 |
+  | cryptography 41.0.7 | 14 | up to 49.0.0 |
+  | gitpython 3.1.52 | 44 | up to 3.2.1 |
+  | langgraph-sdk 0.4.2 | 3 | 0.4.6 |
+  | pyasn1 0.6.4 | 4 | 0.6.5 |
+  | urllib3 2.7.0 | 6 | 2.8.0 |
+
+**Analytical compatibility** (`scripts/p3/workload_compat.py`):
+- **Method:** the final hand-written golden fixture code of every completed task (the same code the e2e tests run; not LLM output) went through the unmodified V1 sandbox. Two interpreters were used:
+  - environment B (Pillow 12.3.0);
+  - a venv installed **only** from `requirements.lock` with the Containerfile's pip flags (Pillow 13.0.0).
+- **Result:**
+  - 4/4 datasets and **28/28 golden answers** matched the committed independent values, at the golden tolerance, in both environments;
+  - all **7 charts decoded to pixel-identical images** across the two Pillow versions;
+  - the canonical copy of each chart passed stage B.
+- **Not run:** this did not happen inside a container (P3.5b).
 
 ## 9. Dataset authorization — IMPLEMENTED (P3.3), demo-only; not yet wired into the dispatcher
 
@@ -779,6 +915,7 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
   - *`ChartPublishedWithCleanupError` (a `SandboxUnavailableError` subclass with `.published = True`):* `os.link` succeeded, so the chart **is** published, complete and validated at `exc.path`. After that, either:
     - removing the temporary name failed twice, and `exc.leftover_temp` names it; or
     - the directory fsync failed, and `exc.directory_synced` is `False`.
+  - Closing the directory descriptor is part of the outcome (P3.5a Task A). After the link, a `close()` failure gives `ChartPublishedWithCleanupError` with `directory_closed=False`. After a pre-publication error, it gives a plain `SandboxUnavailableError` saying that nothing was published and that the descriptor could not be closed, with the original error as `__cause__`. It never surfaces as a bare `OSError`. `close()` is called exactly once and never retried: Linux releases the descriptor even when `close()` reports an error, and a retry could close a descriptor another thread has since been given.
   - After a successful link, the final chart is never deleted or replaced. The store never unlinks any name other than its own random `.tmp-<128-bit>.png`, so another run's chart is never touched. Cleanup failures are reported, never suppressed.
 - **What callers do:**
   - catch `ChartPublishedWithCleanupError` *before* the generic `SandboxUnavailableError`;
@@ -972,7 +1109,7 @@ Original plan text (kept for the later container stages):
 
 ## 15. Image, CI and dependency changes
 
-None in P3.1. Every one of these needs its own review gate:
+None in P3.1. **P3.5a** adds image-only pinned dependencies (`v2/execution/image/requirements.lock`, §8.7a) and development scripts under `scripts/p3/`. The host `requirements.txt` is unchanged, and no CI workflow or VM definition was added. Every one of these needs its own review gate:
 
 - new pinned dependencies (inside the image only; host `requirements.txt` unchanged);
 - the GitHub Actions workflow file;
@@ -1083,7 +1220,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | G-04/05 | Retry semantics identical; UI AppTest through the launcher with the container backend | VE | PLANNED |
 | G-06 | 13 strict-xfails remain xfailed in the same session after hardened fixtures ran, **and 0 tripwire hits**: a leaked tripwire would raise `InsecureConfigurationError`, which is not the `AssertionError` the xfails require, so it would show up as a failure (B-11) | C + VE | PLANNED (13 xfails checked for P3.1) |
 | G-07 | No diff in V1 paths or P0 test files | C | **IMPLEMENTED (checked for P3.1)** |
-| **IMG-01…05** | Hash-locked build; labels; no pip, setuid or `VOLUME`; user 10001; staged build context; reproducible package set | VE | PLANNED |
+| **IMG-01…05** | Hash-locked build; labels; no pip, setuid or `VOLUME`; user 10001; staged build context; reproducible package set | C (inputs) / VE (image) | **Inputs IMPLEMENTED (P3.5a)**, 66 offline tests: digest chain, lock and closure, Containerfile rules, exact context allowlist, inert entrypoint, inspector logic, rootless/cgroup-v2 refusal. Image build and in-image verification PENDING (P3.5b, VE) |
 | **P-01/02** | Benchmark; preflight duration | VE | PLANNED |
 
 **Additional rule (correction B-10):** P3.4 unit tests call pure functions (frame encode and decode, signal setup, attestation parsing) with benign fixtures only. No host-side execution backend may exist; a test asserts that the dispatcher has exactly one backend, `ContainerRuntime`.
@@ -1099,7 +1236,8 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | **P3.2b** | Bootstrap (process-wide mode, fail closed), executor binding, V1 tripwire, dispatcher, runtime interface, file-watcher enforcement, secure-profile gate, leak guard; FakeRuntime wiring tests. Container always unavailable, so production fails closed. | C | **IMPLEMENTED** (deployment-unit checks wait for Q1) |
 | **P3.3** | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` (not wired into the production dispatcher; destructive reconciliation disabled) | C | **IMPLEMENTED** |
 | **P3.4** | Frame protocol, strict decoder, host PNG validator, re-encode and atomic no-overwrite store; pure supervisor helpers (no operational supervisor, runner or backend) | C | **IMPLEMENTED** (not wired into the dispatcher) |
-| P3.5 | Runtime image: Containerfile, hash lock, staged build, verification. **Dependency review gate.** | VE | PLANNED |
+| **P3.5a** | Image foundation: verified base digest, hash lock and dependency review, Containerfile with inert entrypoint, staged context, build and verify scripts, offline supply-chain tests; Task A publication close fix. No image built. | C | **IMPLEMENTED** (awaits review) |
+| P3.5b | Build on rootless Podman with cgroup v2; `verify_image.sh`; image size and start-up measured; golden workloads in the image; stage-A canonicaliser and supervisor files (with P3.6). **Dependency review gate.** | VE | PLANNED |
 | P3.6 | Container backend: detection, argv builder, run/kill/remove, preflight self-test, reconcile, dispatcher. **Sandbox-permission review gate.** | C (unit) + VE | PLANNED |
 | P3.7 | Resource and storage limit enforcement; optional custom seccomp | VE | PLANNED |
 | P3.8 | Integration: golden end-to-end and UI through the launcher; real browser; benchmark; R-24 alignment in docs; handoff. **Senior review before merging into `feature/insightpilot-v2`.** | VE + C | PLANNED |
@@ -1191,6 +1329,33 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Full suite after the corrections | **1042 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (945 + 97) at `71fed85c`; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
 | The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
+**P3.5a results** (same environment, uid 0; base `b31c4eab`):
+
+| Run | Result |
+|---|---|
+| Base `b31c4eab` (before changes) | 1042 passed, 13 xfailed, 0 failed (P3.4-correction final run) |
+| Task A `test_p35a_publication_close.py` | 10 passed; 5 mutation checks killed (raw close after publication; raw close after a pre-publication error; close failure ignored after publication; close retried; close failure dropped after a pre-publication error) |
+| `test_image_p35a.py` | 66 passed; 16 mutation checks killed (base by tag only; tampered base evidence; lock hash dropped; lock version changed; no `--require-hashes`; setid strip removed; no non-root `USER`; port exposed; whole context copied; plain Python entrypoint; pip kept; secret in `ENV`; staging skips the wheel hash check; inspector ignores setuid; entrypoint reads stdin; build script allows root) |
+| Full suite after P3.5a | **1118 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (1042 + 10 + 66) at `5255fa18`, exit 0; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
+**P3.5a measurements** (MEASURED unless marked):
+
+| Metric | Value |
+|---|---|
+| Runtime dependency count | 18 distributions (6 roots), 36 wheels (two architectures) |
+| Downloaded wheels | 94 MB x86_64, 91 MB aarch64 (= staged context size) |
+| Installed runtime packages, host simulation (x86_64, `pip --target`, `bin/` and `share/` removed) | 325 MB without bytecode, 448 MB with 4,623 checked-hash `.pyc` files |
+| Base image, compressed (registry manifest) | 47.6 MB amd64, 47.3 MB arm64 |
+| Version and hash verification | 18/18 versions exact; 36/36 wheel SHA-256 and sizes match PyPI; tamper refused; `check-lock` byte-identical |
+| Context reproducibility | identical context tarball digest on repeated staging (both architectures) |
+| Bytecode reproducibility | two compilations gave identical `.pyc` digests |
+| Final image size | **PENDING** (no image built: no rootless runtime here) |
+| Image build reproducibility (package set / digest) | **PENDING** (P3.5b) |
+| Image start-up overhead | **PENDING** (P3.5b; not safely obtainable here) |
+
+**Build environment status:** this environment cannot build or verify. It runs as uid 0, with a Docker CLI but no daemon, no podman, buildah or newuidmap, no `/etc/subuid` entry, cgroup v1, and `max_user_namespaces` 64272. `build_image.sh --check-host` reports it unsuitable, and both scripts refuse to run here. No rootful runtime was used as a substitute.
+
 *ESTIMATED, not measured:* an incompressible 4096×4096 RGBA image is about 64 MiB and is refused by the 10 MiB size cap before parsing, so the worst decode cost is bounded by the pixel cap (16.8 Mpx × 4 B ≈ 64 MiB plus encoder buffers). Container start-up costs are still unmeasured (P3.6).
 
 ---
@@ -1224,6 +1389,10 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 15. **Non-root validation on VE-2 is still mandatory.** Cloud-container evidence (uid 65534/65533) exists only for P3.3. P3.4's chart-store ownership checks were also only exercised as root.
 16. **Chart provenance is not proven at publication** (§10). The store proves that the content is canonical and bounded and that the metadata is consistent. Any in-process code can still construct a `TrustedChart` that skipped the host Pillow re-encode.
 17. **A post-publication cleanup failure can leave a `.tmp-*.png` hard link** to a published chart. It is reported (`ChartPublishedWithCleanupError.leftover_temp`), never reused, and safe to delete. Callers must handle that exception once the store is wired in (P3.6). The failure paths were exercised only by deterministic injection, not by real I/O errors.
+18. **The host validator still uses Pillow 12.3.0** (58 advisory records) because `streamlit==1.59.2` pins `pillow<13`. Its exposure is limited to the PNG plugin on structurally canonical input, but it is not removed. A host Streamlit/Pillow upgrade needs its own review (exam baseline).
+19. **No image has been built or verified.** The Containerfile's runtime behaviour has not been observed: the pip uninstall, setid stripping, user creation and final distribution set have not been checked inside a built image. Neither have Matplotlib's behaviour with `MPLCONFIGDIR` on tmpfs or the start-up cost (P3.5b on VE-1/VE-2).
+20. **The base image's Debian packages were not vulnerability-scanned.** No scanner or OSV access was available. Tag `3.11.18-slim-bookworm` will receive rebuilds, and the digest pin deliberately freezes this one, so updates need a reviewed re-pin.
+21. **Python 3.11 is in security-fix-only support.** The image follows the examination environment; an upgrade needs its own compatibility review.
 12. **Streamlit version drift** could affect the `runpy` equivalence (L-01, L-03).
 
 **Non-goals for P3:**
@@ -1339,3 +1508,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.3 correction | Run-id collision never deletes an existing run; retryable workspace cleanup (`closing`/`cleaned`); exception-safe lease release with reported failures, metadata-preserving removal order and release/creation serialisation; workspaces own their `runs/` descriptor; early non-root and cross-account evidence (uid 65534/65533); VE-2 non-root run still mandatory |
 | rev. 2.1 + P3.4 | IPX1 frame protocol and strict decoder; attestation policy; host PNG validator with bounded inflate and host re-encode; atomic no-overwrite chart store (`os.link`, full run id); pure supervisor helpers; two new reason codes; residual parser/Pillow risks, lease-teardown error suppression and disabled reconciliation documented; measured host costs |
 | rev. 2.1 + P3.4 corrections | **FIX 1:** `reject_reason` is type-checked before the membership test, so untrusted arrays, objects, numbers and booleans raise `SandboxProtocolError`, not `TypeError`. **FIX 2:** `ChartStore.publish` re-validates field types, digest, strict PNG structure under the store's limits, and declared dimensions; content is validated, provenance is not proven. **FIX 3:** explicit `ChartPublishedWithCleanupError` after a successful link, the final chart is never removed or replaced, one temp-removal retry, directory-fsync failures reported. 97 tests, 12 mutation checks (§10, §17, §19) |
+| rev. 2.1 + P3.5a | **Task A:** the directory-descriptor close can no longer mask the publication outcome (`directory_closed`, never retried). **Image foundation:** verified base digest with offline evidence; hash-locked 18-package runtime set; dependency review (Pillow 12.3.0 → 13.0.0; host Streamlit conflict documented; host advisories listed); multi-stage Containerfile with inert entrypoint; staged allowlisted context; rootless-only build and verify scripts; offline supply-chain tests; golden compatibility of the lock set (§8.7, §8.7a, §15, §16, §17, §19). No image built |
