@@ -197,44 +197,66 @@ The status labels map onto the register's three evidence classes:
 | Dependency pinning | ❌ missing | `requirements.txt` (`>=`) | R-23 |
 | V2 guard rails for future features | ✅ designed | `config/feature_flags.py`: secure profile requires container backend, no silent fallback | Not yet wired (by design in P0) |
 
-## 9. Framework mapping (pending verification)
+## 9. Framework mapping
 
-> **Status: PENDING VERIFICATION. No OWASP identifier in this section has been checked against the official documents.**
->
-> Reference frameworks, as specified by the reviewer:
->
-> - **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
-> - **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
->
-> Neither page could be retrieved from this session. Six attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment allowlist. Therefore:
->
-> - **LLM Top 10 2026:** no identifiers or names are given. The column is left for verified values only. The 2025-edition IDs from the first P1 draft were removed so they cannot be mistaken for 2026 IDs.
-> - **Agentic Applications 2026:** the IDs and names shown are **recalled, not verified**, and each cell is marked *(pending)*.
-> - **Mapping by concept:** findings are grouped by risk concept, the stable part of this analysis, so verified IDs can be dropped in without re-analysing the findings.
+### 9.1 Sources and verification status
 
-| # | Risk concept in InsightPilot | Findings | OWASP GenAI LLM Top 10 2026 (verified ID and name) | OWASP Agentic Top 10 2026 (ID and name) |
+| Framework | Source used | Status |
+|---|---|---|
+| **OWASP GenAI LLM Top 10, 2026 edition** (published 4 August 2026 per the source's `README.md` and `CITATION.cff`; the reviewer's note gave 3 August) | Canonical OWASP GitHub repository <https://github.com/GenAI-Security-Project/GenAI-LLM-Top10>, commit `9253e38a`: `README.md` (list of the ten 2026 entries) and `2026/final/LLM01`–`LLM10` (entry scopes). Citation: OWASP GenAI Security Project (2026), *OWASP Top 10 for Large Language Model Applications* (Version 2026), concept DOI `10.5281/zenodo.22109014`. Official publication page: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/> | **IDs and names verified.** The reviewer independently located this repository and supplied the list. Claude then read the same repository directly (a read-only shallow clone, 2026-11-21) and confirmed all ten IDs and names match. The `genai.owasp.org` page itself was still unreachable from this session (DNS failure). |
+| **OWASP Top 10 for Agentic Applications, 2026** | IDs and titles from `2026/final/mappings/asi-2026.json` in the same OWASP repository. That is the LLM Top 10 project's published crosswalk; it records `"verification": "all-verified"` against the official Agentic resource and announcement pages, accessed 2026-07-11. Official publication: <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/> | **IDs and titles corroborated by an official OWASP GenAI source; the Agentic publication itself was not accessed.** Titles follow that file's canonical forms (for example "Tool Misuse & Exploitation"). |
+| **InsightPilot finding → category mappings** (both frameworks) | This assessment's analysis, checked for consistency against the entries' own scope text and the official LLM↔ASI crosswalk (`2026/final/Appendix_A_Related_Framework_Mappings.md`) | **Analyst judgement, provisional.** These are this document's mappings, not OWASP's. Review them as such. |
+
+### 9.2 OWASP GenAI LLM Top 10 2026
+
+Applicability: **Applicable** means InsightPilot has findings squarely in the entry's scope. **Partial** means only part of the entry's scope is present. **Not applicable** means InsightPilot has no component the entry concerns.
+
+| ID | Name (verified) | Applicability | InsightPilot findings (analyst mapping) | Rationale |
 |---|---|---|---|---|
-| 1 | Untrusted input steering the model (direct, indirect and second-order prompt injection; goal manipulation) | R-10, R-11, R-12 | *Pending verification* | ASI01 Agent Goal Hijack *(pending)* |
-| 2 | Secret and sensitive-data disclosure | R-01, R-02, R-14, F-07 | *Pending verification* | *Pending verification*: no recalled counterpart |
-| 3 | Supply chain (dependencies, committed binaries, prompt and rule files) | R-23, R-01 | *Pending verification* | ASI04 Agentic Supply Chain Vulnerabilities *(pending)* |
-| 4 | Memory, context and data poisoning (lesson store, checkpoints) | R-11, F-05 | *Pending verification* | ASI06 Memory & Context Poisoning *(pending)* |
-| 5 | Model output used unsafely as code, paths, markup or exports | R-03, R-06, R-13, R-15, R-19, R-20, R-21, R-22 | *Pending verification* | ASI05 Unexpected Code Execution (RCE) *(pending)* for R-03, R-06, R-15 |
-| 6 | Excessive agency and tool misuse (sandbox has full file and network reach) | R-04, R-05, R-19, F-02 | *Pending verification* | ASI02 Tool Misuse and Exploitation *(pending)* |
-| 7 | Identity and privilege (inherited credentials, no authentication) | R-02, R-18, F-02 | *Pending verification* | ASI03 Identity and Privilege Abuse *(pending)* |
-| 8 | Human oversight gaps and approval bypass | R-08, R-09, F-04, F-06 | *Pending verification* | ASI09 Human-Agent Trust Exploitation *(pending)* |
-| 9 | Unbounded consumption and resource exhaustion | R-16, R-17 | *Pending verification* | *Pending verification* |
-| 10 | Cascading failures across steps or agents | R-16, F-03 | *Pending verification* | ASI08 Cascading Failures *(pending)* |
-| 11 | Inter-agent communication (future) | F-01 | *Pending verification* | ASI07 Insecure Inter-Agent Communication *(pending)* |
-| 12 | Rogue or looping agents (future) | F-08 | *Pending verification* | ASI10 Rogue Agents *(pending)* |
-| 13 | Unverified or misleading results (misinformation) | F-04, interpretation trust | *Pending verification* | *Pending verification* |
-| 14 | Concepts with no current exposure: system-prompt disclosure (prompts hold no secrets; rules and skills are already public) and retrieval/vector-store weaknesses (no retrieval used) | none | *Pending verification* | *Pending verification* |
+| LLM01:2026 | Prompt Injection | **Applicable** | R-10, R-11, R-12 | The entry's scope covers direct input, retrieved content, tool output and persistent memory. InsightPilot feeds CSV content (R-10), stored lessons (R-11) and sandbox output (R-12) into prompts without separation. |
+| LLM02:2026 | Sensitive Information Disclosure | **Applicable** | R-02, R-14; F-07 (future traces) | Disclosure surfaces include tool-call results, logs and telemetry: credentials readable by generated code (R-02), and tracebacks, exports and provider-bound samples (R-14). |
+| LLM03:2026 | Excessive Agency | **Applicable** | R-03, R-04, R-05, R-08, R-09, R-19 | The code-execution tool has far more functionality and permission than the task needs (R-03, R-04, R-05, R-19), and high-impact actions proceed without enforced human confirmation (R-08, R-09). |
+| LLM04:2026 | Supply Chain | **Partial** | R-23 | InsightPilot uses no third-party model artifacts, datasets, adapters or fine-tunes. Only the LLM framework packages, the unpinned dependency set and the trusted prompt and rule files apply. |
+| LLM05:2026 | Data and Model Poisoning | **Partial** | R-11 | No training, fine-tuning, embeddings or RAG. The entry's "anywhere data is … reused" scope does cover the lesson store, which persists and re-injects past content. |
+| LLM06:2026 | Unbounded Consumption | **Applicable** | R-16, R-18; R-17 (related) | Uncapped plan size, retries and prompt growth, no run budget (R-16), and unauthenticated use of the paid model (R-18). Sandbox resource exhaustion by generated code (R-17) is related but concerns compute rather than inference. |
+| LLM07:2026 | Misinformation | **Applicable as a design concern; no V1 security finding** | F-03, F-04 (future); P6 Verification Agent | Interpretations and self-assigned confidence are shown as insights without independent verification. P1 records no exploitable V1 vulnerability here, and P6 addresses it. |
+| LLM08:2026 | Hidden Context Exposure | **Partial (low)** | Related to R-11, R-18 | Most hidden context (system prompts, `rules/`, `skills/`) is already public in the repository and contains no secrets. However, the planner's hidden context includes stored lessons from other sessions (R-11), shared across users (R-18), so extraction through plan text is possible in principle. That is code-supported only and untested. |
+| LLM09:2026 | Vector and Embedding Weaknesses | **Not applicable** | none | InsightPilot uses no embeddings, vector store, semantic cache or similarity search. Re-assess if V2 adds retrieval or vector memory. |
+| LLM10:2026 | Improper Output Handling | **Applicable** | R-03, R-13, R-15, R-19, R-20, R-21, R-22 | Model output reaches downstream components without validation: generated code executed (R-03), text into HTML (R-13; XSS not demonstrated), code into exported notebooks (R-15), task ids into file paths (R-19), generated stdout trusted as a chart path (R-20), text into PDF markup (R-21) and Markdown status (R-22). |
 
-**Verification checklist (to complete before citing any ID):**
+**Findings outside the LLM Top 10 taxonomy (general application security):**
 
-1. Retrieve both official documents from the URLs above. Record the exact title, edition and publication date.
-2. For each row, enter the official ID and name verbatim. If a 2026 category merges, splits or has no counterpart, edit the row rather than force a match.
-3. Replace *(pending)* only in verified cells. Record who verified it and when, here and in the `risk_register.md` framework note.
-4. Re-check that every finding in rows 1–13 still maps to at least one verified category. List any unmapped finding explicitly.
+| Finding | Why it is outside |
+|---|---|
+| R-01 | A credential in public git history is a secrets-management failure, not LLM-mediated. Its impact (others using the paid key) relates to LLM06. |
+| R-06 | The file-name injection into the wrapper comes from *user* input, not model output, so it is outside LLM10's stated scope. Classic code injection. |
+| R-07 | Upload path traversal (classic web-application issue). |
+| R-24 | Documentation accuracy. |
+
+R-18's authentication gap is also general application security; it is listed under LLM06 only for its cost impact.
+
+### 9.3 OWASP Top 10 for Agentic Applications 2026
+
+IDs and titles are corroborated by an official OWASP GenAI source (see 9.1). Mappings are analyst judgement, provisional.
+
+| ID | Title (corroborated) | Applicability | InsightPilot findings (analyst mapping, provisional) |
+|---|---|---|---|
+| ASI01 | Agent Goal Hijack | Applicable | R-10, R-11, R-12 |
+| ASI02 | Tool Misuse & Exploitation | Applicable | R-03, R-04, R-05, R-19; F-02 |
+| ASI03 | Identity & Privilege Abuse | Applicable | R-02, R-18; F-02 |
+| ASI04 | Agentic Supply Chain Vulnerabilities | Partial | R-23 |
+| ASI05 | Unexpected Code Execution (RCE) | Applicable | R-03, R-06, R-15 |
+| ASI06 | Memory & Context Poisoning | Applicable | R-11; F-05 |
+| ASI07 | Insecure Inter-Agent Communication | Not applicable to V1 (single agent pipeline) | F-01 (future, P7) |
+| ASI08 | Cascading Failures | Partial | R-16 (retry and re-plan loops); F-03 |
+| ASI09 | Human-Agent Trust Exploitation | Applicable | R-08, R-09; F-04, F-06 |
+| ASI10 | Rogue Agents | Not applicable to V1 | F-08 (future, P7) |
+
+### 9.4 Remaining verification work
+
+1. Confirm the Agentic IDs and titles against the Agentic publication itself once `genai.owasp.org` is reachable. Today they rest on the OWASP LLM project's verified crosswalk.
+2. Have a reviewer confirm the analyst mappings in 9.2 and 9.3, especially the Partial and Not applicable judgements.
+3. Re-assess LLM09 and ASI07 when V2 adds retrieval or multiple agents (P7).
 
 ## 10. Security-remediation roadmap
 

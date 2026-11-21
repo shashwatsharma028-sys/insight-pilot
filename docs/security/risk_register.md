@@ -22,19 +22,48 @@ Companion documents: [threat model](threat_model.md), [abuse cases](abuse_cases.
 | **Validation test** | **A proposed test name for the fixing phase; it does not exist yet.** The only tests that exist today are the P0 tests named under "Existing tests" and in [Coverage by existing P0 tests](#coverage-by-existing-p0-tests). |
 | **Evidence confidence** | **Confirmed-test**: an existing P0 test observes the insecure behaviour. **Confirmed-code**: a deterministic code path, read line by line, not executed in P1. **Plausible**: depends on runtime or third-party behaviour that has not been validated yet. **Future**: architectural risk for planned V2 features; not exploitable today. |
 
-### OWASP framework references: pending verification
+### OWASP framework references
 
-The reference frameworks are the two official 2026 editions, as specified by the reviewer:
+- **OWASP GenAI LLM Top 10, 2026 edition** (published 4 August 2026 per the source; the reviewer's note gave 3 August).
+  - **IDs and names verified.** The reviewer located the canonical OWASP repository, <https://github.com/GenAI-Security-Project/GenAI-LLM-Top10>, and supplied the list.
+  - Claude then read that repository directly (read-only shallow clone of commit `9253e38a`, 2026-11-21: `README.md` and `2026/final/`) and confirmed all ten entries match.
+  - Official publication: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>. That page was still unreachable from this session.
+- **OWASP Top 10 for Agentic Applications 2026.**
+  - **IDs and titles corroborated** by the OWASP LLM project's published crosswalk, `2026/final/mappings/asi-2026.json` in the same repository (recorded there as verified against the official Agentic pages).
+  - **The Agentic publication itself was not accessed:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>.
+- **Mappings of InsightPilot findings to either framework are analyst judgement and provisional**, not OWASP's own mappings.
 
-- **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
-- **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
+The full mapping is in [threat_model.md § 9](threat_model.md#9-framework-mapping). It lists applicable, partial and not-applicable categories, and the findings that fall outside the LLM taxonomy (R-01, R-06, R-07, R-24). The per-finding mapping:
 
-Neither page could be retrieved from this session. All six attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment's network allowlist. So no identifier in this register has been checked against the official text.
+| Finding | LLM Top 10 2026 | Agentic Top 10 2026 |
+|---|---|---|
+| R-01 | Outside the taxonomy (secrets management); impact relates to LLM06 | none |
+| R-02 | LLM02:2026 | ASI03 |
+| R-03 | LLM03:2026, LLM10:2026 | ASI02, ASI05 |
+| R-04 | LLM03:2026 | ASI02 |
+| R-05 | LLM03:2026 | ASI02 |
+| R-06 | Outside the taxonomy (user-input code injection) | ASI05 |
+| R-07 | Outside the taxonomy (path traversal) | none |
+| R-08 | LLM03:2026 | ASI09 |
+| R-09 | LLM03:2026 | ASI09 |
+| R-10 | LLM01:2026 | ASI01 |
+| R-11 | LLM01:2026, LLM05:2026 (related: LLM08:2026) | ASI01, ASI06 |
+| R-12 | LLM01:2026 | ASI01 |
+| R-13 | LLM10:2026 (XSS not demonstrated) | none |
+| R-14 | LLM02:2026 | none |
+| R-15 | LLM10:2026 | ASI05 |
+| R-16 | LLM06:2026 | ASI08 |
+| R-17 | LLM06:2026 (related) | none |
+| R-18 | LLM06:2026 (related: LLM08:2026) | ASI03 |
+| R-19 | LLM03:2026, LLM10:2026 | ASI02 |
+| R-20 | LLM10:2026 | none |
+| R-21 | LLM10:2026 | none |
+| R-22 | LLM10:2026 | none |
+| R-23 | LLM04:2026 (partial) | ASI04 |
+| R-24 | Outside the taxonomy (documentation) | none |
+| F-01 to F-08 | LLM07:2026 (F-03, F-04), LLM02:2026 (F-07) | ASI07 (F-01), ASI02/ASI03 (F-02), ASI08 (F-03), ASI09 (F-04, F-06), ASI06 (F-05), ASI10 (F-08) |
 
-- **LLM Top 10 2026:** no IDs or names are given; every mapping is **pending verification**. The 2025-edition IDs used in the first P1 draft have been removed, so a different edition cannot be mistaken for 2026.
-- **Agentic Applications 2026:** the `ASI01`–`ASI10` IDs and names shown are recalled, not verified. Each is marked **pending verification**.
-
-All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framework-mapping-pending-verification), keyed by risk concept so the verified IDs can be filled in a single pass. **Do not cite any OWASP ID from these documents externally until that table is verified.**
+Not applicable today: **LLM09:2026** Vector and Embedding Weaknesses (no embeddings or retrieval). **ASI07** and **ASI10** apply only to the future multi-agent design.
 
 ## Summary
 
