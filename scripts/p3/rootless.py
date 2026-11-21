@@ -16,6 +16,9 @@ InsightPilot P3.5b: rootless build and validation driver (development only).
   verify IMAGE [--evidence F]   Image config, image contents, runtime-enforced
                                 properties and the inert entrypoint.
   measure-startup IMAGE [--warm N] [--cold N]
+  os-packages IMAGE [--evidence F]
+                                Debian package inventory of the image (dpkg-query in
+                                an isolated container), for the vulnerability review.
   golden IMAGE [--evidence F]   The pre-reviewed golden fixtures in
                                 golden_fixtures.json, inside the image:
                                 read-only dataset copies, outputs on a
@@ -525,6 +528,24 @@ def measure_startup(image, warm=30, cold=10, *, facts=None, runner=None, clock=t
             "cold_definition": "first run after podman rmi + podman load; page cache not dropped"}
 
 
+def os_packages_argv(image, arch):
+    return container_run_argv(image, arch, entrypoint="/usr/bin/dpkg-query",
+                              args=["-W", "-f=${Package}\t${Version}\t${Architecture}\n"])
+
+
+def os_packages(image, *, facts=None, runner=None):
+    facts = facts if facts is not None else gather_facts(runner=runner)
+    problems = evaluate_host(facts)
+    if problems:
+        raise Refused(problems)
+    arch = native_arch(facts["machine"])
+    r = _run(os_packages_argv(image, arch), env=podman_env(), timeout=120, runner=runner)
+    if r.returncode != 0:
+        raise Refused([f"dpkg-query failed: {r.stderr[-300:]!r}"])
+    rows = [ln.split("\t") for ln in r.stdout.decode("utf-8", "replace").splitlines() if ln.strip()]
+    return {"count": len(rows), "packages": [{"name": n, "version": v, "arch": a} for n, v, a in rows]}
+
+
 # ── golden compatibility inside the image ───────────────────────────────────
 
 FIXTURES = os.path.join(HERE, "golden_fixtures.json")
@@ -621,7 +642,7 @@ def main(argv=None):
     b = sub.add_parser("build")
     b.add_argument("--wheel-cache", required=True)
     b.add_argument("--arch")
-    for name in ("verify", "measure-startup", "golden"):
+    for name in ("verify", "measure-startup", "golden", "os-packages"):
         s = sub.add_parser(name)
         s.add_argument("image")
         s.add_argument("--evidence")
@@ -650,6 +671,8 @@ def main(argv=None):
             result = verify(a.image)
         elif a.cmd == "measure-startup":
             result = measure_startup(a.image, a.warm, a.cold)
+        elif a.cmd == "os-packages":
+            result = os_packages(a.image)
         else:
             result = golden(a.image)
             if not result["ok"]:

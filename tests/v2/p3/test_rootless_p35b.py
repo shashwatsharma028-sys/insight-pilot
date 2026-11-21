@@ -525,6 +525,22 @@ def test_verify_checks_image_runtime_mapping_and_inert_output(staged):
     assert any(p.startswith("INERT") for p in info.value.problems)
 
 
+def test_os_package_inventory_runs_with_the_same_isolation_options(staged):
+    argv = rl.os_packages_argv("localhost/img", "x86_64")
+    for flag in REQUIRED_RUN:
+        assert flag in argv, flag
+    assert argv[argv.index("--entrypoint") + 1] == "/usr/bin/dpkg-query"
+
+    class DpkgFake(FakePodman):
+        def __call__(self, argv, **kw):
+            super().__call__(argv, **kw)
+            return types.SimpleNamespace(returncode=0, stdout=b"libc6\t2.36-9+deb12u13\tamd64\n", stderr=b"")
+    out = rl.os_packages("localhost/img", facts=GOOD_FACTS, runner=DpkgFake())
+    assert out == {"count": 1, "packages": [{"name": "libc6", "version": "2.36-9+deb12u13", "arch": "amd64"}]}
+    with pytest.raises(rl.Refused):
+        rl.os_packages("localhost/img", facts=facts(uid=0), runner=DpkgFake())
+
+
 # ── startup statistics ──────────────────────────────────────────────────────
 
 def test_percentiles_use_the_nearest_rank_and_report_sample_counts():
@@ -608,7 +624,8 @@ def test_golden_runs_mount_dataset_copies_read_only_and_bound_outputs(staged):
 # ── the gate in THIS environment ────────────────────────────────────────────
 
 @pytest.mark.parametrize("args", [["build", "--wheel-cache", "/nonexistent"], ["verify", "localhost/none"],
-                                  ["measure-startup", "localhost/none"], ["golden", "localhost/none"]])
+                                  ["measure-startup", "localhost/none"], ["golden", "localhost/none"],
+                                  ["os-packages", "localhost/none"]])
 def test_cli_refuses_here_when_this_host_is_unsuitable(args):
     live = rl.gather_facts()
     if not rl.evaluate_host(live):
