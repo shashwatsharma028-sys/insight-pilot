@@ -64,6 +64,17 @@ def test_every_limit_must_be_positive(field, bad):
         Limits(**{field: bad})
 
 
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf"), -0.5, 0.0])
+def test_cpus_must_be_positive_and_finite(bad):
+    with pytest.raises(ValueError, match="positive finite"):
+        Limits(cpus=bad)
+
+
+@pytest.mark.parametrize("good", [0.25, 1, 2.0, 64])
+def test_cpus_accepts_positive_finite_numbers(good):
+    assert Limits(cpus=good).cpus == good
+
+
 @pytest.mark.parametrize("kwargs", [
     {"chart_max_side": 100, "chart_max_pixels": 100 * 100 + 1},
     {"chart_bytes": 33 * 1024 * 1024, "out_bytes": 32 * 1024 * 1024},

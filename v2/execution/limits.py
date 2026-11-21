@@ -57,8 +57,11 @@ class Limits:
         for f in fields(self):
             value = getattr(self, f.name)
             if f.name == "cpus":
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not value > 0:
-                    raise ValueError(f"Limits.cpus must be a positive number, got {value!r}")
+                # The chained comparison also rejects NaN (all comparisons are
+                # false) and +/-infinity.
+                if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                        or not 0 < value < float("inf"):
+                    raise ValueError(f"Limits.cpus must be a positive finite number, got {value!r}")
                 continue
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
                 raise ValueError(f"Limits.{f.name} must be a positive int, got {value!r}")
