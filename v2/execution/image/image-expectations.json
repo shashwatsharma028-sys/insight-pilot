@@ -33,6 +33,90 @@
  "opt_ip_files": [
   "inert_entrypoint.py"
  ],
+ "runtime": {
+  "_note": "Runtime-enforced properties: produced by the launcher options in scripts/p3/rootless.py (container_run_argv), not by the image. Verified inside a running container by image_inspect.py.",
+  "allowed_mount_prefixes": [
+   "/proc/",
+   "/sys/",
+   "/dev/"
+  ],
+  "allowed_mountpoints": [
+   "/",
+   "/proc",
+   "/dev",
+   "/dev/pts",
+   "/dev/mqueue",
+   "/sys",
+   "/sys/fs/cgroup",
+   "/etc/hosts",
+   "/etc/hostname",
+   "/etc/resolv.conf",
+   "/run/.containerenv",
+   "/in/dataset.csv",
+   "/out"
+  ],
+  "cgroup": {
+   "cpu.max": "100000 100000",
+   "memory.max": "268435456",
+   "memory.swap.max": "0",
+   "pids.max": "64"
+  },
+  "env_added_by_runtime": [
+   "HOME",
+   "HOSTNAME",
+   "container"
+  ],
+  "files_must_not_open_for_write": [
+   "/etc/hosts",
+   "/etc/hostname",
+   "/etc/resolv.conf",
+   "/etc/passwd",
+   "/usr/local/bin/python3.11",
+   "/opt/ip/inert_entrypoint.py"
+  ],
+  "gid": 10001,
+  "must_be_writable": [
+   "/tmp"
+  ],
+  "must_not_be_writable": [
+   "/",
+   "/etc",
+   "/usr",
+   "/usr/local/lib/python3.11/site-packages",
+   "/opt/ip",
+   "/var/tmp",
+   "/run",
+   "/dev",
+   "/home",
+   "/root"
+  ],
+  "net_interfaces": [
+   "lo"
+  ],
+  "rw_mountpoints_allowed": [
+   "/proc",
+   "/dev",
+   "/dev/pts",
+   "/dev/mqueue",
+   "/out",
+   "/etc/hosts",
+   "/etc/hostname",
+   "/etc/resolv.conf",
+   "/run/.containerenv"
+  ],
+  "seccomp_mode": "2",
+  "tmpfs": {
+   "/tmp": {
+    "options": [
+     "rw",
+     "nosuid",
+     "nodev",
+     "noexec"
+    ]
+   }
+  },
+  "uid": 10001
+ },
  "runtime_requirements_not_enforced_by_the_image": [
   "rootless runtime (Podman/Buildah) on Linux with cgroup v2",
   "--read-only root filesystem with tmpfs /tmp (MPLCONFIGDIR=/tmp/matplotlib) and tmpfs /out",
