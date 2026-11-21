@@ -69,6 +69,10 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/datasets.py",      # P3.3 (not wired into production yet)
     "v2/execution/workspace.py",     # P3.3 (not wired into production yet)
     "v2/execution/lease.py",         # P3.3 (not wired into production yet)
+    "v2/execution/frame.py",         # P3.4 (not wired into production yet)
+    "v2/execution/artifacts.py",     # P3.4 (not wired into production yet)
+    "v2/execution/chart_store.py",   # P3.4 (not wired into production yet)
+    "v2/execution/supervisor_helpers.py",  # P3.4 pure helpers only
 ]
 
 
@@ -90,7 +94,8 @@ def test_importing_contracts_loads_no_process_network_llm_or_v1_modules():
         "new = set(sys.modules) - before\n"
         "assert 'v2.launch_app' not in new, 'contracts must not import the launcher'\n"
         "assert not new & {'v2.execution.bootstrap', 'v2.execution.binding', 'v2.execution.dispatch', "
-        "'v2.execution.datasets', 'v2.execution.workspace', 'v2.execution.lease'}, "
+        "'v2.execution.datasets', 'v2.execution.workspace', 'v2.execution.lease', 'v2.execution.frame', "
+        "'v2.execution.artifacts', 'v2.execution.chart_store', 'v2.execution.supervisor_helpers'}, "
         "'contracts must not import the bootstrap, binding, dispatcher, datasets, workspace or lease'\n"
         "roots = {m.split('.')[0] for m in new}\n"
         "print(','.join(sorted(roots)))"
