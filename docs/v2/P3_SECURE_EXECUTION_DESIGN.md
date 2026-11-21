@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1 and P3.2a (both accepted after review) and P3.2b are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a and P3.2b (all accepted after review) and P3.3 are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -634,7 +634,32 @@ The host compares this with the expected values. Any mismatch raises `SandboxUna
 
 ---
 
-## 9. Dataset authorization — PLANNED (P3.3), demo-only first
+## 9. Dataset authorization — IMPLEMENTED (P3.3), demo-only; not yet wired into the dispatcher
+
+**P3.3 implementation** (`v2/execution/datasets.py`, `DatasetAuthorizer`):
+
+- It follows §9.2 below exactly, with these decisions made during implementation:
+  - The path is also refused if it is not already normalised (`os.path.normpath(p) != p`), so `.`, `..`, `//` and a trailing `/` are all rejected.
+  - Control characters include C1 and the Unicode line and paragraph separators.
+  - The approved **directory itself** must be owned by this user and not group- or world-writable.
+  - The metadata recheck after the copy compares device, inode, size, **mtime and ctime**. A rename or in-place rewrite during the copy, even one that restores mtime, is refused.
+  - The copy is `fsync`ed.
+  - I/O failures (for example a full disk) raise `SandboxUnavailableError`.
+  - Policy failures raise `DatasetNotAuthorizedError`.
+  - In both cases the partial copy is removed by its fixed name, relative to the workspace descriptor.
+  - A pre-existing (planted) `dataset.csv` in the workspace is never followed or deleted by the authoriser; the workspace cleanup removes the entry only.
+- **The bytes are never read through the requested path:** they come from the trusted approved directory plus the allowlisted name. The requested path only has to *name* that directory.
+- The result (`AuthorizedDataset`) carries the approved name, the verified digest, the size and the fixed workspace name. It deliberately has **no path field**.
+- **Not wired in:** the production dispatcher does not call it yet, and `ExecutionRequest` still carries no dataset.
+- **Platform:** verified on Linux (descriptor-relative `open`, `mkdir` and `unlink`; `O_NOFOLLOW`, `O_DIRECTORY`, `O_CLOEXEC`). macOS offers the same calls, but **no equivalent guarantee is claimed until it is tested there**.
+- **Ownership checks:** the demo files and the data directory must belong to the user running the app. A checkout owned by another account is refused, which is fail closed.
+- **REQUIRES VALIDATION UNDER A NON-ROOT LINUX USER.** Every P3.3 filesystem test ran as **uid 0** in the cloud test container. Root bypasses discretionary access control, so these tests prove the descriptor-relative logic, the symlink, type and link-count refusals, and the ownership comparisons, but **not** the permission-denied behaviour that protects a real deployment. That behaviour includes:
+  - another account being unable to read or enter the `0700` workspace and instance directories;
+  - refusal of foreign-owned files and directories as seen by an unprivileged process;
+  - `umask` effects on created modes;
+  - creating the default root under a shared sticky `/tmp` that another user tries to pre-create.
+
+  These must be re-run as an unprivileged user (the VE-2 `ipval` account, with `ipprobe` as the second account; §12) before any of these properties is claimed. The two root-only fixtures (device node, foreign owner) also need an unprivileged equivalent (for example a file pre-created by `ipprobe`).
 
 ### 9.1 Principle
 
@@ -713,7 +738,55 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
 
 ---
 
-## 11. Concurrency-safe cleanup — PLANNED (P3.3 lease, P3.6 containers)
+## 11. Concurrency-safe cleanup — lease and workspace IMPLEMENTED (P3.3); containers PLANNED (P3.6)
+
+**P3.3 implementation** (`v2/execution/lease.py`, `v2/execution/workspace.py`; not wired into production yet):
+
+- **Private root.** The default root is `<tempdir>/insightpilot-v2-<euid>`; tests use temporary roots.
+  - It is created `0700` and opened `O_DIRECTORY|O_NOFOLLOW`.
+  - It must be a directory owned by this user with no group or other permissions. Otherwise it is refused (`SandboxUnavailableError`): a symlink, a file, a shared mode or a foreign owner. Every level below it is checked the same way.
+- **`InstanceLease.acquire()`:**
+  - instance id = 128 random bits;
+  - `instances/<id>/` is created exclusively (`0700`);
+  - `lease.lock` (`0600`, exclusive create) is held with `flock(LOCK_EX)` for the lease's lifetime;
+  - `lease.json` (`0600`) holds only `schema`, `instance_id`, `pid`, `boot_id`, `created_unix`: no credentials, no environment, no paths;
+  - `runs/` (`0700`).
+- **`release()`:**
+  - It unlocks.
+  - It removes **its own** instance directory only if no runs remain. Otherwise it leaves everything in place and reports the remaining runs.
+  - It never touches another instance.
+- **`inspect_instances()`: report only.** It never deletes, never blocks, and never touches containers.
+  - It tries a **non-blocking** lock on each other instance's `lease.lock`.
+  - States:
+
+    | State | Meaning |
+    |---|---|
+    | `live` | the lock is held |
+    | `stale` | the lock is free, or `boot_id` differs |
+    | `indeterminate` | the lock is free and `lease.json` is missing (possibly still starting) |
+    | `orphan` | no lock file, an unusable directory, or a mismatched id |
+    | `unexpected` | the name is not an instance id |
+    | `self` | this process holds the lease |
+
+  - Liveness comes from the kernel lock, so PID reuse cannot fake it (tested). flock locks belong to an open file description, so two leases in one process are distinguishable.
+- **`reconcile_stale_instances()` is disabled:** it raises until destructive reconciliation is separately reviewed.
+- **`JobWorkspace`:**
+  - `runs/<run_id>/` (`0700`, exclusive) holds `in/` (`0755`) with exactly two possible inputs, `code.py` and `dataset.csv` (`0644`, `O_CREAT|O_EXCL|O_NOFOLLOW` relative to the `in/` descriptor).
+  - Generated code is size-checked **before** anything is written, then written verbatim.
+  - There is **no output directory**: untrusted container output will never land on the host filesystem (§8.5).
+  - `cleanup()` removes exactly `runs/<run_id>` relative to the lease's runs descriptor, using `shutil.rmtree`'s symlink-attack-resistant descriptor implementation (`avoids_symlink_attacks` is True on this Linux). Symlinks inside are unlinked, not followed. A run directory replaced by a symlink is removed as an entry only, and an error is raised.
+  - On platforms without the safe `rmtree`, only the known names are removed; anything unexpected is left in place and reported.
+  - As a context manager it cleans up on success, refusal and exceptions.
+
+- **REQUIRES VALIDATION UNDER A NON-ROOT LINUX USER.** Every P3.3 filesystem test ran as **uid 0** in the cloud test container. Root bypasses discretionary access control, so these tests prove the descriptor-relative logic, the symlink, type and link-count refusals, and the ownership comparisons, but **not** the permission-denied behaviour that protects a real deployment. That behaviour includes:
+  - another account being unable to read or enter the `0700` workspace and instance directories;
+  - refusal of foreign-owned files and directories as seen by an unprivileged process;
+  - `umask` effects on created modes;
+  - creating the default root under a shared sticky `/tmp` that another user tries to pre-create.
+
+  These must be re-run as an unprivileged user (the VE-2 `ipval` account, with `ipprobe` as the second account; §12) before any of these properties is claimed. The two root-only fixtures (device node, foreign owner) also need an unprivileged equivalent (for example a file pre-created by `ipprobe`).
+
+Original plan text (kept for the later container stages):
 
 - **Instance lease:** `instances/<instance_id>/` (0700) contains `lease.json` (pid, process start time, `boot_id`; diagnostics only) and `lease.lock`, which is held with `flock` for the process lifetime.
 - **Per run:**
@@ -778,6 +851,7 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
 | `kill(-1, SIGKILL)` from PID 1 removes every child, including `setsid` daemons | I-11 |
 | `podman --timeout` and `--rm` remove containers after an app crash | C-06 |
 | Rootless Docker equivalents for every row above | the same tests with the Docker adapter |
+| P3.3 host filesystem protections (0700 workspace and instance directories, owner checks, private root under a shared `/tmp`, `umask`) hold for an **unprivileged** user against a second unprivileged account; so far tested only as root | the P3.3 suite re-run as VE-2 `ipval`, plus cross-account probes from `ipprobe` |
 
 ---
 
@@ -855,15 +929,17 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | L-12a | Playwright real browser, no LLM: both entry points render identically up to the missing-key error; refusal page with V2 flags (§7.1b) | C | **Run once in P3.2a as uncommitted evidence: identical at all 3 steps; refusal correct.** Committing it as a test is PROPOSED (needs approval) |
 | L-12 | Playwright real browser via a test-only mock-LLM launcher: demo → run → approve → chart `<img>` loads → report present | VE (C wiring-only) | PLANNED (P3.8) |
 | L-13 | Direct `ui/app.py` with hardened flags inside the deployment unit's constraints: documents the bypass; 0 executions when the key is withheld | C | PLANNED |
-| **DS-01/02** | Demo pins; tampered copy refused; pins equal the golden JSON | C | PLANNED (P3.3) |
-| DS-03 | Any non-demo path (including any `/tmp` upload) → `DatasetNotAuthorizedError` in demo-only mode | C | PLANNED |
-| DS-05 | Traversal, relative, NUL, newline, subdirectory refused before any open | C | PLANNED |
-| DS-06/07/08 | Symlink, FIFO (no hang), directory, socket, device, hardlink refused | C | PLANNED |
-| DS-09 | Foreign owner refused | C / VE | PLANNED |
-| DS-10/11 | Oversize (abort at cap+1); swap or in-place modification during copy → refused and partial copy deleted | C | PLANNED |
-| DS-12 | V1 S3 crafted path → refused; marker absent; 0 executions | C | PLANNED |
-| DS-13 | Job inputs are only `code.py` and `dataset.csv`; argv contains no `csv_path` or `task_id` bytes | C | PLANNED |
-| DS-15 | Demo directory reached through a symlinked `DATA_DIR` accepted; symlinked final component refused (B-5) | C | PLANNED |
+| **DS-01/02** | Demo pins; tampered copy refused; pins equal the golden JSON | C | **IMPLEMENTED (P3.3)** |
+| DS-03 | Any non-demo path (including any `/tmp` upload) → `DatasetNotAuthorizedError` in demo-only mode | C | **IMPLEMENTED (P3.3)** |
+| DS-05 | Traversal, relative, NUL, newline, subdirectory refused before any open | C | **IMPLEMENTED (P3.3)** |
+| DS-06/07/08 | Symlink, FIFO (no hang), directory, socket, device, hardlink refused | C | **IMPLEMENTED (P3.3)** |
+| DS-09 | Foreign owner refused | C / VE | **IMPLEMENTED (P3.3)** (root-only fixture; runs in this environment) |
+| DS-10/11 | Oversize (abort at cap+1); swap or in-place modification during copy → refused and partial copy deleted | C | **IMPLEMENTED (P3.3)** |
+| DS-12 | V1 S3 crafted path → refused; marker absent; 0 executions | C | **IMPLEMENTED (P3.3)** at the authoriser level (not yet through the dispatcher) |
+| DS-13 | Job inputs are only `code.py` and `dataset.csv`; argv contains no `csv_path` or `task_id` bytes | C | **Inputs part IMPLEMENTED (P3.3)**; the argv part waits for the container backend (P3.6) |
+| DS-15 | Demo directory reached through a symlinked `DATA_DIR` accepted; symlinked final component refused (B-5) | C | **IMPLEMENTED (P3.3)** |
+| WS-01…10 | Workspace: private layout and modes; 128-bit unique run ids; verbatim code; code size checked before writing; only two input names; exclusive creation; planted symlinks never followed (input, inner, replaced run directory); cleanup on success, refusal and exception, idempotent; sibling runs untouched; 16 simultaneous runs isolated | C | **IMPLEMENTED (P3.3)** |
+| LS-01…09 | Lease: private root refusals (symlink, mode, file, foreign owner, symlinked `instances/`); minimal metadata without credentials; two leases distinct; release never touches another live instance; release with active runs leaves everything; cross-process live → stale after SIGKILL; crash → stale and untouched; PID reuse cannot fake liveness; previous boot → stale; orphans and unexpected entries reported, not deleted; destructive reconciliation disabled | C | **IMPLEMENTED (P3.3)** |
 | **O-01…04** | Ownership (§8.2) | VE (O-01 also C) | PLANNED |
 | **S-01/02** ★ | `/out` and `/tmp` fill: ENOSPC at the byte and inode caps | VE | PLANNED |
 | S-03 ★ | Writes to `/`, `/in`, `/var/tmp`, `/run`, `/dev/shm`, `/dev` fail | VE | PLANNED |
@@ -883,7 +959,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | I-14 | Host stop: `kill -s TERM` has no effect; `kill -s KILL` stops; zombie reaping under a 50-grandchild churn leaves `pids.current` back at baseline | VE | PLANNED |
 | **R-01…06** ★ | Memory OOM message; PID limit; CPU loop → V1-identical timeout message; SIGTERM-ignoring child; `nofile`; fork bomb | VE | PLANNED |
 | **A-01…21** | Artifact corpus: valid chart through stage A; wrong magic; renamed JPEG/SVG; bad CRC; tEXt, iCCP, zTXt, eXIf; APNG; interlaced; 16-bit; palette; dimensions over cap; pixel bomb; zlib bomb; truncated IDAT; trailing data and polyglot; double IHDR; empty; over size; symlink, hardlink, FIFO or directory `chart.png` (VE); atomic unique store and safe stem; raw Matplotlib PNG at stage B rejected (B-6) | C / VE | PLANNED |
-| **C-01…08** | Exact-name cleanup; live instance B untouched by A's reconcile; stale instance cleaned up via flock even with PID reuse; orphan reported but not removed; crash → self-termination; changed `boot_id` → stale; 8 dispatches with limit 2 | VE / C | PLANNED |
+| **C-01…08** | Exact-name cleanup; live instance B untouched by A's reconcile; stale instance cleaned up via flock even with PID reuse; orphan reported but not removed; crash → self-termination; changed `boot_id` → stale; 8 dispatches with limit 2 | VE / C | Host-side detection IMPLEMENTED (P3.3, see LS-xx). Container cleanup, and any destructive stale cleanup, PLANNED and disabled |
 | **G-01** | Full suite, flags off | C + VE | **IMPLEMENTED for P3.1: see §17** |
 | G-02 | Golden snapshots byte-identical (`git diff --exit-code tests/v2/golden`) | C | **IMPLEMENTED (checked for P3.1)** |
 | G-03 | Golden end-to-end, 4 datasets, container backend: 28 answers; behaviour equals the committed snapshots; LLM calls equal | VE | PLANNED |
@@ -904,7 +980,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | **P3.1** | Baseline re-run in a scratch venv; B1 flag rule; pure contracts; this document | C | **IMPLEMENTED** |
 | **P3.2a** | Launcher flags-off compatibility boundary: `prepare_sys_path`, strict flag check (only V1 defaults start), `runpy` execution of the unchanged `ui/app.py`; equivalence and parity tests; `Limits.cpus` finiteness | C | **IMPLEMENTED** |
 | **P3.2b** | Bootstrap (process-wide mode, fail closed), executor binding, V1 tripwire, dispatcher, runtime interface, file-watcher enforcement, secure-profile gate, leak guard; FakeRuntime wiring tests. Container always unavailable, so production fails closed. | C | **IMPLEMENTED** (deployment-unit checks wait for Q1) |
-| P3.3 | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` | C | PLANNED |
+| **P3.3** | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` (not wired into the production dispatcher; destructive reconciliation disabled) | C | **IMPLEMENTED** |
 | P3.4 | Frame protocol, strict decoder, host PNG validator, re-encode and store; pure supervisor, runner and canonicaliser functions (no backend) | C | PLANNED |
 | P3.5 | Runtime image: Containerfile, hash lock, staged build, verification. **Dependency review gate.** | VE | PLANNED |
 | P3.6 | Container backend: detection, argv builder, run/kill/remove, preflight self-test, reconcile, dispatcher. **Sandbox-permission review gate.** | C (unit) + VE | PLANNED |
@@ -940,6 +1016,18 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | New `tests/v2/p3/test_bootstrap_p3.py` | 63 passed |
 | Mutation checks (throw-away copies) | V1 fallback on runtime error → 6 failures; silent production downgrade to V1 → 7; mode switching → 2; no tripwire → 8 |
 | Full suite after P3.2b | **558 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed**; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
+**P3.3 test results** (same environment):
+
+| Run | Result |
+|---|---|
+| Base `d9d5787a` (P3.2b, before changes) | 558 passed, 13 xfailed, 0 failed |
+| New `tests/v2/p3/test_datasets_p33.py` | 60 passed, 0 skipped (the root-only device and ownership cases ran) |
+| New `tests/v2/p3/test_workspace_lease_p33.py` | 44 passed |
+| Scope guard (`test_contract_purity.py`) | 10 passed (three reviewed modules added) |
+| Mutation checks (throw-away copies) | dataset open follows symlinks → 2 failures; no hash comparison → 2; no metadata recheck → 2; basename-only path check → 2; hard links allowed → 1; inspection deletes stale instances → 3; cleanup follows a replaced run directory → 1; shared workspace root accepted → 4 |
+| Full suite after P3.3 | **662 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (558 + 60 + 44); 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test). Run as **uid 0**; see the non-root validation requirement in §9 and §11 |
 | The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
 ---
@@ -1053,7 +1141,7 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | D4 | Ownership R1; reject R2, R4 and R5; defer R3 | Conditionally accepted |
 | D5 | tmpfs-only storage, `--read-only-tmpfs=false`, `--ipc=none`, no logs, frame-only extraction | Conditionally accepted |
 | D6 | Custom PID-1 supervisor, same uid, non-dumpable, signals reset (B-2); custom seccomp optional | Conditionally accepted; requires runtime validation |
-| D7 | Datasets: **demo-only first**; uploader observer only after separate approval | **Reviewer direction adopted** |
+| D7 | Datasets: **demo-only first**; uploader observer only after separate approval | **IMPLEMENTED (P3.3, demo-only)**; uploader observer not implemented |
 | D8 | Unique chart names `<stem>-<run8>.png` | Conditionally accepted |
 | D9 | Provisional limits (`DEFAULT_LIMITS`) | Contract IMPLEMENTED; values provisional |
 | D10 | Two concurrent containers per instance; 120 s queue wait | Conditionally accepted |
@@ -1079,3 +1167,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.1 | Status markers; P3.1 implementation and results; reviewer directions (demo-only datasets; no uploader monkeypatch) and open questions Q1–Q6 |
 | rev. 2.1 + P3.2a | Launcher flags-off boundary implemented (§7.1–7.1b); **correction:** Streamlit magic always inserts one unused import, and wraps nothing in `ui/app.py` (§2.2 item 9, L-03); `sys.path` mirroring of `streamlit run ui/app.py`; `Limits.cpus` finiteness; AppTest limitations and the real-browser proposal |
 | rev. 2.1 + P3.2b | Bootstrap, binding, tripwire, dispatcher and runtime interface implemented (§7.1c, §7.2, §7.5); deployment boundary documented (§7.4); leak guard; **plan refinements:** flags are frozen per process and compared on every run (a mismatch is a sticky refusal, never a mode switch); a `FAILED` state reached from `HARDENED` keeps the binding installed |
+| rev. 2.1 + P3.3 | Demo-only `DatasetAuthorizer`, `JobWorkspace` and `InstanceLease` implemented and documented (§9, §11); not wired into production; destructive stale reconciliation disabled; Linux-only claims |
