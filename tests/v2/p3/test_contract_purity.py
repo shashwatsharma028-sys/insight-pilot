@@ -55,21 +55,33 @@ def test_contract_module_is_pure(relpath):
     assert problems == [], f"{relpath}: {problems}"
 
 
-def test_every_v2_python_file_is_a_reviewed_contract_module():
-    """P3.1 scope guard: no executor, launcher or runtime code exists yet."""
+# Reviewed V2 modules that are NOT pure contracts. Each entry needs its own
+# review; P3.2a added the flags-off launcher (tests/v2/p3/test_launcher_p3.py
+# constrains its imports and behaviour). Executors, runtimes and bindings
+# still do not exist.
+REVIEWED_NON_CONTRACT_MODULES = [
+    "v2/launch_app.py",   # P3.2a
+]
+
+
+def test_every_v2_python_file_is_a_reviewed_module():
+    """Scope guard: every Python file under v2/ is explicitly reviewed."""
     found = sorted(
         os.path.relpath(os.path.join(dirpath, name), ROOT).replace(os.sep, "/")
         for dirpath, _, files in os.walk(os.path.join(ROOT, "v2"))
         for name in files if name.endswith(".py")
     )
-    assert found == sorted(CONTRACT_MODULES)
+    assert found == sorted(CONTRACT_MODULES + REVIEWED_NON_CONTRACT_MODULES)
+    assert not set(CONTRACT_MODULES) & set(REVIEWED_NON_CONTRACT_MODULES)
 
 
 def test_importing_contracts_loads_no_process_network_llm_or_v1_modules():
     code = (
         "import sys; sys.path.insert(0, %r); before = set(sys.modules)\n"
         "import v2.execution\n"
-        "roots = {m.split('.')[0] for m in set(sys.modules) - before}\n"
+        "new = set(sys.modules) - before\n"
+        "assert 'v2.launch_app' not in new, 'contracts must not import the launcher'\n"
+        "roots = {m.split('.')[0] for m in new}\n"
         "print(','.join(sorted(roots)))"
     ) % ROOT
     env = {k: v for k, v in os.environ.items() if k != "GOOGLE_API_KEY"}
