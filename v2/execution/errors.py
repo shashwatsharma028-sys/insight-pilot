@@ -42,6 +42,8 @@ ARTIFACT_REJECT_REASONS = frozenset({
     "decompression_mismatch",
     "trailing_data",
     "decode_failed",
+    "truncated",          # P3.4: a chunk or the file ends early
+    "too_many_chunks",    # P3.4: chunk-count cap
 })
 
 
