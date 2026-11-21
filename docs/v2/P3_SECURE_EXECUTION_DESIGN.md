@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction (all accepted after review) and P3.4 are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections are implemented and await review.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -767,6 +767,26 @@ The proposed mechanism is an observer wrapper on `streamlit.file_uploader` that 
   - The charts directory is opened with `O_NOFOLLOW` and must be owned by this user and not group- or world-writable.
   - The store only accepts a `TrustedChart` and has no path parameter.
   - No stale-chart fallback.
+- **Validation at publication (P3.4 correction, FIX 2).** `ChartStore.publish` does not trust a `TrustedChart` because of its type or digest. Before the charts directory is opened, it checks, in order:
+  1. the exact field types: `png` is `bytes` (not `bytearray`, `memoryview` or a subclass); `width` and `height` are `int` (not `bool` or `float`); `sha256` is `str`. Failure raises `TypeError`;
+  2. the SHA-256 digest (`SandboxUnavailableError`);
+  3. the same strict `validate_png_structure` used by stage B, under the store's own `Limits`. This covers size, chunk allowlist, CRC, trailing data, IHDR rules, dimension caps and bounded inflate (`ArtifactRejectedError` with its reason);
+  4. that the declared `width × height` equals the IHDR (`ArtifactRejectedError("bad_ihdr")`).
+- **Content is validated; provenance is not proven.** `TrustedChart` is an ordinary frozen dataclass that any code in the host process can construct. The checks above prove that the bytes being published form a canonical, bounded, structurally valid PNG of the declared size. They do **not** prove that the host encoder (`reencode_png`) produced those bytes. Pillow is not re-run at publication: pixel content is not a structural property, and the extra decode would only add attack surface. Proving provenance would need an unforgeable capability, for example a module-private token or an HMAC key held by the encoder. That is deliberately not added: any in-process attacker could read it anyway, and the same strict structural boundary already applies.
+- **Outcomes of `publish` (P3.4 correction, FIX 3):**
+  - *A path is returned:* the chart is published, its temporary name removed and the directory fsynced.
+  - *`TypeError`, `ValueError`, `ArtifactRejectedError`, or `SandboxUnavailableError` other than the subclass below:* **nothing was published.** This covers invalid input, an unsafe directory, a write or file-fsync failure, a name collision, or missing hard-link support. If the temporary file cannot be removed even after a retry, the message names it.
+  - *`ChartPublishedWithCleanupError` (a `SandboxUnavailableError` subclass with `.published = True`):* `os.link` succeeded, so the chart **is** published, complete and validated at `exc.path`. After that, either:
+    - removing the temporary name failed twice, and `exc.leftover_temp` names it; or
+    - the directory fsync failed, and `exc.directory_synced` is `False`.
+  - After a successful link, the final chart is never deleted or replaced. The store never unlinks any name other than its own random `.tmp-<128-bit>.png`, so another run's chart is never touched. Cleanup failures are reported, never suppressed.
+- **What callers do:**
+  - catch `ChartPublishedWithCleanupError` *before* the generic `SandboxUnavailableError`;
+  - use `exc.path` as the chart and log the warning;
+  - never retry publication under the same name, since that would be refused as "not overwritten";
+  - treat `directory_synced=False` as a durability warning only: the chart may not survive a crash.
+
+  A leftover `.tmp-*.png` is a second hard link to the published chart (same inode, mode 0644, in a directory that only this user can write). Nothing reads or reuses it. An operator may delete it, which removes only that name. The dispatcher is not wired to the store yet; that handling is required when it is (P3.6).
 - **RESIDUAL RISK, stated plainly:**
   - Passing validation does **not** make host PNG decoding risk-free.
   - zlib still inflates attacker data, within bounds.
@@ -1160,6 +1180,17 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Decompression bomb (1 MiB file inflating to 1 GiB, declaring 4096×4096) | rejected in 143 ms |
 | Unit test | peak traced Python allocation < 2 MiB while rejecting a 200 MiB bomb |
 
+**P3.4 security-review corrections** (same environment, uid 0; base `bae643ac`):
+
+| Run | Result |
+|---|---|
+| Base `bae643ac` (before changes) | 945 passed, 13 xfailed, 0 failed |
+| New `test_p34_corrections.py` | 97 passed (FIX 1: 18 untrusted `reject_reason` values through `decode_frame_bytes` and the streaming `decode_frame`, the same values through the encoder, every known reason; FIX 2: 7 invalid PNGs with matching digests, raw Matplotlib output, 6 wrong declared sizes, 12 malformed field types, `bytearray` and `bytes` subclasses, the store's own limits, validation before the directory is opened; FIX 3: persistent and transient temp-removal failure, directory-sync failure, both together, pre-publication failures, a second publication that cannot replace the original, another run's chart under 4 failure scenarios, documentation) |
+| All P3 tests | 772 passed |
+| Mutation checks (throw-away copies; each killed) | unsafe `reject_reason` membership restored; no structure validation at publication; no dimension-metadata check; default limits instead of the store's; no strict field types; cleanup failure suppressed (path returned); a plain pre-publication error after the link; final chart deleted on cleanup failure; directory-fsync failure suppressed; no temp-removal retry; `os.replace` instead of `os.link`; a pre-publication failure leaves its temp |
+| Full suite after the corrections | **1042 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed** (945 + 97) at `71fed85c`; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
 *ESTIMATED, not measured:* an incompressible 4096×4096 RGBA image is about 64 MiB and is refused by the 10 MiB size cap before parsing, so the worst decode cost is bounded by the pixel cap (16.8 Mpx × 4 B ≈ 64 MiB plus encoder buffers). Container start-up costs are still unmeasured (P3.6).
 
 ---
@@ -1191,6 +1222,8 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 13. **Lease teardown suppresses descriptor-close errors.** `InstanceLease._teardown()` ignores `OSError` from `flock(LOCK_UN)` and `os.close` so that release always completes. A close failure is not reported (the descriptor is still released by the kernel on process exit).
 14. **Automated stale-instance reconciliation is disabled** (`reconcile_stale_instances()` raises). Stale and orphan instances are only reported. Enabling it needs a separate review.
 15. **Non-root validation on VE-2 is still mandatory.** Cloud-container evidence (uid 65534/65533) exists only for P3.3. P3.4's chart-store ownership checks were also only exercised as root.
+16. **Chart provenance is not proven at publication** (§10). The store proves that the content is canonical and bounded and that the metadata is consistent. Any in-process code can still construct a `TrustedChart` that skipped the host Pillow re-encode.
+17. **A post-publication cleanup failure can leave a `.tmp-*.png` hard link** to a published chart. It is reported (`ChartPublishedWithCleanupError.leftover_temp`), never reused, and safe to delete. Callers must handle that exception once the store is wired in (P3.6). The failure paths were exercised only by deterministic injection, not by real I/O errors.
 12. **Streamlit version drift** could affect the `runpy` equivalence (L-01, L-03).
 
 **Non-goals for P3:**
@@ -1305,3 +1338,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2.1 + P3.3 | Demo-only `DatasetAuthorizer`, `JobWorkspace` and `InstanceLease` implemented and documented (§9, §11); not wired into production; destructive stale reconciliation disabled; Linux-only claims |
 | rev. 2.1 + P3.3 correction | Run-id collision never deletes an existing run; retryable workspace cleanup (`closing`/`cleaned`); exception-safe lease release with reported failures, metadata-preserving removal order and release/creation serialisation; workspaces own their `runs/` descriptor; early non-root and cross-account evidence (uid 65534/65533); VE-2 non-root run still mandatory |
 | rev. 2.1 + P3.4 | IPX1 frame protocol and strict decoder; attestation policy; host PNG validator with bounded inflate and host re-encode; atomic no-overwrite chart store (`os.link`, full run id); pure supervisor helpers; two new reason codes; residual parser/Pillow risks, lease-teardown error suppression and disabled reconciliation documented; measured host costs |
+| rev. 2.1 + P3.4 corrections | **FIX 1:** `reject_reason` is type-checked before the membership test, so untrusted arrays, objects, numbers and booleans raise `SandboxProtocolError`, not `TypeError`. **FIX 2:** `ChartStore.publish` re-validates field types, digest, strict PNG structure under the store's limits, and declared dimensions; content is validated, provenance is not proven. **FIX 3:** explicit `ChartPublishedWithCleanupError` after a successful link, the final chart is never removed or replaced, one temp-removal retry, directory-fsync failures reported. 97 tests, 12 mutation checks (§10, §17, §19) |
