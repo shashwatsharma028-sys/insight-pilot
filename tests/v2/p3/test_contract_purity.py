@@ -24,6 +24,7 @@ CONTRACT_MODULES = [
     "v2/execution/limits.py",
     "v2/execution/errors.py",
     "v2/execution/results.py",
+    "v2/execution/runtime.py",     # P3.2b: request type and runtime interface
 ]
 ALLOWED_IMPORT_ROOTS = {"dataclasses", "enum", "typing", "re", "config", "v2"}
 ALLOWED_FROM_CONFIG = {"config.feature_flags"}
@@ -56,11 +57,15 @@ def test_contract_module_is_pure(relpath):
 
 
 # Reviewed V2 modules that are NOT pure contracts. Each entry needs its own
-# review; P3.2a added the flags-off launcher (tests/v2/p3/test_launcher_p3.py
-# constrains its imports and behaviour). Executors, runtimes and bindings
-# still do not exist.
+# review: P3.2a added the flags-off launcher (constrained by
+# test_launcher_p3.py); P3.2b added the bootstrap, the executor binding and
+# the dispatcher (constrained by test_bootstrap_p3.py). No container runtime,
+# subprocess executor or supervisor exists.
 REVIEWED_NON_CONTRACT_MODULES = [
-    "v2/launch_app.py",   # P3.2a
+    "v2/launch_app.py",              # P3.2a
+    "v2/execution/bootstrap.py",     # P3.2b
+    "v2/execution/binding.py",       # P3.2b
+    "v2/execution/dispatch.py",      # P3.2b
 ]
 
 
@@ -81,6 +86,8 @@ def test_importing_contracts_loads_no_process_network_llm_or_v1_modules():
         "import v2.execution\n"
         "new = set(sys.modules) - before\n"
         "assert 'v2.launch_app' not in new, 'contracts must not import the launcher'\n"
+        "assert not new & {'v2.execution.bootstrap', 'v2.execution.binding', 'v2.execution.dispatch'}, "
+        "'contracts must not import the bootstrap, binding or dispatcher'\n"
         "roots = {m.split('.')[0] for m in new}\n"
         "print(','.join(sorted(roots)))"
     ) % ROOT

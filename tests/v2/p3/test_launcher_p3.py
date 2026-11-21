@@ -145,7 +145,14 @@ def test_launcher_source_is_minimal():
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for t in targets:   # never assigns attributes of other modules
                 assert not isinstance(t, ast.Attribute), ast.unparse(t)
-    assert imported == {"os", "runpy", "sys", "config.feature_flags", "streamlit"}
+    # P3.2b: the only V2 import is the bootstrap, lazily inside admit(), so
+    # default flags never load any V2 module.
+    assert imported == {"os", "runpy", "sys", "config.feature_flags", "streamlit", "v2.execution"}
+    v2_imports = [(fn.name, node) for fn in tree.body if isinstance(fn, ast.FunctionDef)
+                  for node in ast.walk(fn) if isinstance(node, ast.ImportFrom)
+                  and node.module == "v2.execution"]
+    assert [(name, [a.name for a in node.names]) for name, node in v2_imports] == [("admit", ["bootstrap"])]
+    assert not any(isinstance(n, ast.ImportFrom) and n.module == "v2.execution" for n in tree.body)
     assert "environ[" not in ast.unparse(tree) and "dotenv" not in ast.unparse(tree)
 
 
@@ -711,7 +718,13 @@ def test_launcher_defaults_run_the_app_and_load_no_v2_execution_modules():
 def test_refusal_in_a_fresh_process_never_imports_the_app():
     result = _fresh_process(LAUNCHER, {"IP_FF_SANDBOX_HARDENED": "1", "IP_SANDBOX_BACKEND": "container"})
     assert result["app_ran"] is False
-    assert result["v2"] == [] and result["exceptions"] == []
+    # P3.2b: a hardened request is decided by the V2 bootstrap (and its pure
+    # contracts); the executor binding and the dispatcher are never loaded.
+    allowed = {"v2", "v2.execution", "v2.execution.bootstrap", "v2.execution.errors",
+               "v2.execution.isolation", "v2.execution.limits", "v2.execution.results"}
+    assert set(result["v2"]) <= allowed, set(result["v2"]) - allowed
+    assert "v2.execution.bootstrap" in result["v2"]
+    assert result["exceptions"] == []
     assert len(result["errors"]) == 1 and "IP_FF_SANDBOX_HARDENED" in result["errors"][0]
 
 
