@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **P3.1 (accepted after review) and P3.2a are implemented.** Everything else is a plan and needs separate approval for each stage.
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1 and P3.2a (both accepted after review) and P3.2b are implemented.** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
 **Status labels used throughout:**
 
@@ -287,7 +287,7 @@ Run ids are only *validated* here. Generating them is planned for the dispatcher
 
 ---
 
-## 7. Launcher integration — P3.2a IMPLEMENTED (flags-off boundary); P3.2b PLANNED
+## 7. Launcher integration — P3.2a and P3.2b IMPLEMENTED (no backend yet; hardened mode fails closed)
 
 ### 7.1 Entrypoint — IMPLEMENTED (P3.2a)
 
@@ -384,11 +384,74 @@ The `sys.path` behaviour of `streamlit run` is therefore verified by simulating 
 
 This is evidence from one run, not a committed test.
 
-### 7.1c Still PLANNED for P3.2b
+### 7.1c Bootstrap, binding and dispatcher — IMPLEMENTED (P3.2b)
 
-Bootstrap state machine, executor binding, tripwire, the secure-profile gate message, file-watcher enforcement, deployment-unit checks (§20 Q1), and the FakeRuntime wiring tests L-04 to L-11. In P3.2a, the "stop for any non-default flag" rule already covers hardened mode and the secure profile.
+**Modules:**
 
-### 7.2 Bindings (process-global by design) — PLANNED (P3.2b; nothing is bound in P3.2a)
+| Module | Kind | Role |
+|---|---|---|
+| `v2/execution/runtime.py` | pure contract | `ExecutionRequest` (run id, task id, code, limits; **no dataset path until P3.3**) and the `ExecutionRuntime` protocol (`name`, `isolation`, `is_test_double`, `preflight()`, `execute()`) |
+| `v2/execution/bootstrap.py` | reviewed non-contract | The process-wide, thread-safe (`RLock`) decision point. Modes: `UNINITIALIZED` → `V1_COMPATIBLE` / `HARDENED` / `FAILED` |
+| `v2/execution/binding.py` | reviewed non-contract | The two recorded, reversible rebindings (§7.2) and the V1 tripwire |
+| `v2/execution/dispatch.py` | reviewed non-contract | `HardenedDispatcher`: V1-compatible tuple contract; V1 AST scanner first; injected runtime; fail-closed error handling |
+| `v2/launch_app.py` | reviewed non-contract | `admit()`. With default flags and no initialised bootstrap it takes the exact P3.2a path (nothing V2 imported). Otherwise it calls `bootstrap.ensure_ready()`; once the bootstrap is initialised it stays authoritative for the process. |
+
+**Production decision** (`bootstrap.ensure_ready()`; no runtime parameter; no flag, environment variable or setting can supply one):
+
+| Flags | Result |
+|---|---|
+| All defaults | `V1_COMPATIBLE`: nothing bound; `ui/app.py` runs as in P3.2a |
+| Invalid or unknown | `FAILED`: "Invalid V2 feature-flag configuration" |
+| Hardened + container (exam) | **`FAILED` after every prerequisite is checked and reported**: Streamlit `server.fileWatcherType == "none"`, `server.runOnSave == False`, and a validated container backend. The last one never exists in this build, so the request always fails closed. |
+| Secure profile | `FAILED`: needs the P2 guardrails (`P2_GUARDRAILS_IMPLEMENTED = False`); "a hardened backend alone does not make the application secure" |
+| Any other V2 feature | `FAILED`: "not integrated yet: …" |
+
+**Per run** (every Streamlit rerun, every session):
+
+- `FAILED` is sticky ("restart the application").
+- The flags are re-read and must equal the frozen ones, so **the mode never switches**: `V1_COMPATIBLE` never becomes hardened, and `HARDENED` never silently becomes V1. A `FAILED` state reached from `HARDENED` keeps the binding installed, so the V1 executor stays closed for anything still running.
+- In `HARDENED`: the Streamlit settings are re-checked, and `binding.verify()` runs. Drift is repaired, logged and counted; if repair fails, the process fails.
+
+**Test-only entry points** (`install_for_tests`, `_reset_for_tests`):
+
+- They refuse to run unless `pytest` is loaded.
+- They accept only runtimes declaring `is_test_double = True`.
+- They run the same prerequisite checks as production, plus the runtime's `preflight()`.
+- Static tests assert that they are called nowhere outside `tests/`, and that `binding.install` is reachable only from `install_for_tests`.
+- The only test double is `tests/v2/p3/fakes.FakeRuntime`, which **never executes code**; production code contains no fake runtime.
+
+**Dispatcher contract** (§7.3 table, now IMPLEMENTED for the outcomes a runtime can report):
+
+- Scanner violation → the identical V1 message and tuple; the runtime is not called.
+- Oversized code → failure tuple; the runtime is not called.
+- `SUCCEEDED` → `(True, stdout without CHART_SAVED lines or the V1 default text, None, None)`.
+- `CODE_ERROR` → `(False, stderr, None, V1 classify_error)`.
+- `TIMED_OUT` → V1's exact timeout message.
+- `MEMORY_LIMIT` → "Execution exceeded the memory limit (1024 MiB)."
+- **Any runtime exception** → `SandboxUnavailableError`.
+- Wrong run id, unisolated result, a claimed scanner block, or a chart (artifact extraction does not exist yet) → `SandboxProtocolError`.
+- Nothing ever falls back to V1. The dispatcher source references neither `execute_code` nor `subprocess`.
+
+**Not implemented in P3.2b (deliberately):**
+
+- the concurrency semaphore (belongs to the container backend, P3.6);
+- the instance lease and `atexit` cleanup (P3.3);
+- the dataset authoriser (P3.3);
+- artifacts (P3.4);
+- the deployment-unit invariants beyond the file-watcher settings and the secure-profile gate. Q1 is still open, so `euid`, `.env`, key-inheritance and secrets-file checks are **not** implemented.
+
+**Leak guard** (`tests/v2/p3/leak_guard.py`, autouse for every P3 test):
+
+- `tests/v2/p3` is collected before the P0 tests (including the 13 strict xfails) in the same process.
+- Before and after every P3 test, the guard first undoes the test's own `monkeypatch` changes. It then resets the bootstrap and, if a binding is still installed, the tripwire has unacknowledged hits, the V1 executor identity changed, or the Streamlit server options changed, it **repairs that and fails the test**.
+- Subprocess tests prove three things:
+  1. a deliberate leak is caught and repaired before a following V1 test, which then passes;
+  2. **without** the guard the same leak breaks that V1 test;
+  3. a runtime that "falls back" to the V1 executor fails.
+
+**This is routing, not a security boundary.** Rebinding a Python name decides which function `executor_node` calls; it isolates nothing. Isolation will come only from the container backend (P3.5–P3.7) and must be proven in the validation environment.
+
+### 7.2 Bindings (process-global by design) — IMPLEMENTED (P3.2b; installed only in test mode, since production cannot reach `HARDENED`)
 
 | Binding | Purpose |
 |---|---|
@@ -429,11 +492,17 @@ Bootstrap state machine, executor binding, tripwire, the secure-profile gate mes
 
 ### 7.4 Direct `ui/app.py` launch
 
-**`streamlit run ui/app.py` bypasses all V2 hardening, now and after P3.** V1 cannot detect this without code changes, and V1 code will not be changed. See §20 Q1 for the secure deployment boundary.
+**`streamlit run ui/app.py` bypasses all V2 hardening, now and after P3.** It never imports the launcher or the bootstrap, ignores every `IP_*` variable, and runs generated code in the unisolated V1 subprocess. It is an **unprotected legacy application** and must never be presented as secure, whatever flags are set. V1 cannot detect this without code changes, and V1 code will not be changed.
+
+**Deployment boundary as of P3.2b:**
+
+- The only V2 entry point is `streamlit run v2/launch_app.py`.
+- The hardened launch command is `streamlit run v2/launch_app.py --server.fileWatcherType none --server.runOnSave false --server.address 127.0.0.1`, with `IP_FF_SANDBOX_HARDENED=1` and `IP_SANDBOX_BACKEND=container`. **In this build it always refuses before `ui/app.py` runs**, because no validated container backend exists.
+- No deployment is secure before P2, P5 and P8. See §20 Q1 for the proposed deployment unit (still undecided).
 
 ### 7.5 Secure-profile gate
 
-**P3.2a already refuses the secure profile**, together with every other non-default flag. For P3.2b and later: the launcher holds `P2_GUARDRAILS_IMPLEMENTED = False` and refuses `IP_DEPLOYMENT_PROFILE=secure` with `InsecureConfigurationError` until P2 lands and is validated. P3 testing uses the **P3 isolation configuration**: `exam` profile + `IP_FF_SANDBOX_HARDENED=1` + `IP_SANDBOX_BACKEND=container`.
+**IMPLEMENTED (P3.2b).** The bootstrap holds `P2_GUARDRAILS_IMPLEMENTED = False` and refuses `IP_DEPLOYMENT_PROFILE=secure`, in production and in test mode alike, even with an injected runtime, until P2 lands and is validated. The refusal is a `BootstrapRefused`, shown by the launcher before `ui/app.py` runs. P3 testing uses the **P3 isolation configuration**: `exam` profile + `IP_FF_SANDBOX_HARDENED=1` + `IP_SANDBOX_BACKEND=container`.
 
 ---
 
@@ -772,14 +841,17 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | L-16 | Refusal before `ui/app.py` runs: 8 unsupported and 5 invalid configurations via AppTest (no `run_path` call, one error, no app widgets or state, no LLM calls) and one in a fresh process (no `agent.*` import) | C | **IMPLEMENTED (P3.2a)** |
 | L-17 | 10 reruns: identical page, launcher adds nothing to `sys.path` (ui/app.py's own V1 insert unchanged); a V2 flag appearing mid-session stops the next rerun | C | **IMPLEMENTED (P3.2a)** |
 | L-18 | Launcher source constraints: imports only `os`, `runpy`, `sys`, `config.feature_flags` and `streamlit`; no attribute assignment, `exec`, `eval`, `open`, `setattr`, `dotenv` or environment writes; fixed target path | C | **IMPLEMENTED (P3.2a)** |
-| L-04 | Flags on, FakeRuntime: Path 1 and Path 2 each call the backend once per executor log entry; tripwire never fires | C | PLANNED |
-| L-05 | 20 reruns with bindings: one bootstrap init; identity checked every rerun; no double-wrapping | C | PLANNED (P3.2b) |
-| L-06 | Reload `agent.nodes.executor`, then `sandbox.executor` → tripwire raises; next rerun rebinds | C | PLANNED |
-| L-07 | Call-site census: only `executor_node` calls `execute_code` | C | PLANNED |
-| L-08 | Preflight failure: one error element; app never runs | C | PLANNED (P3.2b; the refusal mechanism exists, see L-16) |
-| L-09 | File watcher on in hardened mode → refused | C | PLANNED |
-| L-10 | Deployment-unit invariants (§20 Q1) → refused if violated | C | PLANNED |
-| L-11 | Two parallel AppTest sessions: no crossed results; ≤ 2 concurrent | C | PLANNED |
+| L-04 | Flags on, FakeRuntime: Path 1 (`analyst_graph.invoke`; also the UI with safe mode off) and Path 2 (the UI approve loop through the launcher) each call the runtime once per executor attempt that passed the V1 scanner; nothing runs before approval; tripwire never fires; no V1 sandbox subprocess is spawned; the code never runs (no GOLDEN output) | C | **IMPLEMENTED (P3.2b)** |
+| L-05 | 15 reruns in hardened test mode: one bootstrap initialisation, binding verified every rerun, 0 repairs | C | **IMPLEMENTED (P3.2b)** |
+| L-06 | Real `importlib.reload` of `agent.nodes.executor` → `executor_node` hits the tripwire (fail closed) → next `ensure_ready` repairs (counted). Reload of `sandbox.executor` → drift detected and repaired. Module dicts fully restored afterwards | C | **IMPLEMENTED (P3.2b)** |
+| L-07 | Call-site census: only `executor_node` calls `execute_code` | C | **IMPLEMENTED (P3.2b)** |
+| L-08 | Runtime preflight failure (simulated attestation mismatch) → `FAILED`, sticky over 3 reruns, one error element, no app widgets, no binding, no LLM calls | C | **IMPLEMENTED (P3.2b)** |
+| L-09 | Hardened path requires `server.fileWatcherType=none` and `server.runOnSave=false`: checked at initialisation and on every run; the V1-compatible path is not affected | C | **IMPLEMENTED (P3.2b)** |
+| L-10 | Deployment-unit invariants (§20 Q1) → refused if violated | C | PLANNED: waits for the Q1 decision. The secure-profile and file-watcher parts are implemented. |
+| L-11 | Concurrency: 16 threads initialise once; 8 parallel `executor_node` calls get independent results and unique run ids; two interleaved AppTest sessions share one hardened mode (one initialisation). The ≤ 2 concurrent-container limit belongs to P3.6 | C | **IMPLEMENTED (P3.2b)** (limit PLANNED) |
+| L-19 | Production fail-closed: hardened (all prerequisites reported), secure profile, other V2 features, invalid flags; sticky; no environment variable can supply a runtime; test-only entry points refuse outside pytest and are never called outside `tests/` | C | **IMPLEMENTED (P3.2b)** |
+| L-20 | Dispatcher: V1 tuple contract for every outcome; any runtime exception → `SandboxUnavailableError`; bad results → `SandboxProtocolError`; never references the V1 executor | C | **IMPLEMENTED (P3.2b)** |
+| L-21 | Leak guard: a deliberate binding leak fails and is repaired before a following V1 test; without the guard the leak breaks that V1 test; a runtime falling back to V1 fails (subprocess pytest runs) | C | **IMPLEMENTED (P3.2b)** |
 | L-12a | Playwright real browser, no LLM: both entry points render identically up to the missing-key error; refusal page with V2 flags (§7.1b) | C | **Run once in P3.2a as uncommitted evidence: identical at all 3 steps; refusal correct.** Committing it as a test is PROPOSED (needs approval) |
 | L-12 | Playwright real browser via a test-only mock-LLM launcher: demo → run → approve → chart `<img>` loads → report present | VE (C wiring-only) | PLANNED (P3.8) |
 | L-13 | Direct `ui/app.py` with hardened flags inside the deployment unit's constraints: documents the bypass; 0 executions when the key is withheld | C | PLANNED |
@@ -831,7 +903,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 |---|---|---|---|
 | **P3.1** | Baseline re-run in a scratch venv; B1 flag rule; pure contracts; this document | C | **IMPLEMENTED** |
 | **P3.2a** | Launcher flags-off compatibility boundary: `prepare_sys_path`, strict flag check (only V1 defaults start), `runpy` execution of the unchanged `ui/app.py`; equivalence and parity tests; `Limits.cpus` finiteness | C | **IMPLEMENTED** |
-| P3.2b | Bootstrap, executor binding, tripwire, file-watcher and deployment-unit checks; FakeRuntime wiring tests. Container always unavailable, so it fails closed. | C | PLANNED |
+| **P3.2b** | Bootstrap (process-wide mode, fail closed), executor binding, V1 tripwire, dispatcher, runtime interface, file-watcher enforcement, secure-profile gate, leak guard; FakeRuntime wiring tests. Container always unavailable, so production fails closed. | C | **IMPLEMENTED** (deployment-unit checks wait for Q1) |
 | P3.3 | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` | C | PLANNED |
 | P3.4 | Frame protocol, strict decoder, host PNG validator, re-encode and store; pure supervisor, runner and canonicaliser functions (no backend) | C | PLANNED |
 | P3.5 | Runtime image: Containerfile, hash lock, staged build, verification. **Dependency review gate.** | VE | PLANNED |
@@ -857,6 +929,17 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | New launcher tests `tests/v2/p3/test_launcher_p3.py` | 49 passed (2 visible AppTest stale-widget workaround warnings) |
 | New `Limits.cpus` tests | 9 passed |
 | Full suite after P3.2a | **494 passed, 13 xfailed, 0 failed, 0 skipped** |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
+
+**P3.2b test results** (same environment):
+
+| Run | Result |
+|---|---|
+| Base `5fe60aa9` (P3.2a, before changes) | 494 passed, 13 xfailed, 0 failed (final P3.2a run) |
+| Existing P3 tests on the new code | 225 passed (224 + one purity case for `runtime.py`) |
+| New `tests/v2/p3/test_bootstrap_p3.py` | 63 passed |
+| Mutation checks (throw-away copies) | V1 fallback on runtime error → 6 failures; silent production downgrade to V1 → 7; mode switching → 2; no tripwire → 8 |
+| Full suite after P3.2b | **558 passed, 13 xfailed, 0 failed, 0 skipped, 0 xpassed**; 3 warnings, all the known Streamlit 1.59 AppTest stale-widget workaround (2 in the P3.2a equivalence flow, 1 in the P0 UI smoke test) |
 | The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
 ---
@@ -965,8 +1048,8 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | # | Decision | Status |
 |---|---|---|
 | D1 | B1: hardened requires container; no process tier | **Approved and IMPLEMENTED (P3.1)** |
-| D2 | Launcher: `runpy` + bootstrap + dispatch binding + V1 tripwire; file watcher off | **P3.2a part IMPLEMENTED** (flags-off `runpy` boundary, refusal); bindings, tripwire and bootstrap are P3.2b and need approval |
-| D3 | Deployment unit (§20 Q1) with launcher self-checks; key withheld from direct launches | **UNRESOLVED:** reviewer to confirm the boundary definition |
+| D2 | Launcher: `runpy` + bootstrap + dispatch binding + V1 tripwire; file watcher off | **IMPLEMENTED (P3.2a + P3.2b)**; binding is active only in test mode until a validated backend exists |
+| D3 | Deployment unit (§20 Q1) with launcher self-checks; key withheld from direct launches | **UNRESOLVED:** reviewer to confirm the boundary definition. P3.2b documents the boundary (§7.4) and implements only the file-watcher and secure-profile checks |
 | D4 | Ownership R1; reject R2, R4 and R5; defer R3 | Conditionally accepted |
 | D5 | tmpfs-only storage, `--read-only-tmpfs=false`, `--ipc=none`, no logs, frame-only extraction | Conditionally accepted |
 | D6 | Custom PID-1 supervisor, same uid, non-dumpable, signals reset (B-2); custom seccomp optional | Conditionally accepted; requires runtime validation |
@@ -994,4 +1077,5 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2 | Reviewer decisions 1–9: B1; launcher reliability; ownership R1; tmpfs storage plus frame extraction; dataset authorisation; two-stage artifact validation; lease-based cleanup; VE claim rule; 8 stages |
 | rev. 2.1 | 11 corrections, all integrated into this document: **B-1** exact flag and doc diffs (§5.2); **B-2** reset PID-1 signal dispositions (§8.4, I-10); **B-3** separate error families (§6); **B-4** dataset tests renamed DS-xx (§16); **B-5** demo-path realpath comparison (§9.2, DS-15); **B-6** strict PNG allowlist applies to stage-A output only (§10, A-21); **B-7** uploader observer return shapes (§9.3, deferred); **B-8** test-only bootstrap reset (§7.2); **B-9** more runtime flags to verify (§8.1); **B-10** P3.4 tests use pure functions only; single backend (§16); **B-11** a tripwire leak fails the V1 xfails loudly (G-06) |
 | rev. 2.1 + P3.1 | Status markers; P3.1 implementation and results; reviewer directions (demo-only datasets; no uploader monkeypatch) and open questions Q1–Q6 |
-| rev. 2.1 + P3.2a | Launcher flags-off boundary implemented (§7.1–7.1c); **correction:** Streamlit magic always inserts one unused import, and wraps nothing in `ui/app.py` (§2.2 item 9, L-03); `sys.path` mirroring of `streamlit run ui/app.py`; `Limits.cpus` finiteness; AppTest limitations and the real-browser proposal |
+| rev. 2.1 + P3.2a | Launcher flags-off boundary implemented (§7.1–7.1b); **correction:** Streamlit magic always inserts one unused import, and wraps nothing in `ui/app.py` (§2.2 item 9, L-03); `sys.path` mirroring of `streamlit run ui/app.py`; `Limits.cpus` finiteness; AppTest limitations and the real-browser proposal |
+| rev. 2.1 + P3.2b | Bootstrap, binding, tripwire, dispatcher and runtime interface implemented (§7.1c, §7.2, §7.5); deployment boundary documented (§7.4); leak guard; **plan refinements:** flags are frozen per process and compared on every run (a mismatch is a sticky refusal, never a mode switch); a `FAILED` state reached from `HARDENED` keeps the binding installed |
