@@ -2,7 +2,7 @@
 
 **Document status:** consolidated, self-contained design. It merges the P3.0 proposal (rev. 1), the revised architecture (rev. 2) and the 11 corrections of rev. 2.1. It does not depend on any other document or conversation, apart from the P0 and P1 documents it cites (`docs/v2/BASELINE.md`, `docs/v2/FEATURE_FLAGS.md`, `docs/security/*`).
 
-**Review status:** the reviewer has conditionally accepted the architecture. **Only P3.1 is authorised and implemented.** Everything else is a plan and needs separate approval for each stage.
+**Review status:** the reviewer has conditionally accepted the architecture. **P3.1 (accepted after review) and P3.2a are implemented.** Everything else is a plan and needs separate approval for each stage.
 
 **Status labels used throughout:**
 
@@ -65,7 +65,7 @@ Verified for P3.0 and again at the start of P3.1 (2026-11-21).
 6. **`rules/*.md` files are injected into LLM prompts**, so P3 documents rule alignment (R-24) in `docs/`, never in `rules/`.
 7. **V1 returns stale charts.** When the current run made none, V1 still returns an existing `{task_id}.png` (`sandbox/executor.py:134-136`). The hardened path will not do this.
 8. **Container CLIs leak host settings by default.** Podman's `--http-proxy` defaults to true. Docker copies `~/.docker/config.json` `proxies` into containers. `containers.conf` can add environment variables and mounts. The effective configuration must therefore be **verified from inside** the container (§8.6 attestation).
-9. **`ui/app.py` does not rely on Streamlit "magic".** An AST scan found 8 non-call expression statements, all docstrings (lines 1, 66, 620, 637, 648, 656, 684, 725); all other bare statements are calls (109).
+9. **`ui/app.py` does not rely on Streamlit "magic".** *Corrected in P3.2a:* the earlier claim that magic leaves the file untouched was not exact. Streamlit 1.59's `magic.add_magic` **always inserts one import** (`import streamlit.runtime.scriptrunner.magic_funcs as __streamlitmagic__`) into the main script. In `ui/app.py` it wraps **no** expression: the 8 non-call expression statements are docstrings (lines 1, 66, 620, 637, 648, 656, 684, 725) and the 109 bare call statements are left alone. Magic applies only to the main script, so under the launcher `ui/app.py` runs without that one unused import, which renders identically. `test_streamlit_magic_does_not_change_the_script` pins exactly this: the transformed AST minus that import equals the original AST.
 10. **Uploads.** `ui/app.py:801-807` writes uploads to `/tmp/{uploaded.name}`. Demo datasets are `ROOT/data/{sales_data,attendance_data,student_data,ecommerce_timeseries}.csv` (`ui/app.py:737-742, 809`). Their full SHA-256 hashes are pinned in `tests/v2/golden/expected/*.json`.
 11. **Missing key.** `utils/llm.py:13` calls `load_dotenv()`. `utils/llm.py:96-100` raises `ValueError("GOOGLE_API_KEY not set…")` when the key is absent.
 
@@ -271,7 +271,7 @@ Package `v2/` lives outside the folders the P0 tests scan. Types and interfaces 
 | `v2/__init__.py` | Package docstring (V1 never imports V2) |
 | `v2/execution/__init__.py` | Re-exports |
 | `v2/execution/isolation.py` | `IsolationLevel` = {`V1_UNISOLATED`, `ROOTLESS_CONTAINER`}. **No process tier.** `.os_isolated` is true only for the container. `isolation_for_backend()` maps `resolve_sandbox_backend()` output (`"legacy"`, `"container"`) and rejects anything else, including `"subprocess"`. |
-| `v2/execution/limits.py` | Frozen `Limits` with the **provisional** values of §8.3; validation of positive values and consistency (chart pixels ≤ side², chart ≤ `/out`, tmpfs sizes < memory); derived `stderr_bytes`, `max_frame_bytes`, `host_deadline_seconds`; `DEFAULT_LIMITS` |
+| `v2/execution/limits.py` | Frozen `Limits` with the **provisional** values of §8.3; validation of positive values (`cpus` must also be finite, so NaN and ±infinity are rejected (P3.2a)) and consistency (chart pixels ≤ side², chart ≤ `/out`, tmpfs sizes < memory); derived `stderr_bytes`, `max_frame_bytes`, `host_deadline_seconds`; `DEFAULT_LIMITS` |
 | `v2/execution/errors.py` | **Policy:** `SandboxPolicyError(RuntimeError)` → `DatasetNotAuthorizedError`, `ArtifactRejectedError(reason)` with a fixed `ARTIFACT_REJECT_REASONS` set (never attacker text). **Infrastructure:** `SandboxUnavailableError(InsecureConfigurationError)` → `SandboxProtocolError` (correction B-3) |
 | `v2/execution/results.py` | `ExecutionOutcome` = {`SUCCEEDED`, `CODE_ERROR`, `TIMED_OUT`, `MEMORY_LIMIT`, `BLOCKED_BY_SCANNER`}; frozen `ExecutionResult` with invariants: run id is 32 lowercase hex; a chart only on success; chart path and reject reason are mutually exclusive; known reasons only; scanner-blocked runs have zero duration; `is_valid_run_id()` |
 
@@ -281,37 +281,114 @@ Package `v2/` lives outside the folders the P0 tests scan. Types and interfaces 
 - they make no `eval`, `exec`, `compile`, `open` or `__import__` calls, and no `system`, `popen`, `spawn`, `fork`, `exec*` or `run_path` attributes;
 - importing `v2.execution` in a fresh interpreter loads no subprocess, socket, ssl, http, urllib, multiprocessing, ctypes, runpy, threading, Streamlit, LangChain/LangGraph, Google, dotenv, pandas or V1 application module;
 - no V1 module imports `v2`;
-- every `.py` file under `v2/` is one of the six reviewed contract modules. This scope guard must be updated deliberately in later stages.
+- every `.py` file under `v2/` is one of the six reviewed contract modules or is listed in `REVIEWED_NON_CONTRACT_MODULES`. This scope guard must be updated deliberately in later stages. P3.2a added exactly one entry, `v2/launch_app.py`, and the fresh-interpreter check also asserts that importing the contracts never imports the launcher.
 
 Run ids are only *validated* here. Generating them is planned for the dispatcher, using `secrets.token_hex(16)`. `uuid` was avoided because it imports `platform` on Python 3.11.
 
 ---
 
-## 7. Launcher integration — PLANNED (P3.2)
+## 7. Launcher integration — P3.2a IMPLEMENTED (flags-off boundary); P3.2b PLANNED
 
-### 7.1 Entrypoint
+### 7.1 Entrypoint — IMPLEMENTED (P3.2a)
 
-```python
-# v2/launch_app.py
-# run: streamlit run v2/launch_app.py --server.fileWatcherType none --server.runOnSave false --server.address 127.0.0.1
-import os, runpy, sys
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-from v2.execution import bootstrap
-bootstrap.ensure_ready()          # idempotent; flags off: returns having done nothing
-runpy.run_path(os.path.join(ROOT, "ui", "app.py"), run_name="__main__")
-```
+`v2/launch_app.py` (run with `streamlit run v2/launch_app.py`) does three things on **every** script run, including reruns:
 
-**How it runs `ui/app.py`:**
+1. **`prepare_sys_path()`.** `streamlit run X` puts X's folder first on `sys.path`: `v2/` for the launcher, `ui/` for the original command. The launcher removes the `v2/` entry, adds `ui/`, and makes the repository root importable (for `config.feature_flags`). It is idempotent, so reruns do not grow `sys.path`. Import resolution of `agent`, `sandbox`, `utils`, `config`, `app`, `streamlit`, `pandas`, `v2` and `tests`, and the de-duplicated directory order, equal those of `streamlit run ui/app.py` (tested). Top-level names such as `execution` and `launch_app` do not become importable.
+2. **`check_flags()`.** `load_flags()` with strict parsing. The app starts **only if `FeatureFlags.is_v1_default`**. Any other value raises `LaunchRefused`, and the launcher renders one `st.error` naming the variables, then calls `st.stop()`. This covers hardened execution, the secure profile, guardrails, tracing, verifier, HITL v2, orchestrator v2, parallel tasks, a live LLM budget, and any invalid or unknown flag. **`ui/app.py` is never executed for such a request, and the V1 executor is never a fallback.**
+3. **`run_app()`.** `runpy.run_path(APP_PATH, run_name="__main__")`, where `APP_PATH` is the fixed path `<root>/ui/app.py`. No environment variable or argument can change it.
 
-- Streamlit executes the launcher as its main script on every run and rerun.
-- `runpy.run_path` compiles and executes the unmodified `ui/app.py` in a fresh namespace with `__file__` set to `ui/app.py`, so the app's `sys.path.insert` and its `data_dir` resolve exactly as under a direct launch.
-- `st.stop()` (`StopException`) and `st.rerun()` (`RerunException`) are ordinary exceptions and propagate through `run_path` to Streamlit's runner.
-- On the success path the launcher renders nothing, so `st.set_page_config` stays the first Streamlit command. On failure it renders `st.error` and calls `st.stop()`, so the app never runs.
-- Streamlit magic applies only to the main script, and `ui/app.py` has no magic-dependent statements (§2.2 item 9). Tests L-01 and L-03 enforce this.
+What it does **not** do in P3.2a: rebind or replace any function, add a tripwire, read or load secrets, start processes or containers, or import `v2.execution`.
 
-### 7.2 Bindings (process-global by design)
+**Execution semantics, compared with Streamlit's own main-script execution by probe scripts (tested):**
+
+| Property | Streamlit runs `ui/app.py` directly | Launcher + `runpy` |
+|---|---|---|
+| `__name__` | `"__main__"` | `"__main__"` |
+| `__file__` | the script path | absolute `ui/app.py` |
+| `sys.modules["__main__"]` is the script's globals | yes | yes (runpy's temporary module; restored afterwards) |
+| `sys.argv[0]` | the script path | `ui/app.py` while it runs (runpy) |
+| Working directory | unchanged | unchanged (the launcher never changes directory) |
+| `st.session_state` | shared per session | shared per session |
+| `st.stop()` / `st.rerun()` | Streamlit control exceptions | propagate through `run_path` unchanged |
+| Magic | applied (adds one unused import) | not applied to `ui/app.py` (§2.2 item 9) |
+| `pages/` discovery | next to the main script | neither `ui/pages` nor `v2/pages` exists (tested) |
+
+**Known differences, none of which affects behaviour:**
+
+- tracebacks of *uncaught* exceptions contain two extra frames (launcher and runpy);
+- Streamlit's file watcher watches `v2/` instead of `ui/` (development-time "rerun on save" only);
+- widget IDs are internal and may differ, so they are excluded from comparison; keyed widgets and `session_state` keys are identical.
+
+### 7.1a How the equivalence is verified — IMPLEMENTED (P3.2a)
+
+`tests/v2/p3/test_launcher_p3.py` drives **both** `ui/app.py` and `v2/launch_app.py` with Streamlit `AppTest`, in independent runs. Each run gets its own output folders, lesson store and token counters; one scripted mock LLM is used, and its call log is cleared between runs.
+
+**What is compared after every step:**
+
+- the **entire element tree**: every element's full protobuf, in tree order;
+- the exceptions shown;
+- LLM calls per skill;
+- the app's `session_state` keys, with `agent_state` reduced through `normalize_run` from the golden harness.
+
+**Normalisations, all minimal and justified:**
+
+- the per-run output folder is replaced by `<OUT>`;
+- wall-clock timestamps are masked;
+- widget `id`/`formId` are dropped;
+- the media URLs of exactly the three report download buttons are masked, because those files embed generation timestamps and random notebook cell ids that differ between *any* two runs. The report files themselves are then compared: Markdown and notebook text after the same normalisation, and the PDF by header and page count, since its compressed streams contain the timestamp.
+
+Chart images are compared **byte for byte**, and chart media URLs are not masked.
+
+**Flows:**
+
+- demo selection → planning → approval → execution with retries (sales_t1 recovers; sales_t4 is blocked by the V1 scanner four times) → reports → all 7 results pages → follow-up chat;
+- plan edit → replanning;
+- discard;
+- safe mode off (the LangGraph graph path, Path 1).
+
+**Golden parity through the launcher:** the approve flow reproduces the committed `sales_ui_approve_safe_mode_on` snapshot, and the safe-mode-off flow (retries set to 2) reproduces the committed `sales_graph_safe_mode_off` snapshot. Snapshots are compared with `IP_UPDATE_GOLDEN` forcibly unset and are never regenerated.
+
+**Mutation checks** (throw-away copies of the tree, P3.2a):
+
+- one extra element rendered by the launcher fails equivalence at the first step;
+- ignoring non-default flags fails all 17 unsupported-feature refusal tests;
+- keeping `v2/` on `sys.path` fails the import-resolution test.
+
+### 7.1b What AppTest cannot verify, and the proposed real-browser test
+
+AppTest runs scripts in-process. It does **not** exercise:
+
+- the real `streamlit run` bootstrap (`_fix_sys_path`, CLI argument handling, config loading from the working directory);
+- the Tornado/WebSocket server and real browser sessions, including several concurrent tabs;
+- the file watcher;
+- real page-config and HTML/CSS rendering in a browser;
+- the Streamlit 1.59 AppTest stale-widget defect, which the tests work around exactly like the P0 UI tests, with a visible warning.
+
+The `sys.path` behaviour of `streamlit run` is therefore verified by simulating `_fix_sys_path` in a test, not by a real server.
+
+**Real-browser check (L-12a): run once in P3.2a as uncommitted evidence; committing it as a test needs approval:**
+
+- Playwright with headless Chromium starts `streamlit run ui/app.py` and `streamlit run v2/launch_app.py --server.headless true --server.address 127.0.0.1` on two free ports, with `GOOGLE_API_KEY` unset and no `.env`.
+- It compares the rendered page text and structure for: initial load, demo-dataset selection and preview, and "Run autonomous analysis", which ends in the identical missing-key error **before** any LLM call (`utils/llm.py:96-100`), so no Gemini call is possible.
+- It also starts the launcher with `IP_FF_SANDBOX_HARDENED=1` and `IP_SANDBOX_BACKEND=container` and asserts the refusal page.
+- The approval and execution flows in a real browser need the test-only mock-LLM launcher (decision D13).
+
+**One-off result (2026-11-21, this cloud container, Streamlit 1.59.2, headless Chromium 1243 via Playwright, script kept outside the repository):**
+
+| Step | Visible page text | Count of each `data-testid` element | Page title |
+|---|---|---|---|
+| initial load | identical (984 characters) | identical | `InsightPilot`, both |
+| demo dataset selected | identical (1,115 characters) | identical | identical |
+| "Run autonomous analysis" with no key | identical (2,942 characters, including the missing-key error and its traceback) | identical | identical |
+| launcher with `IP_FF_SANDBOX_HARDENED=1`, `IP_SANDBOX_BACKEND=container` | refusal message naming both variables; **no app content rendered**; the refusal also printed to the server's stderr | — | — |
+
+This is evidence from one run, not a committed test.
+
+### 7.1c Still PLANNED for P3.2b
+
+Bootstrap state machine, executor binding, tripwire, the secure-profile gate message, file-watcher enforcement, deployment-unit checks (§20 Q1), and the FakeRuntime wiring tests L-04 to L-11. In P3.2a, the "stop for any non-default flag" rule already covers hardened mode and the secure profile.
+
+### 7.2 Bindings (process-global by design) — PLANNED (P3.2b; nothing is bound in P3.2a)
 
 | Binding | Purpose |
 |---|---|
@@ -356,7 +433,7 @@ runpy.run_path(os.path.join(ROOT, "ui", "app.py"), run_name="__main__")
 
 ### 7.5 Secure-profile gate
 
-The launcher holds `P2_GUARDRAILS_IMPLEMENTED = False` and refuses `IP_DEPLOYMENT_PROFILE=secure` with `InsecureConfigurationError` until P2 lands and is validated. P3 testing uses the **P3 isolation configuration**: `exam` profile + `IP_FF_SANDBOX_HARDENED=1` + `IP_SANDBOX_BACKEND=container`.
+**P3.2a already refuses the secure profile**, together with every other non-default flag. For P3.2b and later: the launcher holds `P2_GUARDRAILS_IMPLEMENTED = False` and refuses `IP_DEPLOYMENT_PROFILE=secure` with `InsecureConfigurationError` until P2 lands and is validated. P3 testing uses the **P3 isolation configuration**: `exam` profile + `IP_FF_SANDBOX_HARDENED=1` + `IP_SANDBOX_BACKEND=container`.
 
 ---
 
@@ -679,23 +756,31 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | F-04 | Hardening off → `"legacy"` without consulting availability | C | **IMPLEMENTED** |
 | F-05 | Resolver never returns `"subprocess"` even when "available"; error is still a `FeatureFlagError` | C | **IMPLEMENTED** |
 | F-06 | Docs state the container requirement and the `ui/app.py` bypass | C | **IMPLEMENTED** |
-| F-07 | Launcher refuses the secure profile (P2 missing) | C | PLANNED (P3.2) |
+| F-07 | Launcher refuses the secure profile (P2 missing) | C | **IMPLEMENTED in P3.2a** as part of the refusal of every non-default flag (`test_unsupported_v2_features_are_refused[secure_profile]`, `test_refusal_stops_before_ui_app_executes[secure_profile]`) |
 | **CT-01** | Exactly two isolation levels, no process tier; only the container is OS-isolated; backend mapping rejects `"subprocess"` | C | **IMPLEMENTED** (`test_contracts_p3.py`) |
 | CT-02 | `Limits`: frozen, positive, consistent; derived frame budget; default wall clock = V1 `MAX_EXECUTION_TIME` | C | **IMPLEMENTED** |
 | CT-03 | Error families separate; fixed artifact reason set | C | **IMPLEMENTED** |
 | CT-04 | `ExecutionResult` invariants; run-id format | C | **IMPLEMENTED** |
-| CT-05 | Contract purity (AST allowlist, fresh-interpreter import set, P3.1 file scope); no V1 module imports `v2` | C | **IMPLEMENTED** (`test_contract_purity.py`) |
-| **L-01** | AppTest `v2/launch_app.py` vs `ui/app.py`, flags off: load, demo, run → approval, approve, 7 pages, chat. Identical elements and `session_state`; normalised run equals the **committed** `sales_ui_approve_safe_mode_on` | C | PLANNED (P3.2) |
-| L-02 | Flags off: original identities; no V2 runtime modules loaded | C | PLANNED |
-| L-03 | AST invariant: `ui/app.py` has only docstrings and calls as bare statements | C | PLANNED |
+| CT-05 | Contract purity (AST allowlist, fresh-interpreter import set, reviewed-file scope, now including `v2/launch_app.py`); no V1 module imports `v2`; contracts never import the launcher | C | **IMPLEMENTED** (`test_contract_purity.py`) |
+| CT-06 | `Limits.cpus` rejects NaN and ±infinity; accepts positive finite numbers | C | **IMPLEMENTED (P3.2a)** |
+| **L-01** | AppTest `v2/launch_app.py` vs `ui/app.py`, flags off, 4 flows (§7.1a): identical element trees, exceptions, LLM calls and `session_state` at every step; equivalent report files; byte-identical charts | C | **IMPLEMENTED (P3.2a)** (`test_launcher_is_equivalent_to_ui_app`) |
+| L-01b | Golden parity through the launcher: `sales_ui_approve_safe_mode_on` (approve; retries; golden answers; MD, PDF, notebook) and `sales_graph_safe_mode_off` (graph path) | C | **IMPLEMENTED (P3.2a)** |
+| L-02 | Flags off: `sandbox.executor.execute_code` (and its code object), `agent.nodes.executor.execute_code`, `executor_node`, `streamlit.file_uploader` and `runpy.run_path` identities unchanged after a full run; fresh-process checks: `ui/app.py` imports no `v2` and no flags; the launcher loads no `v2.execution` | C | **IMPLEMENTED (P3.2a)** |
+| L-03 | Magic invariant: Streamlit's transform of `ui/app.py` (and of the launcher) differs only by its own inserted import | C | **IMPLEMENTED (P3.2a)** (replaces the earlier "only docstrings and calls" wording) |
+| L-14 | Import resolution equals `streamlit run ui/app.py` (simulated `_fix_sys_path`); idempotent across reruns; no `pages/` folders | C | **IMPLEMENTED (P3.2a)** |
+| L-15 | `runpy` execution semantics equal Streamlit's main-script semantics (probe scripts: `__name__`, `__file__`, `__main__`, cwd, `st.stop`, `st.rerun`, session state); `__main__` and `argv[0]` restored | C | **IMPLEMENTED (P3.2a)** |
+| L-16 | Refusal before `ui/app.py` runs: 8 unsupported and 5 invalid configurations via AppTest (no `run_path` call, one error, no app widgets or state, no LLM calls) and one in a fresh process (no `agent.*` import) | C | **IMPLEMENTED (P3.2a)** |
+| L-17 | 10 reruns: identical page, launcher adds nothing to `sys.path` (ui/app.py's own V1 insert unchanged); a V2 flag appearing mid-session stops the next rerun | C | **IMPLEMENTED (P3.2a)** |
+| L-18 | Launcher source constraints: imports only `os`, `runpy`, `sys`, `config.feature_flags` and `streamlit`; no attribute assignment, `exec`, `eval`, `open`, `setattr`, `dotenv` or environment writes; fixed target path | C | **IMPLEMENTED (P3.2a)** |
 | L-04 | Flags on, FakeRuntime: Path 1 and Path 2 each call the backend once per executor log entry; tripwire never fires | C | PLANNED |
-| L-05 | 20 reruns: one bootstrap init; identity checked every rerun; no double-wrapping | C | PLANNED |
+| L-05 | 20 reruns with bindings: one bootstrap init; identity checked every rerun; no double-wrapping | C | PLANNED (P3.2b) |
 | L-06 | Reload `agent.nodes.executor`, then `sandbox.executor` → tripwire raises; next rerun rebinds | C | PLANNED |
 | L-07 | Call-site census: only `executor_node` calls `execute_code` | C | PLANNED |
-| L-08 | Preflight failure: one error element; app never runs | C | PLANNED |
+| L-08 | Preflight failure: one error element; app never runs | C | PLANNED (P3.2b; the refusal mechanism exists, see L-16) |
 | L-09 | File watcher on in hardened mode → refused | C | PLANNED |
 | L-10 | Deployment-unit invariants (§20 Q1) → refused if violated | C | PLANNED |
 | L-11 | Two parallel AppTest sessions: no crossed results; ≤ 2 concurrent | C | PLANNED |
+| L-12a | Playwright real browser, no LLM: both entry points render identically up to the missing-key error; refusal page with V2 flags (§7.1b) | C | **Run once in P3.2a as uncommitted evidence: identical at all 3 steps; refusal correct.** Committing it as a test is PROPOSED (needs approval) |
 | L-12 | Playwright real browser via a test-only mock-LLM launcher: demo → run → approve → chart `<img>` loads → report present | VE (C wiring-only) | PLANNED (P3.8) |
 | L-13 | Direct `ui/app.py` with hardened flags inside the deployment unit's constraints: documents the bypass; 0 executions when the key is withheld | C | PLANNED |
 | **DS-01/02** | Demo pins; tampered copy refused; pins equal the golden JSON | C | PLANNED (P3.3) |
@@ -745,7 +830,8 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | Stage | Scope | Environment | Status |
 |---|---|---|---|
 | **P3.1** | Baseline re-run in a scratch venv; B1 flag rule; pure contracts; this document | C | **IMPLEMENTED** |
-| P3.2 | Launcher, bootstrap, bindings, tripwire, secure gate, deployment-unit checks. Container always unavailable, so it fails closed. | C | PLANNED |
+| **P3.2a** | Launcher flags-off compatibility boundary: `prepare_sys_path`, strict flag check (only V1 defaults start), `runpy` execution of the unchanged `ui/app.py`; equivalence and parity tests; `Limits.cpus` finiteness | C | **IMPLEMENTED** |
+| P3.2b | Bootstrap, executor binding, tripwire, file-watcher and deployment-unit checks; FakeRuntime wiring tests. Container always unavailable, so it fails closed. | C | PLANNED |
 | P3.3 | Demo-only `DatasetAuthorizer`, instance lease, `JobWorkspace` | C | PLANNED |
 | P3.4 | Frame protocol, strict decoder, host PNG validator, re-encode and store; pure supervisor, runner and canonicaliser functions (no backend) | C | PLANNED |
 | P3.5 | Runtime image: Containerfile, hash lock, staged build, verification. **Dependency review gate.** | VE | PLANNED |
@@ -762,6 +848,16 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | New `tests/v2/p3` | 166 passed (F-02…F-06, CT-01…CT-05) |
 | Full suite after P3.1 | **436 passed, 13 xfailed, 0 failed, 0 skipped** |
 | Golden snapshots | byte-identical; never regenerated |
+
+**P3.2a test results** (same environment):
+
+| Run | Result |
+|---|---|
+| Base `147f8340` (P3.1, before changes) | 436 passed, 13 xfailed, 0 failed |
+| New launcher tests `tests/v2/p3/test_launcher_p3.py` | 49 passed (2 visible AppTest stale-widget workaround warnings) |
+| New `Limits.cpus` tests | 9 passed |
+| Full suite after P3.2a | **494 passed, 13 xfailed, 0 failed, 0 skipped** |
+| The 13 V1 strict-xfails; golden snapshots | unchanged; never regenerated |
 
 ---
 
@@ -869,7 +965,7 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | # | Decision | Status |
 |---|---|---|
 | D1 | B1: hardened requires container; no process tier | **Approved and IMPLEMENTED (P3.1)** |
-| D2 | Launcher: `runpy` + bootstrap + dispatch binding + V1 tripwire; file watcher off | Conditionally accepted; P3.2 needs approval |
+| D2 | Launcher: `runpy` + bootstrap + dispatch binding + V1 tripwire; file watcher off | **P3.2a part IMPLEMENTED** (flags-off `runpy` boundary, refusal); bindings, tripwire and bootstrap are P3.2b and need approval |
 | D3 | Deployment unit (§20 Q1) with launcher self-checks; key withheld from direct launches | **UNRESOLVED:** reviewer to confirm the boundary definition |
 | D4 | Ownership R1; reject R2, R4 and R5; defer R3 | Conditionally accepted |
 | D5 | tmpfs-only storage, `--read-only-tmpfs=false`, `--ipc=none`, no logs, frame-only extraction | Conditionally accepted |
@@ -880,7 +976,7 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | D10 | Two concurrent containers per instance; 120 s queue wait | Conditionally accepted |
 | D11 | VE-1 probe first, plus the VE-2 VM definition; who runs VE-2 | **Open** |
 | D12 | Image base and contents (§8.7) | P3.5 review gate |
-| D13 | Test-only mock-LLM launcher for Playwright | Open (P3.8) |
+| D13 | Test-only mock-LLM launcher for Playwright | Open (P3.8); a no-LLM real-browser check (L-12a) is proposed separately |
 | D14 | Scratch venv for the baseline in the cloud session only | **Approved and done (P3.1)** |
 | D15 | Policy and infrastructure failures raise; no retries, no fallback | Contract IMPLEMENTED (error families) |
 | D16 | Stages P3.1–P3.8 with review gates | Conditionally accepted |
@@ -898,3 +994,4 @@ P3 isolates TB3 only. TB1, TB2, TB4 and TB5 (P2) and approval enforcement (P8) r
 | rev. 2 | Reviewer decisions 1–9: B1; launcher reliability; ownership R1; tmpfs storage plus frame extraction; dataset authorisation; two-stage artifact validation; lease-based cleanup; VE claim rule; 8 stages |
 | rev. 2.1 | 11 corrections, all integrated into this document: **B-1** exact flag and doc diffs (§5.2); **B-2** reset PID-1 signal dispositions (§8.4, I-10); **B-3** separate error families (§6); **B-4** dataset tests renamed DS-xx (§16); **B-5** demo-path realpath comparison (§9.2, DS-15); **B-6** strict PNG allowlist applies to stage-A output only (§10, A-21); **B-7** uploader observer return shapes (§9.3, deferred); **B-8** test-only bootstrap reset (§7.2); **B-9** more runtime flags to verify (§8.1); **B-10** P3.4 tests use pure functions only; single backend (§16); **B-11** a tripwire leak fails the V1 xfails loudly (G-06) |
 | rev. 2.1 + P3.1 | Status markers; P3.1 implementation and results; reviewer directions (demo-only datasets; no uploader monkeypatch) and open questions Q1–Q6 |
+| rev. 2.1 + P3.2a | Launcher flags-off boundary implemented (§7.1–7.1c); **correction:** Streamlit magic always inserts one unused import, and wraps nothing in `ui/app.py` (§2.2 item 9, L-03); `sys.path` mirroring of `streamlit run ui/app.py`; `Limits.cpus` finiteness; AppTest limitations and the real-browser proposal |

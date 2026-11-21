@@ -1,13 +1,13 @@
 # InsightPilot V2 feature flags
 
-Defined in `config/feature_flags.py`. **As of P3.1, nothing in the application reads these flags.** The module exists so later phases share one strict, tested contract. With no `IP_*` variables set, the app behaves exactly like the examination build (`streamlit run ui/app.py`).
+Defined in `config/feature_flags.py`. **The V1 application (`ui/app.py`, `agent/`, `sandbox/`, `utils/`) never reads these flags.** As of P3.2a the only reader is the V2 launcher `v2/launch_app.py`, and it only uses them to decide whether to start. The module exists so later phases share one strict, tested contract. With no `IP_*` variables set, the app behaves exactly like the examination build (`streamlit run ui/app.py`).
 
 ## Rules
 
 - **Default off.** Every flag defaults to V1 behaviour.
 - **Strict parsing.** An invalid value (`IP_FF_TRACING=maybe`) or an unknown variable with a reserved prefix (`IP_FF_`, `IP_SANDBOX_`, `IP_HITL_`, for example the typo `IP_FF_VERIFER`) raises `FeatureFlagError`. Nothing silently falls back to a default.
 - **No unsafe fallback.** `IP_FF_SANDBOX_HARDENED=1` requires `IP_SANDBOX_BACKEND=container` in every profile; there is no hardened subprocess mode. Any other combination raises `InsecureConfigurationError`. If the container backend is unavailable, `resolve_sandbox_backend()` raises `InsecureConfigurationError`. It never returns the legacy executor.
-- **Launch command.** `streamlit run ui/app.py` is pure V1 and ignores every `IP_*` variable, now and after P3. The planned V2 launcher (`v2/launch_app.py`, P3.2, not yet implemented) will be the only entry point that honours these flags. See `docs/v2/P3_SECURE_EXECUTION_DESIGN.md`.
+- **Launch command.** `streamlit run ui/app.py` is pure V1 and ignores every `IP_*` variable, now and after P3; it bypasses all V2 checks. `streamlit run v2/launch_app.py` (P3.2a) runs the unchanged `ui/app.py` only when every flag is at its V1-compatible default. Any other value (hardened execution, the secure profile, guardrails, tracing, verifier, HITL v2, orchestrator v2, a live LLM budget) or any invalid flag makes it stop **before** `ui/app.py` runs, with an error naming the variables. It never falls back to the V1 executor for a V2 request. See `docs/v2/P3_SECURE_EXECUTION_DESIGN.md`.
 - **Secure profile.** `IP_DEPLOYMENT_PROFILE=secure` only starts with OS/container isolation and enforced guardrails, and it rejects in-memory HITL checkpointing (which is for tests only).
 
 ## Flags
