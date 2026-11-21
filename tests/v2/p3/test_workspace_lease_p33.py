@@ -351,7 +351,7 @@ def test_releasing_one_instance_never_touches_another_live_instance(root):
     ws_b.write_code("b = 1")
     with JobWorkspace.create(a) as ws_a:
         ws_a.write_code("a = 1")
-    assert a.release() == {"released": True, "removed": True, "remaining_runs": []}
+    assert a.release() == {"released": True, "removed": True, "remaining_runs": [], "error": None}
     assert ws_b.inputs() == ["code.py"]
     assert os.path.isdir(os.path.join(root, "instances", b.instance_id))
     states = {r["entry"]: r["state"] for r in inspect_instances(root=root)}
@@ -365,7 +365,7 @@ def test_release_with_active_runs_leaves_everything_in_place(root):
     ws = JobWorkspace.create(held)
     ws.write_code("x = 1")
     report = held.release()
-    assert report == {"released": True, "removed": False, "remaining_runs": [ws.run_id]}
+    assert report == {"released": True, "removed": False, "remaining_runs": [ws.run_id], "error": None}
     assert os.path.isfile(os.path.join(ws.input_dir, "code.py"))
     states = {r["entry"]: r["state"] for r in inspect_instances(root=root)}
     assert states == {held.instance_id: "stale"}      # reported, not deleted
@@ -472,11 +472,12 @@ def test_lease_module_has_no_container_or_deletion_of_other_instances():
     tree = ast.parse(src)
     calls = {getattr(n.func, "attr", getattr(n.func, "id", None)) for n in ast.walk(tree) if isinstance(n, ast.Call)}
     assert "rmtree" not in calls and "subprocess" not in src and "podman" not in src and "docker" not in src
-    # The only deletions are of this instance's own lease files (release, failed acquire).
+    # The only deletions are of this instance's own lease files (release via
+    # _remove_own_directory, and a failed acquire).
     fn_with_deletes = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
                        for n in ast.walk(fn) if isinstance(n, ast.Call)
                        and getattr(n.func, "attr", None) in ("unlink", "rmdir", "remove")}
-    assert fn_with_deletes == {"release", "_remove_own_instance_dir"}
+    assert fn_with_deletes == {"_remove_own_directory", "_remove_own_instance_dir"}
 
 
 def test_inspection_with_no_instances_directory_is_empty(root):
