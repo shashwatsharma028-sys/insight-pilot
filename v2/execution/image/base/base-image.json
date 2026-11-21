@@ -1,0 +1,94 @@
+{
+ "base_contents_amd64": {
+  "absent": [
+   "/usr/bin/gcc",
+   "/usr/bin/cc",
+   "/usr/bin/make",
+   "/usr/bin/curl",
+   "/usr/bin/wget"
+  ],
+  "config": {
+   "Cmd": [
+    "python3"
+   ],
+   "Entrypoint": null,
+   "ExposedPorts": null,
+   "User": "",
+   "Volumes": null
+  },
+  "ensurepip_bundled": [
+   "pip-24.0-py3-none-any.whl",
+   "setuptools-79.0.1-py3-none-any.whl"
+  ],
+  "entries": 7258,
+  "setid_files": [
+   "/usr/bin/chage",
+   "/usr/bin/chfn",
+   "/usr/bin/chsh",
+   "/usr/bin/expiry",
+   "/usr/bin/gpasswd",
+   "/usr/bin/mount",
+   "/usr/bin/newgrp",
+   "/usr/bin/passwd",
+   "/usr/bin/su",
+   "/usr/bin/umount",
+   "/usr/sbin/unix_chkpwd"
+  ],
+  "site_packages": [
+   "README.txt",
+   "_distutils_hack",
+   "distutils-precedence.pth",
+   "packaging",
+   "packaging-26.3.dist-info",
+   "pip",
+   "pip-24.0.dist-info",
+   "pkg_resources",
+   "setuptools",
+   "setuptools-79.0.1.dist-info",
+   "wheel",
+   "wheel-0.46.3.dist-info"
+  ],
+  "usr_local_bin": [
+   "2to3",
+   "2to3-3.11",
+   "idle",
+   "idle3",
+   "idle3.11",
+   "pip",
+   "pip3",
+   "pip3.11",
+   "pydoc",
+   "pydoc3",
+   "pydoc3.11",
+   "python",
+   "python-config",
+   "python3",
+   "python3-config",
+   "python3.11",
+   "python3.11-config",
+   "wheel"
+  ]
+ },
+ "debian": "bookworm",
+ "index_digest": "sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39",
+ "method": "Anonymous pull token from auth.docker.io; GET registry-1.docker.io/v2/library/python/manifests/<tag>. The Docker-Content-Digest header equalled sha256(body). Per-platform manifests and config blobs were fetched by digest, and their SHA-256 matched. The floating tag 3.11-slim-bookworm resolved to the same index digest at verification time. amd64 layers were downloaded and verified by digest, and their tar member lists were inspected without extraction (base_contents_amd64). The files in this directory are the verified bytes; tests re-check the whole digest chain offline.",
+ "platforms": {
+  "amd64": {
+   "compressed_bytes": 47616215,
+   "config": "sha256:cf2dad23925ed51a00735f57606b2998aedf4705a1634cb9ae1053b5c145d5ba",
+   "created": "2026-11-05T08:05:13.883471956Z",
+   "layers": 4,
+   "manifest": "sha256:e8c69d86735f6df3efa06b324694fe51f0422785f83a3bd463052636c2421944"
+  },
+  "arm64": {
+   "compressed_bytes": 47284873,
+   "config": "sha256:979e604d0e9885d9049fd50bd11344aa4a9d17c0ee304db804154a84a6512f3a",
+   "created": "2026-11-05T08:15:07.147068721Z",
+   "layers": 4,
+   "manifest": "sha256:464bee9ac10a34b0c86031f12d94d7ccc4643725773b23eff4076305fafab420"
+  }
+ },
+ "python_version": "3.11.18",
+ "reference": "docker.io/library/python:3.11.18-slim-bookworm",
+ "verified_on": "2026-11-21"
+}
