@@ -73,7 +73,7 @@ flowchart TB
 | **TB1** User / data → app | Browser upload, text inputs | Streamlit XSRF protection (default on); `.csv` type filter | No auth, binds all interfaces (R-18); file name unsanitised (R-06, R-07); no size or shape limits (R-16) |
 | **TB2** App ↔ LLM | Prompts and responses | Plan JSON parsed and fields defaulted (`planner.py:60-94`) | Data and instructions not separated (R-10); output trusted as code and HTML (R-12, R-13); no task cap (R-16) |
 | **TB3** App ↔ generated code | Subprocess | 30 s timeout; AST denylist; separate process | Same user, same environment, no FS/network/resource isolation (R-02 to R-05, R-17); wrapper interpolation (R-06); stdout trusted (R-20) |
-| **TB4** App → browser | HTML rendering | `html.escape` in `df_preview_html` and `md_inline` | 15 unescaped sites (R-13); Markdown in status messages (R-22) |
+| **TB4** App → browser | HTML rendering | `html.escape` in `df_preview_html` and `md_inline` | 15 sites insert untrusted text unescaped (R-13; XSS not demonstrated); Markdown in status messages (R-22) |
 | **TB5** Persistent stores | Lessons, reports, exports | `.gitignore` for outputs; LESSONS_DIR override for tests | Free-text lessons re-enter prompts (R-11); exports leak paths and contain unsandboxed code (R-14, R-15) |
 | **TB6** Source repository | Public GitHub | `.env` ignored *now* | Credential in history (R-01) |
 
@@ -137,7 +137,9 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 | I | Arbitrary file read; network exfiltration | sandbox | R-04, R-05 | Confirmed-test |
 | I | Tracebacks, paths, data excerpts in UI and exports; samples sent to Gemini | UI, report | R-14 | Confirmed-code |
 | I | Cross-session reuse of chart, report and upload files | shared state | R-18 | Confirmed-code |
-| I | Remote-image beacons through injected HTML or Markdown | UI | R-13, R-22 | Plausible |
+| S / I | Untrusted text inserted **unescaped** into UI HTML (15 sites), enabling spoofed UI or remote-image beacons *if* the browser renders it | UI | R-13 | Confirmed-code (unescaped insertion); rendering not verified |
+| I | Remote-image beacons through Markdown in status messages | UI | R-22 | Plausible |
+| E | Browser-executable XSS through injected markup | UI | R-13 | **Not demonstrated**: no payload executed; sanitisation unknown |
 | **D**enial of service | Memory, disk or process exhaustion by generated code | sandbox | R-17 | Confirmed-test (memory) |
 | D | Unbounded tasks, retries, prompt growth and provider back-off | planner, LLM client | R-16 | Confirmed-code |
 | D | Malformed markup aborts PDF export | report | R-21 | Plausible |
@@ -156,7 +158,7 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 - **A-5. The LLM provider receives data.** Five sample rows, column names, statistics and model outputs go to Google (R-14). Real personal or company data needs the owner's consent and provider terms review.
 - **A-6. Platform.** Assessed on Linux with the exam package pins. macOS behaviour (rlimits, `/tmp` → `/private/tmp`, browser rendering) is not verified; see `docs/v2/BASELINE.md`.
 - **A-7. Third-party behaviour not validated here:**
-  - Streamlit HTML sanitisation for `unsafe_allow_html` (R-13);
+  - whether Streamlit renders or sanitises injected markup in `unsafe_allow_html` content, and therefore whether browser-executable XSS is possible (R-13: unescaped insertion confirmed, XSS not demonstrated);
   - Markdown image rendering in `st.info` (R-22);
   - ReportLab tag handling (R-21);
   - Gemini's susceptibility to the injection corpus (R-10).
@@ -186,39 +188,44 @@ Out of scope: attacks on Google's infrastructure, physical access to the laptop,
 | Dependency pinning | ❌ missing | `requirements.txt` (`>=`) | R-23 |
 | V2 guard rails for future features | ✅ designed | `config/feature_flags.py`: secure profile requires container backend, no silent fallback | Not yet wired (by design in P0) |
 
-## 9. Framework mapping (provisional)
+## 9. Framework mapping (pending verification)
 
-> **Verification status: NOT VERIFIED against the official pages.** `https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/` and `https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/` could not be fetched from this session (DNS failure for `genai.owasp.org`, even after the host was allowlisted). The Agentic IDs follow the 2026 Agentic Applications list as known to the author. For the LLM list the **2025** IDs are used, because the existence and contents of a 2026 edition could not be confirmed. Re-check every ID and name in this table before citing it.
+> **Status: PENDING VERIFICATION. No OWASP identifier in this section has been checked against the official documents.**
+>
+> Reference frameworks, as specified by the reviewer:
+>
+> - **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
+> - **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
+>
+> Neither page could be retrieved from this session. Five attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment allowlist. Therefore:
+>
+> - **LLM Top 10 2026:** no identifiers or names are given. The column is left for verified values only. The 2025-edition IDs from the first P1 draft were removed so they cannot be mistaken for 2026 IDs.
+> - **Agentic Applications 2026:** the IDs and names shown are **recalled, not verified**, and each cell is marked *(pending)*.
+> - **Mapping by concept:** findings are grouped by risk concept, the stable part of this analysis, so verified IDs can be dropped in without re-analysing the findings.
 
-**OWASP Top 10 for Agentic Applications (2026), provisional:**
+| # | Risk concept in InsightPilot | Findings | OWASP GenAI LLM Top 10 2026 (verified ID and name) | OWASP Agentic Top 10 2026 (ID and name) |
+|---|---|---|---|---|
+| 1 | Untrusted input steering the model (direct, indirect and second-order prompt injection; goal manipulation) | R-10, R-11, R-12 | *Pending verification* | ASI01 Agent Goal Hijack *(pending)* |
+| 2 | Secret and sensitive-data disclosure | R-01, R-02, R-14, F-07 | *Pending verification* | *Pending verification*: no recalled counterpart |
+| 3 | Supply chain (dependencies, committed binaries, prompt and rule files) | R-23, R-01 | *Pending verification* | ASI04 Agentic Supply Chain Vulnerabilities *(pending)* |
+| 4 | Memory, context and data poisoning (lesson store, checkpoints) | R-11, F-05 | *Pending verification* | ASI06 Memory & Context Poisoning *(pending)* |
+| 5 | Model output used unsafely as code, paths, markup or exports | R-03, R-06, R-13, R-15, R-19, R-20, R-21, R-22 | *Pending verification* | ASI05 Unexpected Code Execution (RCE) *(pending)* for R-03, R-06, R-15 |
+| 6 | Excessive agency and tool misuse (sandbox has full file and network reach) | R-04, R-05, R-19, F-02 | *Pending verification* | ASI02 Tool Misuse and Exploitation *(pending)* |
+| 7 | Identity and privilege (inherited credentials, no authentication) | R-02, R-18, F-02 | *Pending verification* | ASI03 Identity and Privilege Abuse *(pending)* |
+| 8 | Human oversight gaps and approval bypass | R-08, R-09, F-04, F-06 | *Pending verification* | ASI09 Human-Agent Trust Exploitation *(pending)* |
+| 9 | Unbounded consumption and resource exhaustion | R-16, R-17 | *Pending verification* | *Pending verification* |
+| 10 | Cascading failures across steps or agents | R-16, F-03 | *Pending verification* | ASI08 Cascading Failures *(pending)* |
+| 11 | Inter-agent communication (future) | F-01 | *Pending verification* | ASI07 Insecure Inter-Agent Communication *(pending)* |
+| 12 | Rogue or looping agents (future) | F-08 | *Pending verification* | ASI10 Rogue Agents *(pending)* |
+| 13 | Unverified or misleading results (misinformation) | F-04, interpretation trust | *Pending verification* | *Pending verification* |
+| 14 | Concepts with no current exposure: system-prompt disclosure (prompts hold no secrets; rules and skills are already public) and retrieval/vector-store weaknesses (no retrieval used) | none | *Pending verification* | *Pending verification* |
 
-| ID | Name (provisional) | InsightPilot findings |
-|---|---|---|
-| ASI01 | Agent Goal Hijack | R-10, R-11, R-12 |
-| ASI02 | Tool Misuse and Exploitation | R-03, R-04, R-05, R-19, F-02 |
-| ASI03 | Identity and Privilege Abuse | R-02, R-18, F-02 |
-| ASI04 | Agentic Supply Chain Vulnerabilities | R-23, R-01 |
-| ASI05 | Unexpected Code Execution (RCE) | R-03, R-06, R-15 |
-| ASI06 | Memory & Context Poisoning | R-11, F-05 |
-| ASI07 | Insecure Inter-Agent Communication | F-01 (future) |
-| ASI08 | Cascading Failures | R-16, F-03 |
-| ASI09 | Human-Agent Trust Exploitation | R-08, R-09, F-04, F-06 |
-| ASI10 | Rogue Agents | F-08 (future) |
+**Verification checklist (to complete before citing any ID):**
 
-**OWASP Top 10 for LLM Applications, using 2025 IDs (2026 edition unverified):**
-
-| ID | Name (2025) | InsightPilot findings |
-|---|---|---|
-| LLM01:2025 | Prompt Injection | R-10, R-11, R-12 |
-| LLM02:2025 | Sensitive Information Disclosure | R-01, R-02, R-14, F-07 |
-| LLM03:2025 | Supply Chain | R-23 |
-| LLM04:2025 | Data and Model Poisoning | R-11 |
-| LLM05:2025 | Improper Output Handling | R-03, R-06, R-13, R-15, R-19, R-20, R-21, R-22 |
-| LLM06:2025 | Excessive Agency | R-04, R-05, R-08, R-09 |
-| LLM07:2025 | System Prompt Leakage | Not observed. Prompts hold no secrets; rules and skills files are public in the repository. |
-| LLM08:2025 | Vector and Embedding Weaknesses | Not applicable: no retrieval or vector store |
-| LLM09:2025 | Misinformation | F-04 (verifier), interpretation trust |
-| LLM10:2025 | Unbounded Consumption | R-16, R-17 |
+1. Retrieve both official documents from the URLs above. Record the exact title, edition and publication date.
+2. For each row, enter the official ID and name verbatim. If a 2026 category merges, splits or has no counterpart, edit the row rather than force a match.
+3. Replace *(pending)* only in verified cells. Record who verified it and when, here and in the `risk_register.md` framework note.
+4. Re-check that every finding in rows 1–13 still maps to at least one verified category. List any unmapped finding explicitly.
 
 ## 10. Security-remediation roadmap
 

@@ -21,14 +21,19 @@ Companion documents: [threat model](threat_model.md), [abuse cases](abuse_cases.
 | **Validation test** | **A proposed test name for the fixing phase; it does not exist yet.** The only tests that exist today are the P0 tests named under "Existing tests" and in [Coverage by existing P0 tests](#coverage-by-existing-p0-tests). |
 | **Evidence confidence** | **Confirmed-test**: an existing P0 test observes the insecure behaviour. **Confirmed-code**: a deterministic code path, read line by line, not executed in P1. **Plausible**: depends on runtime or third-party behaviour that has not been validated yet. **Future**: architectural risk for planned V2 features; not exploitable today. |
 
-### OWASP references are provisional
+### OWASP framework references: pending verification
 
-The two official pages requested were unreachable from this session: `genai.owasp.org` failed DNS resolution, even after the host was added to the environment's network allowlist.
+The reference frameworks are the two official 2026 editions, as specified by the reviewer:
 
-- **Agentic Applications.** IDs `ASI01`–`ASI10` below follow the *OWASP Top 10 for Agentic Applications 2026* as I know it.
-- **LLM Top 10.** I could not confirm that an "LLM Top 10 2026" edition exists or what it contains. IDs below therefore use the **LLM Top 10 2025** list (`LLMxx:2025`).
+- **OWASP GenAI LLM Top 10 2026**, published 3 August 2026: <https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/>
+- **OWASP Top 10 for Agentic Applications 2026:** <https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/>
 
-**Both must be checked against the official pages before this register is cited externally.** All mappings are collected in one place, [threat_model.md § 9](threat_model.md#9-framework-mapping-provisional), so they can be corrected in a single pass.
+Neither page could be retrieved from this session. All five attempts on 2026-11-21 failed with `getaddrinfo ENOTFOUND genai.owasp.org`, including attempts after the host was added to the environment's network allowlist. So no identifier in this register has been checked against the official text.
+
+- **LLM Top 10 2026:** no IDs or names are given; every mapping is **pending verification**. The 2025-edition IDs used in the first P1 draft have been removed, so a different edition cannot be mistaken for 2026.
+- **Agentic Applications 2026:** the `ASI01`–`ASI10` IDs and names shown are recalled, not verified. Each is marked **pending verification**.
+
+All mappings are in one place, [threat_model.md § 9](threat_model.md#9-framework-mapping-pending-verification), keyed by risk concept so the verified IDs can be filled in a single pass. **Do not cite any OWASP ID from these documents externally until that table is verified.**
 
 ## Summary
 
@@ -46,7 +51,7 @@ The two official pages requested were unreachable from this session: `genai.owas
 | R-10 | Indirect prompt injection from CSV values, headers and file name into planner/code-generator prompts | **High** | Confirmed-code (data flow); Plausible (model behaviour) | P2 (+P6) |
 | R-11 | Persistent memory poisoning through `lessons/lessons.json` | Medium | Confirmed-code | P2 (+P8) |
 | R-12 | Second-order injection: sandbox stdout/stderr reaches interpreter, retry prompts, insights and chat | Medium | Confirmed-code | P2 (+P6) |
-| R-13 | HTML injection: untrusted text in 15 `unsafe_allow_html` sites | Medium | Confirmed-code (HTML); Plausible (script execution) | P2 |
+| R-13 | Unescaped insertion of untrusted content at 15 `unsafe_allow_html` sites (browser-executable XSS **not demonstrated**) | Medium | Confirmed-code (unescaped insertion); not verified (markup rendering); not demonstrated (script execution) | P2 |
 | R-14 | Sensitive-data disclosure through tracebacks, logs, reports, exports and provider prompts | Medium | Confirmed-code | P2 + P5 |
 | R-15 | Notebook export: `csv_path` in a quoted string (code injection on later run); exported code runs unsandboxed | Medium | Confirmed-code | P2 (+P3) |
 | R-16 | Unbounded consumption: no cap on plan size, prompt growth, run budget or provider back-off | Medium | Confirmed-code | P2 + P5 |
@@ -256,10 +261,21 @@ The two official pages requested were unreachable from this session: `genai.owas
 - **Validation test:** `test_execution_output_is_quoted_in_interpreter_prompt`; `test_verifier_flags_claim_not_supported_by_reference` (P6).
 - **Phase:** P2 (+P6).
 
-### R-13: HTML injection in the Streamlit UI
+### R-13: Unescaped insertion of untrusted content into UI HTML (XSS not demonstrated)
 
-- **Severity / likelihood / impact:** Medium / Medium / spoofed UI, phishing links, remote-image beacons that can carry data. **Script execution is not established**: Streamlit bundles DOMPurify, but whether it applies to `st.markdown(..., unsafe_allow_html=True)` was not verified.
-- **Evidence:** 15 of 62 `unsafe_allow_html=True` sites interpolate untrusted text without escaping, for example:
+- **What is and is not established:**
+
+  | Level | Claim | Status |
+  |---|---|---|
+  | 1 | Untrusted text is inserted unescaped into HTML strings passed to `st.markdown(..., unsafe_allow_html=True)` | **Confirmed (code)** |
+  | 2 | The browser renders the injected text as HTML elements | **Not verified**: expected from Streamlit's documented `unsafe_allow_html` behaviour; no browser test run |
+  | 3 | Browser-executable XSS (script runs) | **Not demonstrated**: no payload executed; Streamlit bundles DOMPurify, and whether it applies here is unknown |
+
+- **Severity / likelihood / impact:** Medium / Medium.
+  - **If level 2 holds:** spoofed UI, phishing links, and remote-image beacons that can carry data.
+  - **If level 3 were demonstrated:** session compromise in the browser. The finding would then be re-rated **High**.
+  - The current Medium rating rests on level 1 (confirmed) plus level 2 (expected, unverified).
+- **Evidence (level 1):** 15 of 62 `unsafe_allow_html=True` sites interpolate untrusted text without escaping, for example:
   - chat messages, user and LLM (`ui/app.py:719`, rendered at `:1210, :1359`);
   - log detail and action (`:701, :1343-1352`);
   - CSV column names (`:1267, :1275, :1284`, `:1000`);
@@ -269,7 +285,9 @@ The two official pages requested were unreachable from this session: `genai.owas
   The full inventory is in [html_render_audit.md](html_render_audit.md).
 - **Existing tests:** none.
 - **Mitigation:** one escaping helper for every interpolated value (`html.escape`, or `md_inline` where formatting is wanted); a lint test that forbids f-string interpolation in `unsafe_allow_html` calls unless wrapped.
-- **Validation test:** `test_render_helpers_escape_untrusted` (unit: each helper given `<img src=x>` returns escaped text); `test_no_unescaped_interpolation_in_unsafe_html` (AST lint over `ui/app.py`); a browser test for script execution (needs approved tooling).
+- **Validation test:**
+  - **Level 1, closes the confirmed defect:** `test_render_helpers_escape_untrusted` (unit: each helper given `<img src=x>` returns escaped text) and `test_no_unescaped_interpolation_in_unsafe_html` (AST lint over `ui/app.py`).
+  - **Levels 2 and 3, settles the unverified claims (needs approved browser tooling, no live LLM):** a browser test on Streamlit 1.59.2 checking whether a corpus payload creates elements, network requests or script execution. Its result decides whether R-13 is re-rated.
 - **Phase:** P2.
 
 ### R-14: Sensitive-data disclosure through UI, logs, reports, exports and provider prompts

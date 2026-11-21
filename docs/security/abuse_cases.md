@@ -26,7 +26,7 @@ IDs `R-xx` / `F-xx` refer to [risk_register.md](risk_register.md). Example input
 - **V1 today:**
   - **Confirmed-code:** the data flow, and the lack of any separation or quoting.
   - **Plausible:** model compliance (not evaluated; LLM budget is 0).
-  - Header names are also rendered unescaped in the UI (AC-10, R-13).
+  - Header names are also inserted unescaped into UI HTML (AC-10, R-13). That insertion is confirmed in code; browser-executable XSS has not been demonstrated.
 - **Mitigation:**
   - **P2:** delimited, quoted data blocks with explicit "data, not instructions" framing; truncated cells; sanitised headers; injection heuristic (monitor → enforce).
   - **P3:** makes success harmless (no secrets, files or network).
@@ -190,9 +190,15 @@ IDs `R-xx` / `F-xx` refer to [risk_register.md](risk_register.md). Example input
   - The Markdown report carries failed-task error excerpts and the execution timeline (`report_generator.py:87-108`).
   - Log details carry stdout/stderr excerpts (`executor.py:85, 108`); the chat shows LLM text that may echo data.
   - Five sample rows go to Gemini (`data_ingestion.py:73-80`).
-  - Untrusted text reaches HTML in 15 places (R-13), which can carry remote-image beacons. **Plausible**; script execution not established.
+  - Untrusted text is inserted unescaped into HTML in 15 places (R-13).
+    - **Confirmed-code:** the unescaped insertion.
+    - **Not verified:** whether the browser renders the injected markup (needed for remote-image beacons or spoofing).
+    - **Not demonstrated:** browser-executable XSS.
   - Shared output names let one session's charts or reports overwrite another's (R-18).
-- **V1 today:** **Confirmed-code** for the disclosure paths; HTML injection confirmed at code level, browser behaviour unvalidated.
+- **V1 today:**
+  - **Confirmed-code** for the disclosure paths and for the unescaped HTML insertion.
+  - Rendering of the injected markup is **not verified** in a browser.
+  - Browser-executable XSS is **not demonstrated**.
 - **Mitigation:**
   - **P2:** generic UI errors; path scrubbing in exports; escaped rendering everywhere; opt-in redaction of provider samples.
   - **P5:** redacted traces by default; per-session output directories.

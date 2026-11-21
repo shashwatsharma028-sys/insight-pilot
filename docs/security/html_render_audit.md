@@ -2,7 +2,17 @@
 
 **Target:** `ui/app.py` at `feature/insightpilot-v2` @ `6152da3a`. This is the only module that renders; `agent/`, `sandbox/` and `utils/` contain no Streamlit rendering calls.
 
-**Finding:** [R-13](risk_register.md#r-13-html-injection-in-the-streamlit-ui) (HTML injection); related R-22 (Markdown in status messages) and R-14 (tracebacks).
+**Finding:** [R-13](risk_register.md#r-13-unescaped-insertion-of-untrusted-content-into-ui-html-xss-not-demonstrated): unescaped insertion of untrusted content into UI HTML. **Browser-executable XSS has not been demonstrated.** Related: R-22 (Markdown in status messages) and R-14 (tracebacks).
+
+**Evidence levels used in this audit:**
+
+| Level | Meaning | Status for R-13 |
+|---|---|---|
+| **1. Unescaped insertion** | Untrusted text is placed, without escaping, into a string passed to `st.markdown(..., unsafe_allow_html=True)` | **Confirmed (code)** at 15 sites |
+| **2. Markup rendering** | The browser renders that inserted text as HTML elements (for example `<b>`, `<a>`, `<img>`) | **Not verified.** Expected from Streamlit's documented `unsafe_allow_html` behaviour, but no browser test was run |
+| **3. Browser-executable XSS** | Injected content runs script in the user's browser | **Not demonstrated.** No payload was executed; Streamlit's frontend bundles DOMPurify, and whether it applies here is unknown |
+
+This audit confirms level 1 only. It does **not** claim XSS.
 
 ## Method and counts
 
@@ -24,13 +34,13 @@ The counts below come from the code, not from earlier reports.
 | `st.html`, `components.html`, `st.write` | 0 |
 | Other rendering calls (Markdown-rendered or widgets), listed below | 49 |
 
-The earlier figure of "62" was correct as a count of `unsafe_allow_html=True` occurrences. It does **not** mean 62 vulnerable sites: 15 carry untrusted, unescaped text.
+The earlier figure of "62" was correct as a count of `unsafe_allow_html=True` occurrences. It does **not** mean 62 vulnerable sites: 15 carry untrusted, unescaped text (level 1). None has been shown to be browser-executable (level 3).
 
 ### Classes
 
 | Class | Meaning |
 |---|---|
-| **U** | User-controlled, dataset-derived or LLM- or sandbox-generated text inserted into HTML without escaping. Injection is possible. |
+| **U** | User-controlled, dataset-derived or LLM- or sandbox-generated text inserted into HTML without escaping: **unescaped insertion confirmed (level 1)**. Rendering (level 2) and script execution (level 3) are not verified. |
 | **E** | Untrusted text inserted only after `html.escape` (`df_preview_html`, `md_inline`). |
 | **C** | Only code constants (icons, theme tokens, fixed labels, skill names) or numbers. |
 | **S** | Static string. |
@@ -162,12 +172,24 @@ Notable among them:
 
 ## Injection risk assessment
 
-- **Confirmed (code):** untrusted text reaches raw HTML at 15 sites. Header names, file names, LLM fields, chat text and sandbox output can therefore insert arbitrary markup into the page.
-- **Not established: script execution.** Streamlit's frontend bundle includes DOMPurify, but whether `st.markdown(..., unsafe_allow_html=True)` content passes through it was not determined from the minified bundle. Even with sanitisation, ordinary HTML usually permits:
-  - **remote images** (`<img src="https://…">`), a beacon or data-exfiltration channel if an LLM is induced to embed data in the URL;
+- **Level 1, confirmed (code): unescaped insertion of untrusted content.** At 15 sites, untrusted text is inserted without escaping into HTML strings rendered with `unsafe_allow_html=True`:
+  - CSV header names;
+  - the upload file name;
+  - LLM task fields;
+  - chat text (user and LLM);
+  - sandbox output in log details.
+
+  This rests on reading every interpolated expression back to its source (inventory above).
+- **Level 2, not verified: rendering of injected markup.** By Streamlit's documented behaviour, `unsafe_allow_html=True` renders the string as HTML, so injected tags are expected to become page elements. No browser test confirmed this for Streamlit 1.59.2. If rendering happens, even sanitised HTML usually still permits:
+  - **remote images** (`<img src="https://…">`), a possible beacon or data-exfiltration channel if an LLM is induced to put data in the URL;
   - **links and phishing text** styled as the app's own UI;
   - **layout overlays and spoofing** through inline styles.
-- **Severity:** Medium for the single-user V1 (an attacker needs a crafted dataset or model manipulation). It is higher if the app is shared (R-18), or if chat or log content from one session were ever shown to another.
+- **Level 3, not demonstrated: browser-executable XSS.** No script was executed and no payload was run in a browser. Streamlit's frontend bundles DOMPurify; whether it sanitises `st.markdown(..., unsafe_allow_html=True)` content could not be determined from the minified bundle. **This audit therefore makes no XSS claim.**
+- **Severity: Medium.** The rating rests on the confirmed level 1 and the expected, unverified level 2, for the single-user V1 (an attacker needs a crafted dataset or model manipulation).
+  - **Raise to High** if a browser test demonstrates level 3, or if the app is shared (R-18) so one session's chat or log content could reach another.
+  - **Lower to Low** if a browser test shows all injected markup is neutralised.
+
+  The remediation below is the same either way: escaping at the boundary removes the confirmed level-1 defect.
 
 ## Recommended fixes (P2)
 
