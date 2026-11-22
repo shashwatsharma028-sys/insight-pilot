@@ -1,0 +1,129 @@
+{
+ "a": "v1",
+ "b": "v1",
+ "claims": [],
+ "correctness": {
+  "answers_correct": {
+   "a": 28,
+   "b": 28,
+   "delta": 0,
+   "regression": false
+  },
+  "charts_valid": {
+   "a": 7,
+   "b": 7,
+   "delta": 0,
+   "regression": false
+  },
+  "deterministic_datasets": {
+   "a": 4,
+   "b": 4,
+   "delta": 0,
+   "regression": false
+  },
+  "expected_failures_observed": {
+   "a": 1,
+   "b": 1,
+   "delta": 0,
+   "regression": false
+  },
+  "quality_correct": {
+   "a": 20,
+   "b": 20,
+   "delta": 0,
+   "regression": false
+  },
+  "reports_valid": {
+   "a": 12,
+   "b": 12,
+   "delta": 0,
+   "regression": false
+  },
+  "run_errors_absent": {
+   "a": 0,
+   "b": 0,
+   "delta": 0,
+   "regression": false
+  },
+  "task_status_as_expected": {
+   "a": 13,
+   "b": 13,
+   "delta": 0,
+   "regression": false
+  },
+  "tasks_completed_of_expected": {
+   "a": 12,
+   "b": 12,
+   "delta": 0,
+   "regression": false
+  }
+ },
+ "environments_identical": true,
+ "latency": {
+  "pipeline_wall": {
+   "ci95_median_diff_ms": [
+    -197.38,
+    418.52
+   ],
+   "median_a_ms": 4391.63,
+   "median_b_ms": 4332.37,
+   "median_diff_ms": 155.57,
+   "n": 20,
+   "relative_change_of_medians": -0.0135,
+   "sign_test_p": 0.823803,
+   "verdict": "no significant difference"
+  },
+  "sandbox_execution": {
+   "ci95_median_diff_ms": [
+    -12.7,
+    105.06
+   ],
+   "median_a_ms": 1283.39,
+   "median_b_ms": 1365.82,
+   "median_diff_ms": 33.14,
+   "n": 65,
+   "relative_change_of_medians": 0.0642,
+   "sign_test_p": 0.457021,
+   "verdict": "no significant difference"
+  },
+  "unpaired_executions": 0
+ },
+ "llm_calls": {
+  "a": 32,
+  "b": 32,
+  "by_skill": {
+   "business_insights": {
+    "a": 12,
+    "b": 12
+   },
+   "code_generator": {
+    "a": 16,
+    "b": 16
+   },
+   "planner": {
+    "a": 4,
+    "b": 4
+   }
+  },
+  "delta": 0
+ },
+ "regressions": [],
+ "schema": "insightpilot.paired-comparison/1",
+ "tokens": {
+  "mock_scripted/estimated_chars_div_4": {
+   "a": {
+    "input": 44490,
+    "output": 3002
+   },
+   "b": {
+    "input": 44490,
+    "output": 3002
+   },
+   "input_delta": 0,
+   "note": "character estimates of scripted prompts: a change in PROMPT SIZE, not cost",
+   "output_delta": 0
+  }
+ },
+ "verdict": "no significant improvement",
+ "workload": "b4ca411def67038d3525f3e0c0e72594850015eb5ebb0ec89cedde39e3eff7c0"
+}

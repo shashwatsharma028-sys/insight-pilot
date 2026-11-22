@@ -1,0 +1,20 @@
+{
+ "_note": "MEASURED on the P4.0 development host (Python 3.11.18, 4 CPUs, environment B packages): fresh `python -c <code>` subprocesses, the same interpreter the V1 sandbox uses; 11 runs each, the first dropped as cache warm-up, median of 10 in ms. Two independent measurement sets; the spread between them is real machine noise.",
+ "set_1": {
+  "interpreter_start (python -c pass)": {"median_ms": 13.5, "min_ms": 12.2, "max_ms": 16.7},
+  "prelude imports (pandas, numpy, matplotlib Agg, pyplot, ticker, seaborn)": {"median_ms": 1255.9, "min_ms": 1077.3, "max_ms": 1565.0},
+  "full V1 prelude (imports + seaborn-v0_8-darkgrid style + read_csv of sales_data.csv)": {"median_ms": 1149.3, "min_ms": 1045.0, "max_ms": 1230.2}
+ },
+ "set_2_cumulative_imports_median_ms": {
+  "numpy": 79.1,
+  "+ pandas": 392.4,
+  "+ matplotlib Agg + pyplot + ticker": 570.0,
+  "+ seaborn (= full prelude imports)": 1070.8
+ },
+ "from_baseline_v1_benchmark": {
+  "sandbox_share_of_pipeline_wall_time": {"median": 0.979, "min": 0.923, "max": 0.983, "n_runs": 20},
+  "executed_sandbox_call_median_ms": 1283.4,
+  "executed_sandbox_calls": 65,
+  "safety_blocked_executions_per_pass": 3
+ }
+}

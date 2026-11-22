@@ -1,0 +1,6444 @@
+{
+ "environment": {
+  "cpu_count": 4,
+  "git_commit": "ba83225331372a507bbee2a1503c51184ab7009c",
+  "git_dirty": false,
+  "implementation": "CPython",
+  "machine": "x86_64",
+  "packages": {
+   "langchain-core": "1.4.9",
+   "langgraph": "1.2.9",
+   "matplotlib": "3.11.1",
+   "nbformat": "5.10.4",
+   "numpy": "2.4.6",
+   "pandas": "3.0.3",
+   "pillow": "12.3.0",
+   "reportlab": "5.0.0",
+   "seaborn": "0.13.2",
+   "streamlit": "1.59.2"
+  },
+  "platform": "Linux-6.18.44-fc-v726-x86_64-with-glibc2.39",
+  "python": "3.11.18"
+ },
+ "harness": "p4.0",
+ "llm": "scripted mock (tests/v2/mock_llm.py); no provider calls are possible",
+ "runs": [
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "att_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 688,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     },
+     "att_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 737,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 969
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "attendance",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4480713029997787,
+     "success": true,
+     "task_id": "att_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2895569029997205,
+     "success": true,
+     "task_id": "att_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.2339261759998408,
+     "success": true,
+     "task_id": "att_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1519,
+     "output_tokens": 297,
+     "prompt_chars": 6076,
+     "response_chars": 1188,
+     "seconds": 4.075699962413637e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1379,
+     "output_tokens": 99,
+     "prompt_chars": 5517,
+     "response_chars": 396,
+     "seconds": 0.0001369339997836505,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1326,
+     "output_tokens": 57,
+     "prompt_chars": 5305,
+     "response_chars": 229,
+     "seconds": 0.00017946600019058678,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1376,
+     "output_tokens": 115,
+     "prompt_chars": 5506,
+     "response_chars": 463,
+     "seconds": 3.261500023654662e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1354,
+     "output_tokens": 56,
+     "prompt_chars": 5418,
+     "response_chars": 227,
+     "seconds": 4.595100017468212e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1377,
+     "output_tokens": 40,
+     "prompt_chars": 5510,
+     "response_chars": 163,
+     "seconds": 1.859499980128021e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1285,
+     "output_tokens": 55,
+     "prompt_chars": 5140,
+     "response_chars": 221,
+     "seconds": 5.214300017541973e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9616,
+    "output_tokens": 719
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 0,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t1",
+     "title": "Attendance Status Breakdown"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t2",
+     "title": "Hours Worked by Department"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t3",
+     "title": "GPS Location Mismatches"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3965,
+        "output_tokens": 168
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4132,
+        "output_tokens": 254
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1519,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9616,
+      "output_tokens": 719
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.303412649000165
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "correct",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 1,
+    "per_task": {
+     "eco_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 646,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     }
+    },
+    "unexpected": [],
+    "valid": 1
+   },
+   "dataset": "ecommerce",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1471751399999448,
+     "success": true,
+     "task_id": "eco_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1505008579997593,
+     "success": true,
+     "task_id": "eco_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.208517835999828,
+     "success": true,
+     "task_id": "eco_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1319,
+     "output_tokens": 289,
+     "prompt_chars": 5276,
+     "response_chars": 1159,
+     "seconds": 4.4052999783161795e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1255,
+     "output_tokens": 54,
+     "prompt_chars": 5020,
+     "response_chars": 218,
+     "seconds": 2.8217999897606205e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1298,
+     "output_tokens": 51,
+     "prompt_chars": 5192,
+     "response_chars": 207,
+     "seconds": 4.6969999857537914e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1258,
+     "output_tokens": 59,
+     "prompt_chars": 5034,
+     "response_chars": 238,
+     "seconds": 1.623800017114263e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1304,
+     "output_tokens": 56,
+     "prompt_chars": 5217,
+     "response_chars": 227,
+     "seconds": 4.184599993095617e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1257,
+     "output_tokens": 94,
+     "prompt_chars": 5028,
+     "response_chars": 379,
+     "seconds": 1.361599970550742e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 54,
+     "prompt_chars": 5239,
+     "response_chars": 217,
+     "seconds": 4.212199974062969e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9000,
+    "output_tokens": 657
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 0,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Revenue Overview",
+      "### 2. Weekend vs Weekday Revenue",
+      "### 3. Monthly Revenue Trend",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t1",
+     "title": "Revenue Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t2",
+     "title": "Weekend vs Weekday Revenue"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t3",
+     "title": "Monthly Revenue Trend"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3911,
+        "output_tokens": 161
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 3770,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1319,
+        "output_tokens": 289
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9000,
+      "output_tokens": 657
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.572565980000036
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "sales_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1000
+     },
+     "sales_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 674,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 982
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "sales",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": "data_error",
+     "seconds": 1.119449867000185,
+     "success": false,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4063492479999695,
+     "success": true,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4006813289997808,
+     "success": true,
+     "task_id": "sales_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.2970137409997733,
+     "success": true,
+     "task_id": "sales_t3"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00026101500043296255,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00014204299986886326,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00014591099989047507,
+     "success": false,
+     "task_id": "sales_t4"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1590,
+     "output_tokens": 391,
+     "prompt_chars": 6362,
+     "response_chars": 1564,
+     "seconds": 3.247299991926411e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 35,
+     "prompt_chars": 5890,
+     "response_chars": 141,
+     "seconds": 1.982000003408757e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1931,
+     "output_tokens": 112,
+     "prompt_chars": 7726,
+     "response_chars": 451,
+     "seconds": 3.189200015185634e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 50,
+     "prompt_chars": 5238,
+     "response_chars": 203,
+     "seconds": 4.333300012149266e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1477,
+     "output_tokens": 92,
+     "prompt_chars": 5908,
+     "response_chars": 370,
+     "seconds": 2.0915999812132213e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1323,
+     "output_tokens": 56,
+     "prompt_chars": 5292,
+     "response_chars": 225,
+     "seconds": 4.7789999825909035e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 48,
+     "prompt_chars": 5890,
+     "response_chars": 194,
+     "seconds": 1.8152000393456547e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1284,
+     "output_tokens": 52,
+     "prompt_chars": 5138,
+     "response_chars": 209,
+     "seconds": 9.152299980996759e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1476,
+     "output_tokens": 32,
+     "prompt_chars": 5904,
+     "response_chars": 129,
+     "seconds": 4.3603999984043185e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 4.175499998382293e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 3.0573999993066536e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 7,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 11,
+    "estimated_calls": 11,
+    "input_tokens": 16460,
+    "output_tokens": 932
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 0,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## \u26a0\ufe0f Failed Analyses",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 11,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [
+     "runtime_error"
+    ],
+    "expected_completed": 3,
+    "expected_failures": 1,
+    "expected_failures_observed": 1,
+    "failed": 1,
+    "planned": 4,
+    "retries": 4,
+    "retries_as_expected": 4,
+    "status_as_expected": 4
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 1,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 1,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t1",
+     "title": "Sales Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t2",
+     "title": "Regional Sales Comparison"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t3",
+     "title": "Target Attainment"
+    },
+    {
+     "error_type": "runtime_error",
+     "expected_retries": 0,
+     "expected_status": "failed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": false,
+     "retries": 3,
+     "status": "failed",
+     "status_as_expected": true,
+     "task_id": "sales_t4",
+     "title": "Filesystem Inventory"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3916,
+        "output_tokens": 158
+       },
+       "code_generator": {
+        "calls": 7,
+        "input_tokens": 10954,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1590,
+        "output_tokens": 391
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 16460,
+      "output_tokens": 932
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "variant": "v1",
+   "wall_seconds": 5.34947539399991
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "stu_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1009
+     },
+     "stu_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 599,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 987
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "student",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2638059680002698,
+     "success": true,
+     "task_id": "stu_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1415700729999116,
+     "success": true,
+     "task_id": "stu_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5001803539998946,
+     "success": true,
+     "task_id": "stu_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1399,
+     "output_tokens": 290,
+     "prompt_chars": 5599,
+     "response_chars": 1161,
+     "seconds": 3.156100001433515e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1351,
+     "output_tokens": 109,
+     "prompt_chars": 5404,
+     "response_chars": 436,
+     "seconds": 2.5226999696315033e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1322,
+     "output_tokens": 50,
+     "prompt_chars": 5288,
+     "response_chars": 203,
+     "seconds": 4.111799989914289e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1352,
+     "output_tokens": 68,
+     "prompt_chars": 5411,
+     "response_chars": 275,
+     "seconds": 1.9009999959962443e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1342,
+     "output_tokens": 52,
+     "prompt_chars": 5371,
+     "response_chars": 209,
+     "seconds": 4.2365000354038784e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1355,
+     "output_tokens": 72,
+     "prompt_chars": 5421,
+     "response_chars": 290,
+     "seconds": 2.3368000256596133e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1293,
+     "output_tokens": 53,
+     "prompt_chars": 5174,
+     "response_chars": 215,
+     "seconds": 5.122199991092202e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9414,
+    "output_tokens": 694
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 0,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t1",
+     "title": "Score Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t2",
+     "title": "Scores by Subject"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t3",
+     "title": "Study Hours vs Score"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3957,
+        "output_tokens": 155
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4058,
+        "output_tokens": 249
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1399,
+        "output_tokens": 290
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9414,
+      "output_tokens": 694
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.005238824999651
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "att_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 688,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     },
+     "att_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 737,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 969
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "attendance",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5605525920000218,
+     "success": true,
+     "task_id": "att_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4570334459999685,
+     "success": true,
+     "task_id": "att_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.3180954659997042,
+     "success": true,
+     "task_id": "att_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1519,
+     "output_tokens": 297,
+     "prompt_chars": 6076,
+     "response_chars": 1188,
+     "seconds": 3.671300009955303e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1379,
+     "output_tokens": 99,
+     "prompt_chars": 5517,
+     "response_chars": 396,
+     "seconds": 3.45130001733196e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1326,
+     "output_tokens": 57,
+     "prompt_chars": 5305,
+     "response_chars": 229,
+     "seconds": 5.4286999784380896e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1376,
+     "output_tokens": 115,
+     "prompt_chars": 5506,
+     "response_chars": 463,
+     "seconds": 2.8602999918803107e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1354,
+     "output_tokens": 56,
+     "prompt_chars": 5418,
+     "response_chars": 227,
+     "seconds": 4.3987999561068136e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1377,
+     "output_tokens": 40,
+     "prompt_chars": 5510,
+     "response_chars": 163,
+     "seconds": 2.1299999843904516e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1285,
+     "output_tokens": 55,
+     "prompt_chars": 5140,
+     "response_chars": 221,
+     "seconds": 4.3989000005240086e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9616,
+    "output_tokens": 719
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 1,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t1",
+     "title": "Attendance Status Breakdown"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t2",
+     "title": "Hours Worked by Department"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t3",
+     "title": "GPS Location Mismatches"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3965,
+        "output_tokens": 168
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4132,
+        "output_tokens": 254
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1519,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9616,
+      "output_tokens": 719
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.487755931000265
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "correct",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 1,
+    "per_task": {
+     "eco_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 646,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     }
+    },
+    "unexpected": [],
+    "valid": 1
+   },
+   "dataset": "ecommerce",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.2635638469996593,
+     "success": true,
+     "task_id": "eco_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1257596460000059,
+     "success": true,
+     "task_id": "eco_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2600510639999811,
+     "success": true,
+     "task_id": "eco_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1319,
+     "output_tokens": 289,
+     "prompt_chars": 5276,
+     "response_chars": 1159,
+     "seconds": 2.897100011978182e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1255,
+     "output_tokens": 54,
+     "prompt_chars": 5020,
+     "response_chars": 218,
+     "seconds": 1.7899999875226058e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1298,
+     "output_tokens": 51,
+     "prompt_chars": 5192,
+     "response_chars": 207,
+     "seconds": 3.982799989898922e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1258,
+     "output_tokens": 59,
+     "prompt_chars": 5034,
+     "response_chars": 238,
+     "seconds": 1.5596000139339594e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1304,
+     "output_tokens": 56,
+     "prompt_chars": 5217,
+     "response_chars": 227,
+     "seconds": 5.711699986932217e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1257,
+     "output_tokens": 94,
+     "prompt_chars": 5028,
+     "response_chars": 379,
+     "seconds": 2.3289999717235332e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 54,
+     "prompt_chars": 5239,
+     "response_chars": 217,
+     "seconds": 4.318099990996416e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9000,
+    "output_tokens": 657
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 1,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Revenue Overview",
+      "### 2. Weekend vs Weekday Revenue",
+      "### 3. Monthly Revenue Trend",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t1",
+     "title": "Revenue Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t2",
+     "title": "Weekend vs Weekday Revenue"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t3",
+     "title": "Monthly Revenue Trend"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3911,
+        "output_tokens": 161
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 3770,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1319,
+        "output_tokens": 289
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9000,
+      "output_tokens": 657
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.7123424350002097
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "sales_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1000
+     },
+     "sales_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 674,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 982
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "sales",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": "data_error",
+     "seconds": 1.1573854779999238,
+     "success": false,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2336149160000787,
+     "success": true,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5476081209999393,
+     "success": true,
+     "task_id": "sales_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.3564909740002804,
+     "success": true,
+     "task_id": "sales_t3"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.0001577359998918837,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00017483999999967637,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 9.796099993764074e-05,
+     "success": false,
+     "task_id": "sales_t4"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1590,
+     "output_tokens": 391,
+     "prompt_chars": 6362,
+     "response_chars": 1564,
+     "seconds": 3.151400005663163e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 35,
+     "prompt_chars": 5890,
+     "response_chars": 141,
+     "seconds": 2.1563999780482845e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1931,
+     "output_tokens": 112,
+     "prompt_chars": 7726,
+     "response_chars": 451,
+     "seconds": 3.077299970755121e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 50,
+     "prompt_chars": 5238,
+     "response_chars": 203,
+     "seconds": 4.175100002612453e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1477,
+     "output_tokens": 92,
+     "prompt_chars": 5908,
+     "response_chars": 370,
+     "seconds": 1.920300019264687e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1323,
+     "output_tokens": 56,
+     "prompt_chars": 5292,
+     "response_chars": 225,
+     "seconds": 5.122600032336777e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 48,
+     "prompt_chars": 5890,
+     "response_chars": 194,
+     "seconds": 3.053299997191061e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1284,
+     "output_tokens": 52,
+     "prompt_chars": 5138,
+     "response_chars": 209,
+     "seconds": 5.825400012327009e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1476,
+     "output_tokens": 32,
+     "prompt_chars": 5904,
+     "response_chars": 129,
+     "seconds": 2.4027000108617358e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.9409000035229838e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.4650999876030255e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 7,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 11,
+    "estimated_calls": 11,
+    "input_tokens": 16460,
+    "output_tokens": 932
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 1,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## \u26a0\ufe0f Failed Analyses",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 11,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [
+     "runtime_error"
+    ],
+    "expected_completed": 3,
+    "expected_failures": 1,
+    "expected_failures_observed": 1,
+    "failed": 1,
+    "planned": 4,
+    "retries": 4,
+    "retries_as_expected": 4,
+    "status_as_expected": 4
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 1,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 1,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t1",
+     "title": "Sales Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t2",
+     "title": "Regional Sales Comparison"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t3",
+     "title": "Target Attainment"
+    },
+    {
+     "error_type": "runtime_error",
+     "expected_retries": 0,
+     "expected_status": "failed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": false,
+     "retries": 3,
+     "status": "failed",
+     "status_as_expected": true,
+     "task_id": "sales_t4",
+     "title": "Filesystem Inventory"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3916,
+        "output_tokens": 158
+       },
+       "code_generator": {
+        "calls": 7,
+        "input_tokens": 10954,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1590,
+        "output_tokens": 391
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 16460,
+      "output_tokens": 932
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "variant": "v1",
+   "wall_seconds": 5.400532195999858
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "stu_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1009
+     },
+     "stu_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 599,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 987
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "student",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5404839030002222,
+     "success": true,
+     "task_id": "stu_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.444439109999621,
+     "success": true,
+     "task_id": "stu_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.546637897000437,
+     "success": true,
+     "task_id": "stu_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1399,
+     "output_tokens": 290,
+     "prompt_chars": 5599,
+     "response_chars": 1161,
+     "seconds": 2.9639999866049038e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1351,
+     "output_tokens": 109,
+     "prompt_chars": 5404,
+     "response_chars": 436,
+     "seconds": 2.3870999939390458e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1322,
+     "output_tokens": 50,
+     "prompt_chars": 5288,
+     "response_chars": 203,
+     "seconds": 5.5731999964336865e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1352,
+     "output_tokens": 68,
+     "prompt_chars": 5411,
+     "response_chars": 275,
+     "seconds": 2.0591000065905973e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1342,
+     "output_tokens": 52,
+     "prompt_chars": 5371,
+     "response_chars": 209,
+     "seconds": 7.695799968132633e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1355,
+     "output_tokens": 72,
+     "prompt_chars": 5421,
+     "response_chars": 290,
+     "seconds": 3.562699976100703e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1293,
+     "output_tokens": 53,
+     "prompt_chars": 5174,
+     "response_chars": 215,
+     "seconds": 4.286600005798391e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9414,
+    "output_tokens": 694
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 1,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t1",
+     "title": "Score Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t2",
+     "title": "Scores by Subject"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t3",
+     "title": "Study Hours vs Score"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3957,
+        "output_tokens": 155
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4058,
+        "output_tokens": 249
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1399,
+        "output_tokens": 290
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9414,
+      "output_tokens": 694
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.630029373999605
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "att_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 688,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     },
+     "att_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 737,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 969
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "attendance",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5060016990000804,
+     "success": true,
+     "task_id": "att_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4824538019997817,
+     "success": true,
+     "task_id": "att_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.3307017349998205,
+     "success": true,
+     "task_id": "att_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1519,
+     "output_tokens": 297,
+     "prompt_chars": 6076,
+     "response_chars": 1188,
+     "seconds": 3.9849000131653156e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1379,
+     "output_tokens": 99,
+     "prompt_chars": 5517,
+     "response_chars": 396,
+     "seconds": 3.278199983469676e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1326,
+     "output_tokens": 57,
+     "prompt_chars": 5305,
+     "response_chars": 229,
+     "seconds": 3.7726999835285824e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1376,
+     "output_tokens": 115,
+     "prompt_chars": 5506,
+     "response_chars": 463,
+     "seconds": 1.6930000128922984e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1354,
+     "output_tokens": 56,
+     "prompt_chars": 5418,
+     "response_chars": 227,
+     "seconds": 0.00010244799977954244,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1377,
+     "output_tokens": 40,
+     "prompt_chars": 5510,
+     "response_chars": 163,
+     "seconds": 1.5920999885565834e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1285,
+     "output_tokens": 55,
+     "prompt_chars": 5140,
+     "response_chars": 221,
+     "seconds": 4.832800004805904e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9616,
+    "output_tokens": 719
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 2,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t1",
+     "title": "Attendance Status Breakdown"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t2",
+     "title": "Hours Worked by Department"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t3",
+     "title": "GPS Location Mismatches"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3965,
+        "output_tokens": 168
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4132,
+        "output_tokens": 254
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1519,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9616,
+      "output_tokens": 719
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.446112607000032
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "correct",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 1,
+    "per_task": {
+     "eco_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 646,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     }
+    },
+    "unexpected": [],
+    "valid": 1
+   },
+   "dataset": "ecommerce",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.3700940970002193,
+     "success": true,
+     "task_id": "eco_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.373006047999752,
+     "success": true,
+     "task_id": "eco_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5221318589997281,
+     "success": true,
+     "task_id": "eco_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1319,
+     "output_tokens": 289,
+     "prompt_chars": 5276,
+     "response_chars": 1159,
+     "seconds": 2.8562999887071783e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1255,
+     "output_tokens": 54,
+     "prompt_chars": 5020,
+     "response_chars": 218,
+     "seconds": 1.7923000086739194e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1298,
+     "output_tokens": 51,
+     "prompt_chars": 5192,
+     "response_chars": 207,
+     "seconds": 4.473999979381915e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1258,
+     "output_tokens": 59,
+     "prompt_chars": 5034,
+     "response_chars": 238,
+     "seconds": 1.7952000234799925e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1304,
+     "output_tokens": 56,
+     "prompt_chars": 5217,
+     "response_chars": 227,
+     "seconds": 5.635600018649711e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1257,
+     "output_tokens": 94,
+     "prompt_chars": 5028,
+     "response_chars": 379,
+     "seconds": 2.198899983341107e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 54,
+     "prompt_chars": 5239,
+     "response_chars": 217,
+     "seconds": 5.843500002811197e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9000,
+    "output_tokens": 657
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 2,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Revenue Overview",
+      "### 2. Weekend vs Weekday Revenue",
+      "### 3. Monthly Revenue Trend",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t1",
+     "title": "Revenue Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t2",
+     "title": "Weekend vs Weekday Revenue"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t3",
+     "title": "Monthly Revenue Trend"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3911,
+        "output_tokens": 161
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 3770,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1319,
+        "output_tokens": 289
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9000,
+      "output_tokens": 657
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.337156426000092
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "sales_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1000
+     },
+     "sales_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 674,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 982
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "sales",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": "data_error",
+     "seconds": 1.42886634100023,
+     "success": false,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.4622226869996666,
+     "success": true,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.6113768119998895,
+     "success": true,
+     "task_id": "sales_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.7005142250000063,
+     "success": true,
+     "task_id": "sales_t3"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.000165616000231239,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00017267500015805126,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.00013360800039663445,
+     "success": false,
+     "task_id": "sales_t4"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1590,
+     "output_tokens": 391,
+     "prompt_chars": 6362,
+     "response_chars": 1564,
+     "seconds": 3.523699979268713e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 35,
+     "prompt_chars": 5890,
+     "response_chars": 141,
+     "seconds": 2.360700000281213e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1931,
+     "output_tokens": 112,
+     "prompt_chars": 7726,
+     "response_chars": 451,
+     "seconds": 4.392399978314643e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 50,
+     "prompt_chars": 5238,
+     "response_chars": 203,
+     "seconds": 4.312800001571304e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1477,
+     "output_tokens": 92,
+     "prompt_chars": 5908,
+     "response_chars": 370,
+     "seconds": 1.9793999854300637e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1323,
+     "output_tokens": 56,
+     "prompt_chars": 5292,
+     "response_chars": 225,
+     "seconds": 5.550900004891446e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 48,
+     "prompt_chars": 5890,
+     "response_chars": 194,
+     "seconds": 2.1828000171808526e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1284,
+     "output_tokens": 52,
+     "prompt_chars": 5138,
+     "response_chars": 209,
+     "seconds": 5.9115000112797134e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1476,
+     "output_tokens": 32,
+     "prompt_chars": 5904,
+     "response_chars": 129,
+     "seconds": 2.2740000076737488e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 3.00900001093396e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.293699981237296e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 7,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 11,
+    "estimated_calls": 11,
+    "input_tokens": 16460,
+    "output_tokens": 932
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 2,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## \u26a0\ufe0f Failed Analyses",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 11,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [
+     "runtime_error"
+    ],
+    "expected_completed": 3,
+    "expected_failures": 1,
+    "expected_failures_observed": 1,
+    "failed": 1,
+    "planned": 4,
+    "retries": 4,
+    "retries_as_expected": 4,
+    "status_as_expected": 4
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 1,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 1,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t1",
+     "title": "Sales Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t2",
+     "title": "Regional Sales Comparison"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t3",
+     "title": "Target Attainment"
+    },
+    {
+     "error_type": "runtime_error",
+     "expected_retries": 0,
+     "expected_status": "failed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": false,
+     "retries": 3,
+     "status": "failed",
+     "status_as_expected": true,
+     "task_id": "sales_t4",
+     "title": "Filesystem Inventory"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3916,
+        "output_tokens": 158
+       },
+       "code_generator": {
+        "calls": 7,
+        "input_tokens": 10954,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1590,
+        "output_tokens": 391
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 16460,
+      "output_tokens": 932
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "variant": "v1",
+   "wall_seconds": 6.314631820000159
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "stu_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1009
+     },
+     "stu_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 599,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 987
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "student",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.6281535210000584,
+     "success": true,
+     "task_id": "stu_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.3685098360001575,
+     "success": true,
+     "task_id": "stu_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.84067842200011,
+     "success": true,
+     "task_id": "stu_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1399,
+     "output_tokens": 290,
+     "prompt_chars": 5599,
+     "response_chars": 1161,
+     "seconds": 3.3817999792518094e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1351,
+     "output_tokens": 109,
+     "prompt_chars": 5404,
+     "response_chars": 436,
+     "seconds": 2.702899973883177e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1322,
+     "output_tokens": 50,
+     "prompt_chars": 5288,
+     "response_chars": 203,
+     "seconds": 6.301299981714692e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1352,
+     "output_tokens": 68,
+     "prompt_chars": 5411,
+     "response_chars": 275,
+     "seconds": 2.2868000087328255e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1342,
+     "output_tokens": 52,
+     "prompt_chars": 5371,
+     "response_chars": 209,
+     "seconds": 4.7917000301822554e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1355,
+     "output_tokens": 72,
+     "prompt_chars": 5421,
+     "response_chars": 290,
+     "seconds": 1.822500007619965e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1293,
+     "output_tokens": 53,
+     "prompt_chars": 5174,
+     "response_chars": 215,
+     "seconds": 5.11839998580399e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9414,
+    "output_tokens": 694
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 2,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t1",
+     "title": "Score Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t2",
+     "title": "Scores by Subject"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t3",
+     "title": "Study Hours vs Score"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3957,
+        "output_tokens": 155
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4058,
+        "output_tokens": 249
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1399,
+        "output_tokens": 290
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9414,
+      "output_tokens": 694
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.934048159999747
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "att_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 688,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     },
+     "att_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 737,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 969
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "attendance",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.5979402449997906,
+     "success": true,
+     "task_id": "att_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.507291154000086,
+     "success": true,
+     "task_id": "att_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.2219249119998494,
+     "success": true,
+     "task_id": "att_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1519,
+     "output_tokens": 297,
+     "prompt_chars": 6076,
+     "response_chars": 1188,
+     "seconds": 3.344900005686213e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1379,
+     "output_tokens": 99,
+     "prompt_chars": 5517,
+     "response_chars": 396,
+     "seconds": 2.610199999253382e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1326,
+     "output_tokens": 57,
+     "prompt_chars": 5305,
+     "response_chars": 229,
+     "seconds": 5.280499999571475e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1376,
+     "output_tokens": 115,
+     "prompt_chars": 5506,
+     "response_chars": 463,
+     "seconds": 2.0554999991873046e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1354,
+     "output_tokens": 56,
+     "prompt_chars": 5418,
+     "response_chars": 227,
+     "seconds": 8.303699996758951e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1377,
+     "output_tokens": 40,
+     "prompt_chars": 5510,
+     "response_chars": 163,
+     "seconds": 1.7316000139544485e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1285,
+     "output_tokens": 55,
+     "prompt_chars": 5140,
+     "response_chars": 221,
+     "seconds": 5.0008000016532606e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9616,
+    "output_tokens": 719
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 3,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t1",
+     "title": "Attendance Status Breakdown"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t2",
+     "title": "Hours Worked by Department"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t3",
+     "title": "GPS Location Mismatches"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3965,
+        "output_tokens": 168
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4132,
+        "output_tokens": 254
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1519,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9616,
+      "output_tokens": 719
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 4.451667274999636
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "correct",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 1,
+    "per_task": {
+     "eco_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 646,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     }
+    },
+    "unexpected": [],
+    "valid": 1
+   },
+   "dataset": "ecommerce",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1074029899996276,
+     "success": true,
+     "task_id": "eco_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.0973323120001623,
+     "success": true,
+     "task_id": "eco_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2193961289999606,
+     "success": true,
+     "task_id": "eco_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1319,
+     "output_tokens": 289,
+     "prompt_chars": 5276,
+     "response_chars": 1159,
+     "seconds": 2.7811000109068118e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1255,
+     "output_tokens": 54,
+     "prompt_chars": 5020,
+     "response_chars": 218,
+     "seconds": 2.081499997075298e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1298,
+     "output_tokens": 51,
+     "prompt_chars": 5192,
+     "response_chars": 207,
+     "seconds": 4.153700001552352e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1258,
+     "output_tokens": 59,
+     "prompt_chars": 5034,
+     "response_chars": 238,
+     "seconds": 1.627000028747716e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1304,
+     "output_tokens": 56,
+     "prompt_chars": 5217,
+     "response_chars": 227,
+     "seconds": 4.2220999603159726e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1257,
+     "output_tokens": 94,
+     "prompt_chars": 5028,
+     "response_chars": 379,
+     "seconds": 1.3675999980478082e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 54,
+     "prompt_chars": 5239,
+     "response_chars": 217,
+     "seconds": 5.8677000197349116e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9000,
+    "output_tokens": 657
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 3,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Revenue Overview",
+      "### 2. Weekend vs Weekday Revenue",
+      "### 3. Monthly Revenue Trend",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t1",
+     "title": "Revenue Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t2",
+     "title": "Weekend vs Weekday Revenue"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t3",
+     "title": "Monthly Revenue Trend"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3911,
+        "output_tokens": 161
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 3770,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1319,
+        "output_tokens": 289
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9000,
+      "output_tokens": 657
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.49477238999998
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "sales_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1000
+     },
+     "sales_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 674,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 982
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "sales",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": "data_error",
+     "seconds": 1.120015383000009,
+     "success": false,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.298495172999992,
+     "success": true,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2147214760002498,
+     "success": true,
+     "task_id": "sales_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.0875500850002027,
+     "success": true,
+     "task_id": "sales_t3"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.0002517210000405612,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.0001329910001004464,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 8.868200029610307e-05,
+     "success": false,
+     "task_id": "sales_t4"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1590,
+     "output_tokens": 391,
+     "prompt_chars": 6362,
+     "response_chars": 1564,
+     "seconds": 3.1612999919161666e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 35,
+     "prompt_chars": 5890,
+     "response_chars": 141,
+     "seconds": 2.1545999970840057e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1931,
+     "output_tokens": 112,
+     "prompt_chars": 7726,
+     "response_chars": 451,
+     "seconds": 3.2158000067283865e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 50,
+     "prompt_chars": 5238,
+     "response_chars": 203,
+     "seconds": 5.361200010156608e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1477,
+     "output_tokens": 92,
+     "prompt_chars": 5908,
+     "response_chars": 370,
+     "seconds": 2.317100006621331e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1323,
+     "output_tokens": 56,
+     "prompt_chars": 5292,
+     "response_chars": 225,
+     "seconds": 5.7511999784765067e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 48,
+     "prompt_chars": 5890,
+     "response_chars": 194,
+     "seconds": 2.014799974858761e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1284,
+     "output_tokens": 52,
+     "prompt_chars": 5138,
+     "response_chars": 209,
+     "seconds": 5.346200032363413e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1476,
+     "output_tokens": 32,
+     "prompt_chars": 5904,
+     "response_chars": 129,
+     "seconds": 2.1331999960239045e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.5613000161683885e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.2080000235291664e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 7,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 11,
+    "estimated_calls": 11,
+    "input_tokens": 16460,
+    "output_tokens": 932
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 3,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## \u26a0\ufe0f Failed Analyses",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 11,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [
+     "runtime_error"
+    ],
+    "expected_completed": 3,
+    "expected_failures": 1,
+    "expected_failures_observed": 1,
+    "failed": 1,
+    "planned": 4,
+    "retries": 4,
+    "retries_as_expected": 4,
+    "status_as_expected": 4
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 1,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 1,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t1",
+     "title": "Sales Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t2",
+     "title": "Regional Sales Comparison"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t3",
+     "title": "Target Attainment"
+    },
+    {
+     "error_type": "runtime_error",
+     "expected_retries": 0,
+     "expected_status": "failed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": false,
+     "retries": 3,
+     "status": "failed",
+     "status_as_expected": true,
+     "task_id": "sales_t4",
+     "title": "Filesystem Inventory"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3916,
+        "output_tokens": 158
+       },
+       "code_generator": {
+        "calls": 7,
+        "input_tokens": 10954,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1590,
+        "output_tokens": 391
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 16460,
+      "output_tokens": 932
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "variant": "v1",
+   "wall_seconds": 4.82461969499991
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "stu_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1009
+     },
+     "stu_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 599,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 987
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "student",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2166504980000354,
+     "success": true,
+     "task_id": "stu_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.090103524999904,
+     "success": true,
+     "task_id": "stu_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.275405759000023,
+     "success": true,
+     "task_id": "stu_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1399,
+     "output_tokens": 290,
+     "prompt_chars": 5599,
+     "response_chars": 1161,
+     "seconds": 3.35820000145759e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1351,
+     "output_tokens": 109,
+     "prompt_chars": 5404,
+     "response_chars": 436,
+     "seconds": 2.5939999886759324e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1322,
+     "output_tokens": 50,
+     "prompt_chars": 5288,
+     "response_chars": 203,
+     "seconds": 5.451600009109825e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1352,
+     "output_tokens": 68,
+     "prompt_chars": 5411,
+     "response_chars": 275,
+     "seconds": 2.0730999949591933e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1342,
+     "output_tokens": 52,
+     "prompt_chars": 5371,
+     "response_chars": 209,
+     "seconds": 5.077300011180341e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1355,
+     "output_tokens": 72,
+     "prompt_chars": 5421,
+     "response_chars": 290,
+     "seconds": 2.2338999769999646e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1293,
+     "output_tokens": 53,
+     "prompt_chars": 5174,
+     "response_chars": 215,
+     "seconds": 5.462199987960048e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9414,
+    "output_tokens": 694
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 3,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t1",
+     "title": "Score Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t2",
+     "title": "Scores by Subject"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t3",
+     "title": "Study Hours vs Score"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3957,
+        "output_tokens": 155
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4058,
+        "output_tokens": 249
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1399,
+        "output_tokens": 290
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9414,
+      "output_tokens": 694
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.699656756999957
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "att_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 688,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     },
+     "att_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 737,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 969
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "attendance",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.3650463189997026,
+     "success": true,
+     "task_id": "att_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.261428996000177,
+     "success": true,
+     "task_id": "att_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1565686210001331,
+     "success": true,
+     "task_id": "att_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1519,
+     "output_tokens": 297,
+     "prompt_chars": 6076,
+     "response_chars": 1188,
+     "seconds": 3.8144999962241855e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1379,
+     "output_tokens": 99,
+     "prompt_chars": 5517,
+     "response_chars": 396,
+     "seconds": 3.320699988762499e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1326,
+     "output_tokens": 57,
+     "prompt_chars": 5305,
+     "response_chars": 229,
+     "seconds": 5.109899984745425e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1376,
+     "output_tokens": 115,
+     "prompt_chars": 5506,
+     "response_chars": 463,
+     "seconds": 2.7012999908038182e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1354,
+     "output_tokens": 56,
+     "prompt_chars": 5418,
+     "response_chars": 227,
+     "seconds": 5.5268000323849265e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1377,
+     "output_tokens": 40,
+     "prompt_chars": 5510,
+     "response_chars": 163,
+     "seconds": 3.203699998266529e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1285,
+     "output_tokens": 55,
+     "prompt_chars": 5140,
+     "response_chars": 221,
+     "seconds": 8.45320000735228e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9616,
+    "output_tokens": 719
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 4,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Attendance Status Breakdown",
+      "### 2. Hours Worked by Department",
+      "### 3. GPS Location Mismatches",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t1",
+     "title": "Attendance Status Breakdown"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t2",
+     "title": "Hours Worked by Department"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "att_t3",
+     "title": "GPS Location Mismatches"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3965,
+        "output_tokens": 168
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4132,
+        "output_tokens": 254
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1519,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9616,
+      "output_tokens": 719
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.9218589170000087
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "correct",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 1,
+    "per_task": {
+     "eco_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 646,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1006
+     }
+    },
+    "unexpected": [],
+    "valid": 1
+   },
+   "dataset": "ecommerce",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.0917665150000175,
+     "success": true,
+     "task_id": "eco_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.168970939999781,
+     "success": true,
+     "task_id": "eco_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2128206279999176,
+     "success": true,
+     "task_id": "eco_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1319,
+     "output_tokens": 289,
+     "prompt_chars": 5276,
+     "response_chars": 1159,
+     "seconds": 2.604200017231051e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1255,
+     "output_tokens": 54,
+     "prompt_chars": 5020,
+     "response_chars": 218,
+     "seconds": 1.7817000298236962e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1298,
+     "output_tokens": 51,
+     "prompt_chars": 5192,
+     "response_chars": 207,
+     "seconds": 4.223000041747582e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1258,
+     "output_tokens": 59,
+     "prompt_chars": 5034,
+     "response_chars": 238,
+     "seconds": 1.391100022374303e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1304,
+     "output_tokens": 56,
+     "prompt_chars": 5217,
+     "response_chars": 227,
+     "seconds": 4.333299966674531e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1257,
+     "output_tokens": 94,
+     "prompt_chars": 5028,
+     "response_chars": 379,
+     "seconds": 1.4184000065142754e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 54,
+     "prompt_chars": 5239,
+     "response_chars": 217,
+     "seconds": 4.207099982522777e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9000,
+    "output_tokens": 657
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 4,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Revenue Overview",
+      "### 2. Weekend vs Weekday Revenue",
+      "### 3. Monthly Revenue Trend",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t1",
+     "title": "Revenue Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t2",
+     "title": "Weekend vs Weekday Revenue"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "eco_t3",
+     "title": "Monthly Revenue Trend"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3911,
+        "output_tokens": 161
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 3770,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1319,
+        "output_tokens": 289
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9000,
+      "output_tokens": 657
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.534828843000014
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "sales_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1000
+     },
+     "sales_t2": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 674,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 982
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "sales",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": "data_error",
+     "seconds": 1.08079169299981,
+     "success": false,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2090319169997201,
+     "success": true,
+     "task_id": "sales_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.283389416999853,
+     "success": true,
+     "task_id": "sales_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.0837373990002561,
+     "success": true,
+     "task_id": "sales_t3"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 0.0001354860000901681,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 7.76909996602626e-05,
+     "success": false,
+     "task_id": "sales_t4"
+    },
+    {
+     "blocked_by_safety_scan": true,
+     "chart": false,
+     "error_type": "runtime_error",
+     "seconds": 7.426399997711997e-05,
+     "success": false,
+     "task_id": "sales_t4"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1590,
+     "output_tokens": 391,
+     "prompt_chars": 6362,
+     "response_chars": 1564,
+     "seconds": 3.376400036358973e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 35,
+     "prompt_chars": 5890,
+     "response_chars": 141,
+     "seconds": 2.039199989667395e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1931,
+     "output_tokens": 112,
+     "prompt_chars": 7726,
+     "response_chars": 451,
+     "seconds": 3.1334000141214347e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1309,
+     "output_tokens": 50,
+     "prompt_chars": 5238,
+     "response_chars": 203,
+     "seconds": 3.7370999962149654e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1477,
+     "output_tokens": 92,
+     "prompt_chars": 5908,
+     "response_chars": 370,
+     "seconds": 1.9393000002310146e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1323,
+     "output_tokens": 56,
+     "prompt_chars": 5292,
+     "response_chars": 225,
+     "seconds": 4.888800003755023e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1472,
+     "output_tokens": 48,
+     "prompt_chars": 5890,
+     "response_chars": 194,
+     "seconds": 1.8459999864717247e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1284,
+     "output_tokens": 52,
+     "prompt_chars": 5138,
+     "response_chars": 209,
+     "seconds": 4.422100028023124e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1476,
+     "output_tokens": 32,
+     "prompt_chars": 5904,
+     "response_chars": 129,
+     "seconds": 1.834599970607087e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 2.3546000193164218e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1563,
+     "output_tokens": 32,
+     "prompt_chars": 6255,
+     "response_chars": 129,
+     "seconds": 1.8540999917604495e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 7,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 11,
+    "estimated_calls": 11,
+    "input_tokens": 16460,
+    "output_tokens": 932
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 4,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Sales Overview",
+      "### 2. Regional Sales Comparison",
+      "### 3. Target Attainment",
+      "## \u26a0\ufe0f Failed Analyses",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 11,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [
+     "runtime_error"
+    ],
+    "expected_completed": 3,
+    "expected_failures": 1,
+    "expected_failures_observed": 1,
+    "failed": 1,
+    "planned": 4,
+    "retries": 4,
+    "retries_as_expected": 4,
+    "status_as_expected": 4
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 1,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 1,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t1",
+     "title": "Sales Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t2",
+     "title": "Regional Sales Comparison"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "sales_t3",
+     "title": "Target Attainment"
+    },
+    {
+     "error_type": "runtime_error",
+     "expected_retries": 0,
+     "expected_status": "failed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": false,
+     "retries": 3,
+     "status": "failed",
+     "status_as_expected": true,
+     "task_id": "sales_t4",
+     "title": "Filesystem Inventory"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3916,
+        "output_tokens": 158
+       },
+       "code_generator": {
+        "calls": 7,
+        "input_tokens": 10954,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1590,
+        "output_tokens": 391
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 16460,
+      "output_tokens": 932
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "variant": "v1",
+   "wall_seconds": 4.755145054999957
+  },
+  {
+   "answers": {
+    "correct": 7,
+    "expected": 7,
+    "incorrect": 0,
+    "missing": 0,
+    "per_answer": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "unexpected": []
+   },
+   "behavior_matches_v1_snapshot": true,
+   "charts": {
+    "expected": 2,
+    "per_task": {
+     "stu_t1": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 624,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 1009
+     },
+     "stu_t3": {
+      "decodes": true,
+      "exists": true,
+      "expected": true,
+      "height": 599,
+      "path_inside_output_dir": true,
+      "png_signature": true,
+      "valid": true,
+      "width": 987
+     }
+    },
+    "unexpected": [],
+    "valid": 2
+   },
+   "dataset": "student",
+   "duplicate_answers": [],
+   "error": null,
+   "executions": [
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.2674141759998747,
+     "success": true,
+     "task_id": "stu_t1"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": false,
+     "error_type": null,
+     "seconds": 1.1783314879999125,
+     "success": true,
+     "task_id": "stu_t2"
+    },
+    {
+     "blocked_by_safety_scan": false,
+     "chart": true,
+     "error_type": null,
+     "seconds": 1.407836399000189,
+     "success": true,
+     "task_id": "stu_t3"
+    }
+   ],
+   "llm_calls": [
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1399,
+     "output_tokens": 290,
+     "prompt_chars": 5599,
+     "response_chars": 1161,
+     "seconds": 2.980899989779573e-05,
+     "skill": "planner",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1351,
+     "output_tokens": 109,
+     "prompt_chars": 5404,
+     "response_chars": 436,
+     "seconds": 1.9508000150381122e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1322,
+     "output_tokens": 50,
+     "prompt_chars": 5288,
+     "response_chars": 203,
+     "seconds": 5.8924999848386506e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1352,
+     "output_tokens": 68,
+     "prompt_chars": 5411,
+     "response_chars": 275,
+     "seconds": 1.9453999811958056e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1342,
+     "output_tokens": 52,
+     "prompt_chars": 5371,
+     "response_chars": 209,
+     "seconds": 5.69140001971391e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1355,
+     "output_tokens": 72,
+     "prompt_chars": 5421,
+     "response_chars": 290,
+     "seconds": 2.652100010891445e-05,
+     "skill": "code_generator",
+     "token_source": "estimated_chars_div_4"
+    },
+    {
+     "anomaly": null,
+     "call_source": "mock_scripted",
+     "input_tokens": 1293,
+     "output_tokens": 53,
+     "prompt_chars": 5174,
+     "response_chars": 215,
+     "seconds": 4.250699976182659e-05,
+     "skill": "business_insights",
+     "token_source": "estimated_chars_div_4"
+    }
+   ],
+   "llm_calls_by_skill": {
+    "business_insights": 3,
+    "code_generator": 3,
+    "planner": 1
+   },
+   "monitor": {
+    "calls": 7,
+    "estimated_calls": 7,
+    "input_tokens": 9414,
+    "output_tokens": 694
+   },
+   "quality": {
+    "correct": 5,
+    "expected": 5,
+    "per_value": {
+     "duplicate_rows": "correct",
+     "missing_values": "correct",
+     "quality_score": "correct",
+     "total_columns": "correct",
+     "total_rows": "correct"
+    }
+   },
+   "repetition": 4,
+   "reports": {
+    "expected": 3,
+    "markdown": {
+     "headings": [
+      "# \ud83d\udcca Autonomous Data Analysis Report",
+      "## \ud83d\udd0d Data Quality Assessment",
+      "## \ud83d\udcc8 Analysis Results",
+      "### 1. Score Overview",
+      "### 2. Scores by Subject",
+      "### 3. Study Hours vs Score",
+      "## \ud83d\udca1 Key Business Insights",
+      "## \u23f1\ufe0f Execution Timeline"
+     ],
+     "valid": true
+    },
+    "notebook": {
+     "code_cells": 4,
+     "valid": true
+    },
+    "pdf": {
+     "valid": true
+    },
+    "valid": 3
+   },
+   "scripted_calls_seen_by_mock": 7,
+   "task_summary": {
+    "completed": 3,
+    "completed_of_expected": 3,
+    "error_types": [],
+    "expected_completed": 3,
+    "expected_failures": 0,
+    "expected_failures_observed": 0,
+    "failed": 0,
+    "planned": 3,
+    "retries": 0,
+    "retries_as_expected": 3,
+    "status_as_expected": 3
+   },
+   "tasks": [
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t1",
+     "title": "Score Overview"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": false,
+     "has_chart": false,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t2",
+     "title": "Scores by Subject"
+    },
+    {
+     "error_type": null,
+     "expected_retries": 0,
+     "expected_status": "completed",
+     "expects_chart": true,
+     "has_chart": true,
+     "has_interpretation": true,
+     "retries": 0,
+     "status": "completed",
+     "status_as_expected": true,
+     "task_id": "stu_t3",
+     "title": "Study Hours vs Score"
+    }
+   ],
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insights": {
+        "calls": 3,
+        "input_tokens": 3957,
+        "output_tokens": 155
+       },
+       "code_generator": {
+        "calls": 3,
+        "input_tokens": 4058,
+        "output_tokens": 249
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 1399,
+        "output_tokens": 290
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 9414,
+      "output_tokens": 694
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "variant": "v1",
+   "wall_seconds": 3.942342297000323
+  }
+ ],
+ "schema": "insightpilot.benchmark/1",
+ "started_utc": "2026-11-22T14:49:30Z",
+ "summary": {
+  "answers": {
+   "correct": 28,
+   "expected": 28,
+   "incorrect": 0,
+   "missing": 0
+  },
+  "behavior_matches_v1_snapshot": 4,
+  "charts": {
+   "expected": 7,
+   "valid": 7
+  },
+  "datasets": 4,
+  "deterministic_across_repetitions": {
+   "attendance": true,
+   "ecommerce": true,
+   "sales": true,
+   "student": true
+  },
+  "errors": [],
+  "latency": {
+   "by_dataset": {
+    "attendance": {
+     "sandbox_executions": {
+      "max_ms": 1597.9,
+      "median_ms": 1365.0,
+      "min_ms": 1156.6,
+      "n": 15,
+      "p95_ms": 1597.9
+     },
+     "wall": {
+      "max_ms": 4487.8,
+      "median_ms": 4446.1,
+      "min_ms": 3921.9,
+      "n": 5,
+      "p95_ms": 4487.8
+     }
+    },
+    "ecommerce": {
+     "sandbox_executions": {
+      "max_ms": 1522.1,
+      "median_ms": 1208.5,
+      "min_ms": 1091.8,
+      "n": 15,
+      "p95_ms": 1522.1
+     },
+     "wall": {
+      "max_ms": 4337.2,
+      "median_ms": 3572.6,
+      "min_ms": 3494.8,
+      "n": 5,
+      "p95_ms": 4337.2
+     }
+    },
+    "sales": {
+     "sandbox_executions": {
+      "max_ms": 1700.5,
+      "median_ms": 1087.6,
+      "min_ms": 0.1,
+      "n": 35,
+      "p95_ms": 1611.4
+     },
+     "wall": {
+      "max_ms": 6314.6,
+      "median_ms": 5349.5,
+      "min_ms": 4755.1,
+      "n": 5,
+      "p95_ms": 6314.6
+     }
+    },
+    "student": {
+     "sandbox_executions": {
+      "max_ms": 1840.7,
+      "median_ms": 1368.5,
+      "min_ms": 1090.1,
+      "n": 15,
+      "p95_ms": 1840.7
+     },
+     "wall": {
+      "max_ms": 4934.0,
+      "median_ms": 4005.2,
+      "min_ms": 3699.7,
+      "n": 5,
+      "p95_ms": 4934.0
+     }
+    }
+   },
+   "llm_call_mock_all": {
+    "max_ms": 0.2,
+    "median_ms": 0.0,
+    "min_ms": 0.0,
+    "n": 160,
+    "p95_ms": 0.1
+   },
+   "pipeline_wall_all_runs": {
+    "max_ms": 6314.6,
+    "median_ms": 4391.6,
+    "min_ms": 3494.8,
+    "n": 20,
+    "p95_ms": 5400.5
+   },
+   "sandbox_execution_all": {
+    "max_ms": 1840.7,
+    "median_ms": 1233.8,
+    "min_ms": 0.1,
+    "n": 80,
+    "p95_ms": 1597.9
+   }
+  },
+  "llm_calls_by_skill": {
+   "business_insights": 12,
+   "code_generator": 16,
+   "planner": 4
+  },
+  "llm_calls_per_benchmark_pass": 32,
+  "quality": {
+   "correct": 20,
+   "expected": 20
+  },
+  "repetitions": 5,
+  "reports": {
+   "expected": 12,
+   "valid": 12
+  },
+  "runs": 20,
+  "sandbox_executions": {
+   "blocked_by_safety_scan": 3,
+   "failed": 4,
+   "total": 16
+  },
+  "tasks": {
+   "completed": 12,
+   "completed_of_expected": 12,
+   "expected_completed": 12,
+   "expected_failures": 1,
+   "expected_failures_observed": 1,
+   "failed": 1,
+   "planned": 13,
+   "retries": 4,
+   "retries_as_expected": 13,
+   "status_as_expected": 13
+  },
+  "tokens_per_benchmark_pass": {
+   "classes": {
+    "mock_scripted/estimated_chars_div_4": {
+     "anomalies": 0,
+     "by_skill": {
+      "business_insights": {
+       "calls": 12,
+       "input_tokens": 15749,
+       "output_tokens": 642
+      },
+      "code_generator": {
+       "calls": 16,
+       "input_tokens": 22914,
+       "output_tokens": 1093
+      },
+      "planner": {
+       "calls": 4,
+       "input_tokens": 5827,
+       "output_tokens": 1267
+      }
+     },
+     "calls": 32,
+     "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+     "cost_usd_estimate": null,
+     "input_tokens": 44490,
+     "output_tokens": 3002
+    }
+   },
+   "mock_calls": 32,
+   "provider_calls": 0,
+   "total_calls": 32
+  }
+ },
+ "variant": "v1",
+ "variant_description": "unchanged V1 LangGraph pipeline and V1 subprocess sandbox",
+ "workload": {
+  "datasets": {
+   "attendance": {
+    "dataset_sha256": "2fe0b859f92219a49a5431ff2403a471356b00bb6f66187a6eec2874da8bd26e",
+    "expected_sha256": "9c4bdd7a2d01e4f12817feaaeebd28b4887f22f096f26fc02d2e99da691eae9d",
+    "scenario_sha256": "c7c094cc0c9a1ae28a863d4f33fca3428cb0181ff988ce4d1f9f0286078432f4"
+   },
+   "ecommerce": {
+    "dataset_sha256": "102eccf6775442efc96a94fda0436cfcc96901a5089cb07bf32ba9729e94b09a",
+    "expected_sha256": "4a98f3d4dfa4c8c1aa092b144cdc24df1fe4c14a2340a190f281acda01c93359",
+    "scenario_sha256": "88afea704cfe046546a3c481f6d16454f4238e2706dbf3de322471ea015f24f1"
+   },
+   "sales": {
+    "dataset_sha256": "c5ac406600fe86e5a929e5132af87e4737c7185c167adb5d7b15d8d2d5894563",
+    "expected_sha256": "a0032154edfebff97805d15f7cf07abd2eb9658aa7077465c9462ab30d14652d",
+    "scenario_sha256": "ca71a768ac31e25470205e9899a61046c4b385be7aa1350587b9f3e99387caec"
+   },
+   "student": {
+    "dataset_sha256": "3259adb09dbbedeafd91802f2285dcf3a89cde407088387e495d7dea99b4fc7f",
+    "expected_sha256": "3dd1109f1b1b47435cbad3605b307a75af595825a2ef724bff8234e89be62a2a",
+    "scenario_sha256": "61268c94fd87110de50a03e0e059e8fb3322f8d4ef33f09c5d9dd5b0b5ab64bf"
+   }
+  },
+  "harness": "p4.0",
+  "max_retries": 2,
+  "safe_mode": false,
+  "sha256": "b4ca411def67038d3525f3e0c0e72594850015eb5ebb0ec89cedde39e3eff7c0"
+ }
+}

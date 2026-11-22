@@ -1,0 +1,66 @@
+variant,dataset,repetition,task_id,title,status,expected_status,status_as_expected,retries,expected_retries,error_type,has_chart,expects_chart,has_interpretation
+v1,attendance,0,att_t1,Attendance Status Breakdown,completed,completed,True,0,0,,True,True,True
+v1,attendance,0,att_t2,Hours Worked by Department,completed,completed,True,0,0,,True,True,True
+v1,attendance,0,att_t3,GPS Location Mismatches,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,0,eco_t1,Revenue Overview,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,0,eco_t2,Weekend vs Weekday Revenue,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,0,eco_t3,Monthly Revenue Trend,completed,completed,True,0,0,,True,True,True
+v1,sales,0,sales_t1,Sales Overview,completed,completed,True,1,1,,True,True,True
+v1,sales,0,sales_t2,Regional Sales Comparison,completed,completed,True,0,0,,True,True,True
+v1,sales,0,sales_t3,Target Attainment,completed,completed,True,0,0,,False,False,True
+v1,sales,0,sales_t4,Filesystem Inventory,failed,failed,True,3,0,runtime_error,False,False,False
+v1,student,0,stu_t1,Score Overview,completed,completed,True,0,0,,True,True,True
+v1,student,0,stu_t2,Scores by Subject,completed,completed,True,0,0,,False,False,True
+v1,student,0,stu_t3,Study Hours vs Score,completed,completed,True,0,0,,True,True,True
+v1,attendance,1,att_t1,Attendance Status Breakdown,completed,completed,True,0,0,,True,True,True
+v1,attendance,1,att_t2,Hours Worked by Department,completed,completed,True,0,0,,True,True,True
+v1,attendance,1,att_t3,GPS Location Mismatches,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,1,eco_t1,Revenue Overview,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,1,eco_t2,Weekend vs Weekday Revenue,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,1,eco_t3,Monthly Revenue Trend,completed,completed,True,0,0,,True,True,True
+v1,sales,1,sales_t1,Sales Overview,completed,completed,True,1,1,,True,True,True
+v1,sales,1,sales_t2,Regional Sales Comparison,completed,completed,True,0,0,,True,True,True
+v1,sales,1,sales_t3,Target Attainment,completed,completed,True,0,0,,False,False,True
+v1,sales,1,sales_t4,Filesystem Inventory,failed,failed,True,3,0,runtime_error,False,False,False
+v1,student,1,stu_t1,Score Overview,completed,completed,True,0,0,,True,True,True
+v1,student,1,stu_t2,Scores by Subject,completed,completed,True,0,0,,False,False,True
+v1,student,1,stu_t3,Study Hours vs Score,completed,completed,True,0,0,,True,True,True
+v1,attendance,2,att_t1,Attendance Status Breakdown,completed,completed,True,0,0,,True,True,True
+v1,attendance,2,att_t2,Hours Worked by Department,completed,completed,True,0,0,,True,True,True
+v1,attendance,2,att_t3,GPS Location Mismatches,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,2,eco_t1,Revenue Overview,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,2,eco_t2,Weekend vs Weekday Revenue,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,2,eco_t3,Monthly Revenue Trend,completed,completed,True,0,0,,True,True,True
+v1,sales,2,sales_t1,Sales Overview,completed,completed,True,1,1,,True,True,True
+v1,sales,2,sales_t2,Regional Sales Comparison,completed,completed,True,0,0,,True,True,True
+v1,sales,2,sales_t3,Target Attainment,completed,completed,True,0,0,,False,False,True
+v1,sales,2,sales_t4,Filesystem Inventory,failed,failed,True,3,0,runtime_error,False,False,False
+v1,student,2,stu_t1,Score Overview,completed,completed,True,0,0,,True,True,True
+v1,student,2,stu_t2,Scores by Subject,completed,completed,True,0,0,,False,False,True
+v1,student,2,stu_t3,Study Hours vs Score,completed,completed,True,0,0,,True,True,True
+v1,attendance,3,att_t1,Attendance Status Breakdown,completed,completed,True,0,0,,True,True,True
+v1,attendance,3,att_t2,Hours Worked by Department,completed,completed,True,0,0,,True,True,True
+v1,attendance,3,att_t3,GPS Location Mismatches,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,3,eco_t1,Revenue Overview,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,3,eco_t2,Weekend vs Weekday Revenue,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,3,eco_t3,Monthly Revenue Trend,completed,completed,True,0,0,,True,True,True
+v1,sales,3,sales_t1,Sales Overview,completed,completed,True,1,1,,True,True,True
+v1,sales,3,sales_t2,Regional Sales Comparison,completed,completed,True,0,0,,True,True,True
+v1,sales,3,sales_t3,Target Attainment,completed,completed,True,0,0,,False,False,True
+v1,sales,3,sales_t4,Filesystem Inventory,failed,failed,True,3,0,runtime_error,False,False,False
+v1,student,3,stu_t1,Score Overview,completed,completed,True,0,0,,True,True,True
+v1,student,3,stu_t2,Scores by Subject,completed,completed,True,0,0,,False,False,True
+v1,student,3,stu_t3,Study Hours vs Score,completed,completed,True,0,0,,True,True,True
+v1,attendance,4,att_t1,Attendance Status Breakdown,completed,completed,True,0,0,,True,True,True
+v1,attendance,4,att_t2,Hours Worked by Department,completed,completed,True,0,0,,True,True,True
+v1,attendance,4,att_t3,GPS Location Mismatches,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,4,eco_t1,Revenue Overview,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,4,eco_t2,Weekend vs Weekday Revenue,completed,completed,True,0,0,,False,False,True
+v1,ecommerce,4,eco_t3,Monthly Revenue Trend,completed,completed,True,0,0,,True,True,True
+v1,sales,4,sales_t1,Sales Overview,completed,completed,True,1,1,,True,True,True
+v1,sales,4,sales_t2,Regional Sales Comparison,completed,completed,True,0,0,,True,True,True
+v1,sales,4,sales_t3,Target Attainment,completed,completed,True,0,0,,False,False,True
+v1,sales,4,sales_t4,Filesystem Inventory,failed,failed,True,3,0,runtime_error,False,False,False
+v1,student,4,stu_t1,Score Overview,completed,completed,True,0,0,,True,True,True
+v1,student,4,stu_t2,Scores by Subject,completed,completed,True,0,0,,False,False,True
+v1,student,4,stu_t3,Study Hours vs Score,completed,completed,True,0,0,,True,True,True
