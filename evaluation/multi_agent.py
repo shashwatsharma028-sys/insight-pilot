@@ -277,9 +277,53 @@ def measure(name, case, state, calls, pipeline_s, strategy) -> dict:
         "final_answers": {"accepted": len(accepted), "incorrect_accepted": incorrect_accepted,
                           "golden": answers and {k: answers[k] for k in ("expected", "correct", "incorrect", "missing")}},
         "steps": final["steps"], "lessons": final["lessons"],
+        "trace": trace(messages),
     }
     result["expectations"] = check_expectations(case.get("expect", {}), result, final)
     return result
+
+
+def _summary(m) -> str:
+    p, k = m["payload"], m["kind"]
+    if k == "plan_request":
+        return f"planning attempt {p['attempt']}; {len(p['feedback'])} earlier problem(s)"
+    if k == "plan":
+        tasks = p.get("tasks") if isinstance(p.get("tasks"), list) else []
+        return f"{len(tasks)} task(s), {sum(len(t.get('claims') or []) for t in tasks if isinstance(t, dict))} claim(s)"
+    if k == "approval_request":
+        return "tasks " + ", ".join(t["id"] for t in p["plan"]["tasks"])
+    if k == "approval_decision":
+        return f"decision {p.get('decision')!r}" + (f" keep {p['keep_task_ids']}" if "keep_task_ids" in p else "")
+    if k == "analysis_request":
+        return f"{len(p['task']['claims'])} claim spec(s); {len(p['feedback'])} feedback item(s)"
+    if k == "analysis_result":
+        ex = p.get("execution") or {}
+        run = "blocked by safety scan" if ex.get("blocked_by_safety_scan") else "ran ok" if ex.get("ok") else "failed"
+        return f"{run}; {len(p.get('claims') or {})} claim(s), {len(p.get('claim_errors') or {})} parse error(s)"
+    if k == "verification_request":
+        return f"{len(p['submitted'])} reported value(s) to recompute"
+    if k == "verification_report":
+        counts = {}
+        for e in p["claims"].values():
+            counts[e["status"]] = counts.get(e["status"], 0) + 1
+        return f"{p['verdict']}: " + ", ".join(f"{n} {st}" for st, n in sorted(counts.items()))
+    if k == "insight_request":
+        return f"{len(p['verified_claims'])} verified claim(s) only"
+    if k == "insight_report":
+        return f"{len(p.get('insights') or [])} insight(s)"
+    if k == "insight_check_request":
+        return f"{len(p['insights'])} insight(s) to ground"
+    if k == "insight_check_report":
+        return p["verdict"] + (f": {p['problems'][0]}" if p["problems"] else "")
+    if k == "agent_error":
+        return f"{p.get('error_type')}: {str(p.get('message'))[:80]}"
+    return ""
+
+
+def trace(messages) -> list:
+    """One line per handoff: seq, route, kind, task/attempt and a payload summary (no values)."""
+    return [f"{m['seq']:>3} {m['sender']} -> {m['recipient']}: {m['kind']}"
+            + (f" [{m['task_id']} #{m['attempt']}]" if m["task_id"] else "") + f" | {_summary(m)}" for m in messages]
 
 
 def check_expectations(expect, result, final) -> dict:

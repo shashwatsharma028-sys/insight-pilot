@@ -143,3 +143,12 @@ def test_multi_agent_requires_no_new_dependency():
                               "sandbox_v2", "agent"}
     assert third_party == {"langgraph", "langchain_core"}
     assert "langgraph" in req and "langchain" in req
+
+
+def test_case_trace_has_one_line_per_handoff_and_no_claim_values(tmp_path):
+    r = ma.run_case("wrong-value-recovered", str(tmp_path), mode="literal")
+    assert len(r["trace"]) == r["handoffs"]["requests"] + r["handoffs"]["replies"]
+    text = "\n".join(r["trace"])
+    assert "verification_report [sales_t3 #1] | rejected: 1 refuted" in text
+    assert "verification_report [sales_t3 #2] | accepted: 1 verified" in text
+    assert "13573929" not in text and "93.13" not in text
