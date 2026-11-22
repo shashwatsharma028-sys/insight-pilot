@@ -591,5 +591,36 @@ def test_host_check_reports_this_environment_as_unsuitable_when_it_is():
         assert out.returncode != 0 and "suitable for P3.5b build and isolation tests: NO" in out.stdout
 
 
-def test_no_ci_workflow_was_added():
-    assert not os.path.exists(os.path.join(ROOT, ".github"))
+APPROVED_WORKFLOW = "workflows/p3-ubuntu-rootless-probe.yml"     # probe branch only (reviewer approval)
+
+
+def test_no_ci_workflow_except_the_approved_probe():
+    gh = os.path.join(ROOT, ".github")
+    if not os.path.exists(gh):
+        return                                                    # the P3 development branch: no CI at all
+    found = sorted(os.path.relpath(os.path.join(d, f), gh).replace(os.sep, "/")
+                   for d, _, fs in os.walk(gh) for f in fs)
+    assert found == [APPROVED_WORKFLOW]
+    yaml = pytest.importorskip("yaml")
+    text = _read(os.path.join(gh, APPROVED_WORKFLOW))
+    wf = yaml.safe_load(text)
+    on = wf.get(True, wf.get("on"))
+    assert on == {"push": {"branches": ["feature/v2-github-ubuntu-probe"], "paths": [".github/" + APPROVED_WORKFLOW]}}
+    assert wf["permissions"] == {"contents": "read"}
+    assert list(wf["jobs"]) == ["probe"]
+    job = wf["jobs"]["probe"]
+    assert job["runs-on"] == "ubuntu-24.04" and job["timeout-minutes"] <= 20
+    assert all("uses" not in step for step in job["steps"])            # no third-party actions
+    assert all(step.get("timeout-minutes") for step in job["steps"])
+    assert "secrets." not in text and "pull_request" not in text and "schedule" not in text
+    assert "workflow_dispatch" not in text
+    envs = [k for step in job["steps"] for k in (step.get("env") or {})]
+    assert envs == ["TOKEN"]                                          # the read-only token, one step only
+    runs = "\n".join(step.get("run", "") for step in job["steps"])
+    # containers only via rootless.py; `podman run --help` (help text, no container) is the one exception
+    assert not re.search(r"(^|[;&|(]\s*)(sudo\s+)?(docker|podman)\s+(run|build|pull|create|exec)\b(?!\s+--help\b)",
+                         runs, re.M)
+    code = "\n".join(ln for ln in runs.splitlines() if not ln.strip().startswith("#"))
+    executed = re.findall(r"(?:^|[;&|]|\$\()\s*sudo\s+([^;&|)\n]*)", code, re.M)  # sudo as a command, not in text
+    assert executed and all(c.startswith(("loginctl enable-linger", "-n true")) for c in executed), executed
+    assert sum(c.startswith("loginctl enable-linger") for c in executed) == 1   # the one marked admin step

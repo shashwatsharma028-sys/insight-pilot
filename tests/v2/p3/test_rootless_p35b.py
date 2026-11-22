@@ -224,12 +224,14 @@ def test_an_identity_label_would_be_caught_and_is_disabled_at_build():
 # ── container options: isolation flags present, dangerous ones absent ───────
 
 REQUIRED_RUN = ["--rm", "--pull=never", "--network=none", "--ipc=none", "--read-only", "--read-only-tmpfs=false",
-                "--cap-drop=ALL", "--security-opt=no-new-privileges", "--http-proxy=false", "--env-host=false",
+                "--cap-drop=ALL", "--security-opt=no-new-privileges", "--passwd=false", "--http-proxy=false",
+                "--env-host=false",
                 "--memory=256m", "--memory-swap=256m", "--pids-limit=64", "--cpus=1"]
 FORBIDDEN_RUN = ["--privileged", "--network=host", "--net=host", "--userns=host", "--userns=keep-id", "--pid=host",
                  "--ipc=host", "--env-host=true", "--http-proxy=true", "-e", "--env", "--env-file", "-v", "--volume",
                  "--cap-add", "seccomp=unconfined", "label=disable", "--device", "--group-add", "--secret",
-                 "--uts=host", "--cgroupns=host", "--systemd=always", "--init"]
+                 "--uts=host", "--cgroupns=host", "--systemd=always", "--init",
+                 "--passwd", "--passwd=true", "--passwd-entry", "--group-entry"]
 
 
 @pytest.mark.parametrize("kwargs", [{}, {"entrypoint": "/usr/local/bin/python3", "args": ["-I", "-B", "-"],
@@ -252,6 +254,71 @@ def test_every_container_gets_the_isolation_options(kwargs):
         out = [argv[i + 1] for i, a in enumerate(argv) if a == "--tmpfs" and argv[i + 1].startswith("/out:")]
         assert out and "size=64m" in out[0] and "noexec" in out[0]
     assert argv.index("localhost/img") > max(argv.index(f) for f in REQUIRED_RUN)
+
+
+def _all_run_argvs():
+    yield rl.container_run_argv("localhost/img", "x86_64")
+    yield rl.container_run_argv("localhost/img", "aarch64", entrypoint="/usr/local/bin/python3",
+                                args=["-I", "-B", "-"], stdin=True)
+    yield rl.container_run_argv("localhost/img", "x86_64", mounts=[("/tmp/x.csv", "/in/dataset.csv")],
+                                out_tmpfs=True)
+    yield rl.os_packages_argv("localhost/img", "x86_64")
+
+
+def test_podman_is_told_never_to_inject_passwd_or_group_files():
+    for argv in _all_run_argvs():
+        assert argv.count("--passwd=false") == 1
+        assert argv.index("--passwd=false") < argv.index("localhost/img")      # an option, not an argument
+        assert not [a for a in argv if a.startswith(("--passwd-entry", "--group-entry")) or a == "--passwd"]
+
+
+RUN1_INJECTED = [  # GitHub run 45001295990 (Podman 4.9.3, ubuntu-24.04): the probe's only failures
+    {"mountpoint": "/etc/passwd", "options": ["rw", "relatime"], "fstype": "ext4", "source": "/dev/mapper/cow-root",
+     "super_options": ["rw"]},
+    {"mountpoint": "/etc/group", "options": ["rw", "relatime"], "fstype": "ext4", "source": "/dev/mapper/cow-root",
+     "super_options": ["rw"]},
+]
+
+
+def test_run1_regression_injected_passwd_and_group_mounts_stay_rejected():
+    for point in ("/etc/passwd", "/etc/group"):
+        assert point not in EXPECT["runtime"]["allowed_mountpoints"]
+        assert point not in EXPECT["runtime"]["rw_mountpoints_allowed"]
+        assert not point.startswith(tuple(EXPECT["runtime"]["allowed_mount_prefixes"]))
+    rt = good_runtime()
+    rt["mounts"] += copy.deepcopy(RUN1_INJECTED)
+    problems = ii.evaluate_runtime(rt, EXPECT, BASE_ENV)
+    assert any("unexpected mount /etc/passwd (ext4 from /dev/mapper/cow-root)" in p for p in problems)
+    assert any("unexpected mount /etc/group (ext4 from /dev/mapper/cow-root)" in p for p in problems)
+    assert any("writable mount /etc/passwd" in p for p in problems)
+
+
+def test_removing_the_passwd_flag_is_detected():
+    """Self-mutation: a copy of rootless.py without the flag must fail the required-option check."""
+    src = open(os.path.join(SCRIPTS, "rootless.py"), encoding="utf-8").read()
+    assert src.count('"--passwd=false",') == 1
+    mutant_src = src.replace('"--passwd=false",', "", 1)
+    mutant = types.ModuleType("p35b_rootless_mutant")
+    mutant.__file__ = os.path.join(SCRIPTS, "rootless.py")
+    exec(compile(mutant_src, mutant.__file__, "exec"), mutant.__dict__)
+    argv = mutant.container_run_argv("localhost/img", "x86_64")
+    missing = [f for f in REQUIRED_RUN if f not in argv]
+    assert missing == ["--passwd=false"]
+    with pytest.raises(AssertionError, match="--passwd=false"):
+        _check_required(argv)
+    _check_required(rl.container_run_argv("localhost/img", "x86_64"))      # the real builder passes
+
+
+def _check_required(argv):
+    for flag in REQUIRED_RUN:
+        assert flag in argv, flag
+
+
+def test_check_host_evidence_option_exists_and_writes_nothing_when_refused(tmp_path):
+    out = tmp_path / "probe.json"
+    if rl.evaluate_host(rl.gather_facts()):
+        assert rl.main(["check-host", "--probe", "--evidence", str(out)]) == 1
+        assert not out.exists()
 
 
 def test_build_options_are_offline_hermetic_and_proxy_free():

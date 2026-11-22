@@ -285,6 +285,11 @@ def container_run_argv(image, arch, *, entrypoint=None, args=(), stdin=False, mo
             "--network=none", "--ipc=none", "--read-only", "--read-only-tmpfs=false",
             "--tmpfs", "/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777",
             "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user", "10001:10001",
+            # Without this, when the image has no entry for --user, Podman writes generated copies of
+            # /etc/passwd and /etc/group and bind-mounts them into the container. GitHub run
+            # 45001295990 (Podman 4.9.3) showed exactly these two host-side bind mounts, which the
+            # strict mount allowlist correctly rejected. The flag keeps the allowlist strict.
+            "--passwd=false",
             "--http-proxy=false", "--env-host=false",
             f"--memory={LIMITS['memory']}", f"--memory-swap={LIMITS['memory']}",
             f"--pids-limit={LIMITS['pids']}", f"--cpus={LIMITS['cpus']}"]
@@ -639,6 +644,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check-host")
     c.add_argument("--probe", action="store_true")
+    c.add_argument("--evidence", help="with --probe: write the probe's runtime report (JSON) here")
     b = sub.add_parser("build")
     b.add_argument("--wheel-cache", required=True)
     b.add_argument("--arch")
@@ -660,7 +666,10 @@ def main(argv=None):
                 print("\n".join("  - " + x for x in problems))
                 return 1
             if a.probe:
-                ready(facts, probe=True)
+                evidence = ready(facts, probe=True)
+                if a.evidence:
+                    with open(a.evidence, "w", encoding="utf-8") as f:
+                        json.dump(evidence["probe"], f, indent=1, sort_keys=True, default=str)
                 print("enforcement probe: PASSED (container reported the required isolation)")
             print("host suitable for P3.5b build and isolation tests: YES" + ("" if a.probe else
                   " (facts only; run with --probe for proof of enforcement)"))
