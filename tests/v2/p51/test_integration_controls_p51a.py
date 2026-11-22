@@ -222,16 +222,30 @@ def test_p41_optimisation_and_all_benchmark_evidence_are_unchanged():
     assert HARNESS_VERSION == "p4.1"
 
 
+P51A_P3_FILES = {"v2/execution/runtime.py", "v2/execution/datasets.py", "v2/execution/dispatch.py",
+                 "v2/execution/binding.py", "v2/execution/bootstrap.py", "tests/v2/p3/leak_guard.py",
+                 "tests/v2/p3/test_supervisor_helpers_p34.py", "tests/v2/p3/test_workspace_lease_p33.py"}
+# P3.6 stages 0-3 (approved R1-R6): each file listed deliberately; nothing else under these roots may change.
+P36_P3_FILES = {
+    # P3.6-0: evidence reconciliation (comment/docstring/limit alignment only)
+    ".github/workflows/p3-ubuntu-rootless-probe.yml", "scripts/p3/rootless.py", "tests/v2/p3/test_rootless_p35b.py",
+    "v2/__init__.py", "v2/execution/results.py", "v2/execution/image/image-expectations.json",
+}
+
+
 def test_p3_lineage_is_fully_contained_and_only_reviewed_p3_files_changed():
     _git("merge-base", "--is-ancestor", P3_PROBE_COMMIT, "HEAD")
     _git("merge-base", "--is-ancestor", P5_COMMIT, "HEAD")
     changed = set(_git("diff", "--name-only", P3_PROBE_COMMIT, "--", "v2", "scripts/p3", "tests/v2/p3",
                        ".github").split())
-    assert changed <= {"v2/execution/runtime.py", "v2/execution/datasets.py", "v2/execution/dispatch.py",
-                       "v2/execution/binding.py", "v2/execution/bootstrap.py", "tests/v2/p3/leak_guard.py",
-                       "tests/v2/p3/test_supervisor_helpers_p34.py", "tests/v2/p3/test_workspace_lease_p33.py"}, \
-        sorted(changed)
-    assert not [p for p in changed if p.startswith(("v2/execution/image/", "scripts/p3/", ".github/"))]
+    assert changed <= P51A_P3_FILES | P36_P3_FILES, sorted(changed - P51A_P3_FILES - P36_P3_FILES)
+
+
+def test_the_ci_workflow_only_gained_comment_lines():
+    """No executable CI step may change before P3.6-4 is approved."""
+    diff = _git("diff", "-U0", P3_PROBE_COMMIT, "--", ".github/workflows/p3-ubuntu-rootless-probe.yml")
+    body = [ln for ln in diff.splitlines() if ln[:1] in "+-" and not ln.startswith(("+++", "---"))]
+    assert body and all(ln.startswith("+#") for ln in body), body
 
 
 def test_standard_streamlit_entry_point_imports_no_v2_code():
