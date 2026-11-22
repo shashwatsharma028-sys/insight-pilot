@@ -422,3 +422,32 @@ def test_dispatcher_refuses_an_identity_mismatch_before_the_runtime(hardened_p5)
     with pytest.raises(DatasetNotAuthorizedError, match="differs from the profiled identity"):
         hardened_p5.dispatcher("print(1)", _path("sales"), "t", expected_sha256="1" * 64)
     assert hardened_p5.runtime.requests == []
+
+
+# ── added after mutation testing (N3, N20) ───────────────────────────────────
+
+@pytest.mark.parametrize("bad", ["/home/user/data/sales_data.csv", "data/sales_data.csv", "../sales_data.csv",
+                                 "sales_data.csv\n", "SALES.csv"])
+def test_a_dataset_identity_can_never_carry_a_path(bad):
+    from v2.execution.runtime import DatasetIdentity
+    with pytest.raises(ValueError):
+        DatasetIdentity(bad, "0" * 64, 1)
+    assert DatasetIdentity("sales_data.csv", "0" * 64, 1).name == "sales_data.csv"
+
+
+class _LyingHardenedPort(ex.ExecutionPort):
+    """Declares itself hardened but returns a result that does not report container isolation."""
+    name, isolation, hardened = "liar", "rootless_container", True
+
+    def execute(self, code, dataset_path, task_id, dataset_sha256=None):
+        return ex.ExecutionOutcome(True, "CLAIM row_count=293", "", "", "", self.name,
+                                   "none: V1 subprocess", 0.0, False)
+
+
+def test_a_hardened_port_result_without_container_isolation_terminates_the_run():
+    sup, _ = build_team(scripted.ScriptedAgentLLM("sales", mode="literal"), _LyingHardenedPort(),
+                        scripted.approve_all)
+    out = sup.run(_path("sales"))
+    assert out["final"]["status"] == "isolation_unavailable" and out["final"]["accepted_claims"] == {}
+    assert [e["error_class"] for e in out["events"] if e["type"] == "execution_terminated"] == [
+        "ExecutionInfrastructureError"]

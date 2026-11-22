@@ -115,8 +115,11 @@ OPTS = {"server.fileWatcherType": "none", "server.runOnSave": False}
 
 def test_orchestrator_alone_is_still_refused():
     from v2.execution import bootstrap
-    with pytest.raises(bootstrap.BootstrapRefused, match="requires hardened container execution"):
+    with pytest.raises(bootstrap.BootstrapRefused) as info:
         bootstrap.ensure_ready(env={"IP_FF_ORCHESTRATOR": "v2"}, options=OPTS)
+    # both independent refusal reasons must be present (mutation check N6)
+    assert "not integrated yet: IP_FF_ORCHESTRATOR" in str(info.value)
+    assert "IP_FF_ORCHESTRATOR requires hardened container execution" in str(info.value)
 
 
 def test_orchestrator_with_hardening_still_fails_closed_in_production():
