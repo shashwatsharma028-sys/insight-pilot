@@ -258,13 +258,14 @@ def test_bootstrap_is_deterministic_and_brackets_the_median():
 # ── paired comparison on synthetic results ───────────────────────────────────
 
 def synthetic(variant="a", wall=1.0, exec_s=0.5, reps=6, correct=28, fingerprint="f" * 64, cls=None,
-              jitter=0.0, seed=0):
+              jitter=0.0, seed=0, pixels="p" * 64, retries=4, calls=30):
     import random
     rng = random.Random(seed)
     runs = []
     for rep in range(reps):
         for ds in ("sales", "student"):
             runs.append({"dataset": ds, "repetition": rep, "variant": variant,
+                         "charts": {"per_task": {"t1": {"pixels_sha256": pixels}}},
                          "wall_seconds": wall + rng.uniform(-jitter, jitter),
                          "executions": [{"task_id": "t1", "seconds": exec_s + rng.uniform(-jitter, jitter),
                                          "blocked_by_safety_scan": False},
@@ -272,10 +273,13 @@ def synthetic(variant="a", wall=1.0, exec_s=0.5, reps=6, correct=28, fingerprint
     classes = cls or {"mock_scripted/estimated_chars_div_4": {"calls": 30, "input_tokens": 1000,
                                                               "output_tokens": 100}}
     summary = {"repetitions": reps, "answers": {"correct": correct}, "quality": {"correct": 20},
-               "tasks": {"completed_of_expected": 12, "expected_failures_observed": 1, "status_as_expected": 13},
+               "tasks": {"completed_of_expected": 12, "expected_failures_observed": 1, "status_as_expected": 13,
+                         "retries": retries},
+               "sandbox_executions": {"total": 16, "failed": 4, "blocked_by_safety_scan": 3},
+               "behavior_matches_v1_snapshot": 4,
                "charts": {"valid": 7}, "reports": {"valid": 12},
                "deterministic_across_repetitions": {"sales": True, "student": True}, "errors": [],
-               "llm_calls_per_benchmark_pass": 30, "llm_calls_by_skill": {"planner": 4},
+               "llm_calls_per_benchmark_pass": calls, "llm_calls_by_skill": {"planner": 4},
                "tokens_per_benchmark_pass": {"classes": classes}}
     return {"variant": variant, "workload": {"sha256": fingerprint}, "environment": {"python": "3.11"},
             "summary": summary, "runs": runs}
