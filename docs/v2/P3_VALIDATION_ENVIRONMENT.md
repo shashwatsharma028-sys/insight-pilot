@@ -10,6 +10,11 @@
 
 VE-1 (GitHub Actions) needs its own approval and is not covered here.
 
+> **Update (P3.6-0, 2026-11-22):** VE-1 was later approved and run.
+> - GitHub run #4 at `4cd107e0` passed every stage for the **inert** image. The evidence is in `docs/v2/p3/ci_run4/`.
+> - The VE-1 account is root-equivalent, so it does **not** satisfy any VE-2 requirement in this guide.
+> - This guide has still not been executed.
+
 ## 1. Minimum requirements
 
 | Item | Requirement |

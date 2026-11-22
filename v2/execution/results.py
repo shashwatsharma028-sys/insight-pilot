@@ -2,8 +2,9 @@
 Execution-result contract (P3.1).
 
 ExecutionResult describes one hardened execution. It is a data contract only:
-the planned dispatcher (P3.6) will build it and convert it to V1's
-(success, output, chart_path, error_type) tuple. Nothing builds one yet.
+the runtime builds it (P3.6: v2.execution.result_mapping from a decoded
+frame) and the hardened dispatcher (P3.2b) converts it to V1's
+(success, output, chart_path, error_type) tuple.
 """
 
 import re

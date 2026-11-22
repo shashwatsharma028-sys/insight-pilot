@@ -1,0 +1,609 @@
+##[group]Run set -uo pipefail
+set -uo pipefail
+P3_OUT="$RUNNER_TEMP/p3"
+podman run --help 2>&1 | grep -E -- '--passwd ' || { echo "podman lacks --passwd"; echo 3 > "$P3_OUT/gate3.rc"; exit 3; }
+rc=0; python3 -I -B scripts/p3/rootless.py check-host --probe --evidence "$P3_OUT/probe.json" > "$P3_OUT/gate3.txt" 2>&1 || rc=$?
+echo "$rc" > "$P3_OUT/gate3.rc"; tail -n 5 "$P3_OUT/gate3.txt"
+[ -s "$P3_OUT/probe.json" ] && cat "$P3_OUT/probe.json"
+exit "$rc"
+shell: /usr/bin/bash -e {0}
+env:
+  XDG_RUNTIME_DIR: <runtime-dir>
+  DBUS_SESSION_BUS_ADDRESS: unix:path=<runtime-dir>/bus
+##[endgroup]
+      --passwd                                   add entries to /etc/passwd and /etc/group (default true)
+ "podman": "/usr/bin/podman",
+ "podman_version": "4.9.3"
+}
+enforcement probe: PASSED (container reported the required isolation)
+host suitable for P3.5b build and isolation tests: YES
+{
+ "caps": {
+  "CapAmb": "0000000000000000",
+  "CapBnd": "0000000000000000",
+  "CapEff": "0000000000000000",
+  "CapInh": "0000000000000000",
+  "CapPrm": "0000000000000000"
+ },
+ "cgroup": {
+  "cpu.max": "100000 100000",
+  "memory.max": "268435456",
+  "memory.swap.max": "0",
+  "pids.max": "64"
+ },
+ "egid": 10001,
+ "env_names": [
+  "GPG_KEY",
+  "HOME",
+  "HOSTNAME",
+  "LANG",
+  "PATH",
+  "PYTHON_SHA256",
+  "PYTHON_VERSION",
+  "container"
+ ],
+ "euid": 10001,
+ "file_write_probes": {
+  "/etc/hostname": "EACCES",
+  "/etc/hosts": "EACCES",
+  "/etc/passwd": "EACCES",
+  "/etc/resolv.conf": "EACCES",
+  "/opt/ip/inert_entrypoint.py": "ENOENT",
+  "/usr/local/bin/python3.11": "EACCES"
+ },
+ "gid": 10001,
+ "gid_map": [
+  "0",
+  "1001",
+  "1",
+  "1",
+  "165536",
+  "65536"
+ ],
+ "groups": [
+  10001
+ ],
+ "mounts": [
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/etc/hostname",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=1607840k",
+    "nr_inodes=401960",
+    "mode=700",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/etc/hosts",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=1607840k",
+    "nr_inodes=401960",
+    "mode=700",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/run/.containerenv",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=1607840k",
+    "nr_inodes=401960",
+    "mode=700",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "overlay",
+   "mountpoint": "/",
+   "options": [
+    "ro",
+    "relatime"
+   ],
+   "source": "overlay",
+   "super_options": [
+    "rw",
+    "lowerdir=<overlay-redacted>",
+    "upperdir=<overlay-redacted>",
+    "workdir=<overlay-redacted>",
+    "redirect_dir=nofollow",
+    "uuid=on",
+    "fsync=volatile",
+    "userxattr"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/tmp",
+   "options": [
+    "rw",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=65536k",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc",
+   "options": [
+    "rw",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/dev",
+   "options": [
+    "ro",
+    "nosuid"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=65536k",
+    "mode=755",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "sysfs",
+   "mountpoint": "/sys",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "sysfs",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "devpts",
+   "mountpoint": "/dev/pts",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "devpts",
+   "super_options": [
+    "rw",
+    "gid=165540",
+    "mode=620",
+    "ptmxmode=666"
+   ]
+  },
+  {
+   "fstype": "mqueue",
+   "mountpoint": "/dev/mqueue",
+   "options": [
+    "rw",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "mqueue",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "cgroup2",
+   "mountpoint": "/sys/fs/cgroup",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "cgroup2",
+   "super_options": [
+    "rw",
+    "nsdelegate",
+    "memory_recursiveprot"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/null",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/zero",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/full",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/tty",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/random",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/dev/urandom",
+   "options": [
+    "rw",
+    "nosuid",
+    "noexec",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/proc/acpi",
+   "options": [
+    "ro",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=0k",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/proc/kcore",
+   "options": [
+    "ro",
+    "nosuid",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/proc/keys",
+   "options": [
+    "ro",
+    "nosuid",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/proc/latency_stats",
+   "options": [
+    "ro",
+    "nosuid",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "devtmpfs",
+   "mountpoint": "/proc/timer_list",
+   "options": [
+    "ro",
+    "nosuid",
+    "relatime"
+   ],
+   "source": "udev",
+   "super_options": [
+    "rw",
+    "size=7094560k",
+    "nr_inodes=1773640",
+    "mode=755",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/proc/scsi",
+   "options": [
+    "ro",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=0k",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/sys/firmware",
+   "options": [
+    "ro",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=0k",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "tmpfs",
+   "mountpoint": "/sys/dev/block",
+   "options": [
+    "ro",
+    "relatime"
+   ],
+   "source": "tmpfs",
+   "super_options": [
+    "rw",
+    "size=0k",
+    "uid=1001",
+    "gid=1001",
+    "inode64"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc/bus",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc/fs",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc/irq",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc/sys",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  },
+  {
+   "fstype": "proc",
+   "mountpoint": "/proc/sysrq-trigger",
+   "options": [
+    "ro",
+    "nosuid",
+    "nodev",
+    "noexec",
+    "relatime"
+   ],
+   "source": "proc",
+   "super_options": [
+    "rw"
+   ]
+  }
+ ],
+ "net_interfaces": [
+  "lo"
+ ],
+ "no_new_privs": "1",
+ "routes": [],
+ "seccomp": "2",
+ "uid": 10001,
+ "uid_map": [
+  "0",
+  "1001",
+  "1",
+  "1",
+  "165536",
+  "65536"
+ ],
+ "write_probes": {
+  "/": "EROFS",
+  "/dev": "EROFS",
+  "/dev/shm": "ENOENT",
+  "/etc": "EROFS",
+  "/home": "EROFS",
+  "/opt/ip": "ENOENT",
+  "/root": "EACCES",
+  "/run": "EROFS",
+  "/tmp": "writable",
+  "/usr": "EROFS",
+  "/usr/local/lib/python3.11/site-packages": "EROFS",
+  "/var/tmp": "EROFS"
+ }
+}

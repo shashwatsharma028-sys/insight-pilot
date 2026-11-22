@@ -11,6 +11,8 @@
 #   (docs/v2/P3_CHART_REFERENCE_INVESTIGATION.md). Correction (approved): exact
 #   comparison against the hermetic chart_hermetic references, plus a
 #   mandatory render-environment check. Original references preserved.
+# - Run 4 (45033387515, 4cd107e0): every stage passed, for the inert image (functional evidence;
+#   root-equivalent runner, not VE-2). Sanitized evidence: docs/v2/p3/ci_run4/ (P3.6-0).
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;

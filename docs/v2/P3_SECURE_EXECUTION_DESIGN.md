@@ -4,6 +4,15 @@
 
 **Review status:** the reviewer has conditionally accepted the architecture. **P3.1, P3.2a, P3.2b and P3.3 with its lifecycle correction, and P3.4 (architecture accepted after review) are implemented; the P3.4 security-review corrections were accepted; P3.5a (image foundation and dependency review) was accepted. **P3.5b is INCOMPLETE: Phase A (tool corrections) is implemented; the validation-environment gate failed in this session, so no image has been built (Phases C–E pending on VE-2, docs/v2/P3_VALIDATION_ENVIRONMENT.md).** Everything else is a plan and needs separate approval for each stage. **No container backend exists: hardened execution cannot start outside the offline test suite.**
 
+> **Update notes (P3.6-0, 2026-11-22). These notes add to the historical text above and below; they do not change it.**
+> - **VE-1:** P3.5b Phases C–E **ran on VE-1** (GitHub Actions run #4, `4cd107e0`, success) for the **inert** P3.5a image:
+>   - reproducible builds, verification, start-up, golden 28/28 and charts 12/12 in the image, and the OS package inventory;
+>   - the runner account is root-equivalent, so this is functional evidence only. The sanitized evidence and its provenance are in `docs/v2/p3/ci_run4/`.
+> - **Still not done:** VE-2 has not been executed, there has been no vulnerability scan, and no isolation property has been validated for untrusted code.
+> - **P5.1A** wired the dataset identity check, the trusted-prelude selector and the extended tripwire (`docs/v2/P51A_INTEGRATION.md`).
+> - **P3.6 stages 0–3** are being implemented on `feature/v2-p36-container-runtime` with fakes only, under `docs/v2/P36_IMPLEMENTATION_PROPOSAL.md` / `docs/v2/P36_IMPLEMENTATION.md`. Production hardened execution remains refused.
+> - **R2 (approved):** the provisional memory limit is **1 GiB** (`Limits.memory_bytes`) everywhere. The 256 MiB in the P3.5b probe and image expectations was a probe-only value; it is reconciled to 1 GiB in the tooling. Enforcement is not claimed until a real container is tested.
+
 **Status labels used throughout:**
 
 | Label | Meaning |
@@ -533,6 +542,10 @@ podman run --rm --name ip-<inst8>-<run12>
 - **CLI environment.** The CLI subprocess gets `PATH`, `HOME`, `XDG_RUNTIME_DIR` and `LANG` only.
 - **Rejected at preflight:** rootful runtimes, `euid 0`, cgroup v1, and missing `cpu`/`memory`/`pids` controllers.
 - **Docker differences:** `--log-driver=none` while attached; no `--timeout` (the supervisor deadline plus a host kill instead); `--read-only` adds no implicit tmpfs.
+- **P3.6-0 reconciliation notes:**
+  - **Workspace path.** The workspace implemented in P3.3 is `<root>/instances/<instance_id>/runs/<run_id>/in`, not `jobs/<run>/in` as written above.
+  - **Home and Matplotlib directory.** The image sets `HOME=/nonexistent` and `MPLCONFIGDIR=/tmp/matplotlib`. Run #4 gave 0 Matplotlib cache warnings with them, so P3.6 keeps the image values instead of the `HOME=/tmp` / `MPLCONFIGDIR=/opt/ip/mpl` shown above.
+  - **Network files.** `--no-hosts` and `--dns=none` are part of the approved command. Which `/etc` files Podman still mounts with them is **REQUIRES RUNTIME VALIDATION**. The P3.5b probe did not pass them, so it saw `/etc/hosts` and `/etc/resolv.conf`.
 - **Must be validated on the runtime** (correction B-9 extended this list):
   - `--log-driver=passthrough` with pipe stdio;
   - `nr_inodes` passed through for Podman and Docker `--tmpfs`;
@@ -567,6 +580,8 @@ All values are provisional and are the same as `v2.execution.limits.DEFAULT_LIMI
 | `/dev` | runtime tmpfs, not writable by 10001 (attested) | no |
 | Logs | `passthrough` / `none` | no |
 | Memory | `memory.max` 1 GiB, swap 0. tmpfs pages are charged to this cgroup, so RSS + tmpfs ≤ 1 GiB (**proven by S-04**) | — |
+
+*R2 (P3.6-0):* 1 GiB is the approved provisional value. Probe tooling and image expectations used 256 MiB until P3.6-0 and are now aligned to `Limits.memory_bytes`. "Proven by S-04" above describes the planned test; it has **not** run.
 | CPU, PIDs, files | 1 CPU; 64 PIDs (BLAS threads pinned to 1); `nofile` 256; `core` 0 | — |
 | Host-written inputs | Trusted host only: code ≤ 1 MiB, dataset ≤ 256 MiB, at most 2 concurrent jobs | bounded |
 | Time | Code 30 s (= V1 `MAX_EXECUTION_TIME`) + 15 s host grace | — |
@@ -1265,6 +1280,7 @@ Test IDs use these prefixes (correction B-4 renamed the dataset tests to DS-xx):
 | **P3.4** | Frame protocol, strict decoder, host PNG validator, re-encode and atomic no-overwrite store; pure supervisor helpers (no operational supervisor, runner or backend) | C | **IMPLEMENTED** (not wired into the dispatcher) |
 | **P3.5a** | Image foundation: verified base digest, hash lock and dependency review, Containerfile with inert entrypoint, staged context, build and verify scripts, offline supply-chain tests; Task A publication close fix. No image built. | C | **IMPLEMENTED** (awaits review) |
 | P3.5b | Phase A, tool corrections (native platform agreement, strengthened host gate with an enforcement probe, proxy and environment stripping, runtime-property verification, startup/golden/os-packages tooling): **IMPLEMENTED**. Phase B gate: **FAILED here** (uid 0, cgroup v1, no Podman); VE-2 guide written. Phases C–E (build, reproducibility, start-up, golden in the image, OS vulnerability review): **PENDING on VE-2** | C (Phase A) / VE | **INCOMPLETE** |
+| P3.5b (update, P3.6-0) | Phases C–E **ran on VE-1** (GitHub run #4, root-equivalent account) for the inert image: see `docs/v2/p3/ci_run4/`. VE-2: still **PENDING** | VE-1 | functional evidence only; **not** security validation |
 | P3.6 | Container backend: detection, argv builder, run/kill/remove, preflight self-test, reconcile, dispatcher. **Sandbox-permission review gate.** | C (unit) + VE | PLANNED |
 | P3.7 | Resource and storage limit enforcement; optional custom seccomp | VE | PLANNED |
 | P3.8 | Integration: golden end-to-end and UI through the launcher; real browser; benchmark; R-24 alignment in docs; handoff. **Senior review before merging into `feature/insightpilot-v2`.** | VE + C | PLANNED |

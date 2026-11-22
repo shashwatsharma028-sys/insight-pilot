@@ -64,7 +64,9 @@ REMOTE_ENV = ("CONTAINER_HOST", "CONTAINER_CONNECTION", "DOCKER_HOST", "CONTAINE
 PODMAN_ENV_KEEP = ("PATH", "HOME", "XDG_RUNTIME_DIR", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "LANG", "USER",
                    "LOGNAME")
 PULL_ENV_EXTRA = ("HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy", "SSL_CERT_FILE")
-LIMITS = {"memory": "256m", "pids": "64", "cpus": "1"}
+# R2 (P3.6-0): memory aligned with v2.execution.limits.DEFAULT_LIMITS.memory_bytes (1 GiB, provisional);
+# tests/v2/p36 check that these probe values equal the Limits contract.
+LIMITS = {"memory": "1g", "pids": "64", "cpus": "1"}
 
 
 class Refused(SystemExit):

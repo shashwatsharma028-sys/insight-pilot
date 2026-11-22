@@ -57,7 +57,7 @@
   ],
   "cgroup": {
    "cpu.max": "100000 100000",
-   "memory.max": "268435456",
+   "memory.max": "1073741824",
    "memory.swap.max": "0",
    "pids.max": "64"
   },

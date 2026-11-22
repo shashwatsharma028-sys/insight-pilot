@@ -227,7 +227,7 @@ def test_an_identity_label_would_be_caught_and_is_disabled_at_build():
 REQUIRED_RUN = ["--rm", "--pull=never", "--network=none", "--ipc=none", "--read-only", "--read-only-tmpfs=false",
                 "--cap-drop=ALL", "--security-opt=no-new-privileges", "--passwd=false", "--http-proxy=false",
                 "--env-host=false",
-                "--memory=256m", "--memory-swap=256m", "--pids-limit=64", "--cpus=1"]
+                "--memory=1g", "--memory-swap=1g", "--pids-limit=64", "--cpus=1"]
 FORBIDDEN_RUN = ["--privileged", "--network=host", "--net=host", "--userns=host", "--userns=keep-id", "--pid=host",
                  "--ipc=host", "--env-host=true", "--http-proxy=true", "-e", "--env", "--env-file", "-v", "--volume",
                  "--cap-add", "seccomp=unconfined", "label=disable", "--device", "--group-add", "--secret",
