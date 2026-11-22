@@ -178,6 +178,13 @@ def test_chart_validity_requires_expected_valid_and_inside_output_dir(tmp_path):
     assert v["valid"] == 1 and v["expected"] == 1 and v["unexpected"] == ["t3"]
     state["analysis_plan"][0]["chart_path"] = None
     assert metrics.chart_validity(state, SCEN, str(tmp_path))["valid"] == 0
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    outside = elsewhere / "t1.png"
+    outside.write_bytes(_png())
+    state["analysis_plan"][0]["chart_path"] = str(outside)                  # a valid PNG, wrong directory
+    v = metrics.chart_validity(state, SCEN, str(tmp_path))
+    assert v["valid"] == 0 and v["per_task"]["t1"]["decodes"] and not v["per_task"]["t1"]["path_inside_output_dir"]
 
 
 def _reports(tmp_path, md=None, pdf=b"%PDF-1.4\n...\n%%EOF\n", nb=None, titles=("Overview",)):
@@ -400,8 +407,11 @@ def test_workload_fingerprint_is_stable_and_sensitive(monkeypatch):
     changed["code"]["Sales Overview"][-1] += "\n# changed\n"
     monkeypatch.setitem(sc.SCENARIOS, "sales", changed)
     assert harness.workload_fingerprint(["sales", "student"])["sha256"] != f1["sha256"]
-    monkeypatch.setattr(harness, "MAX_RETRIES", 3)
-    assert harness.workload_fingerprint(["student"])["sha256"] != f1["sha256"]
+    student = harness.workload_fingerprint(["student"])["sha256"]
+    monkeypatch.setattr(harness, "MAX_RETRIES", harness.MAX_RETRIES + 1)
+    assert harness.workload_fingerprint(["student"])["sha256"] != student        # retry budget is part of it
+    monkeypatch.setattr(harness, "SAFE_MODE", not harness.SAFE_MODE)
+    assert harness.workload_fingerprint(["student"])["sha256"] != student
 
 
 def test_variant_registry_and_argument_validation(tmp_path):
