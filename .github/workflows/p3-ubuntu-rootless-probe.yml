@@ -1,0 +1,232 @@
+# InsightPilot V2 P3.5b: rootless CI image build and benchmark on the GitHub-hosted ubuntu-24.04 runner.
+#
+# History:
+# - Run 1 (45001295990, 2f3e1fbb): the enforcement probe was refused only for
+#   Podman-injected /etc/passwd and /etc/group bind mounts.
+# - Run 2 (45002558309, 98e29c04): with --passwd=false (approved), all three
+#   gates passed.
+# - Run 3 (45031896461, 83596758): every stage passed except the golden charts.
+#   The 7 chart hashes differed because the P3.5a references were rendered with
+#   the development host's MATPLOTLIBRC and system fonts
+#   (docs/v2/P3_CHART_REFERENCE_INVESTIGATION.md). Correction (approved): exact
+#   comparison against the hermetic chart_hermetic references, plus a
+#   mandatory render-environment check. Original references preserved.
+# This revision (approved) adds, each step only after the previous one passed:
+# - Phase C: verified wheels, offline rootless build, full image verification;
+# - Phase D: a clean second build and an image/layer comparison;
+# - Phase E: warm/cold start-up, the hash-pinned golden fixtures in the image,
+#   and the OS package inventory.
+#
+# Safety:
+# - every container and build goes through scripts/p3/rootless.py (rootless
+#   Podman, --passwd=false, --network=none, read-only root, cap-drop ALL,
+#   no-new-privileges, seccomp, uid/gid 10001, cgroup limits);
+# - direct podman use here is limited to --version, run --help, tag and rmi;
+# - no rootful Docker or Podman, no secrets, no third-party actions, no
+#   generated or user code, no vulnerability scan;
+# - the only privileged action is the marked enable-linger step; `sudo -n true`
+#   is a no-op check whose result the report records;
+# - gates 2 and 3 stop the job on failure.
+
+name: p3-ubuntu-rootless-probe
+
+on:
+  push:
+    branches: [feature/v2-github-ubuntu-probe]
+    paths: [.github/workflows/p3-ubuntu-rootless-probe.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p3-ubuntu-rootless-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Fetch the exact pushed commit (read-only token, this step only, no third-party action)
+        timeout-minutes: 3
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          mkdir -p "$P3_OUT"
+          git init -q "$GITHUB_WORKSPACE/src"
+          cd "$GITHUB_WORKSPACE/src"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic ${AUTH}" fetch -q --depth 1 origin "$GITHUB_SHA"
+          unset AUTH
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "commit: $(git rev-parse HEAD)" | tee "$P3_OUT/commit.txt"
+
+      - name: Record runner specifications (read-only)
+        timeout-minutes: 2
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          {
+            echo "== os-release"; grep -E '^(PRETTY_NAME|VERSION_ID)=' /etc/os-release
+            echo "== kernel"; uname -srvm
+            echo "== cpu"; nproc; grep -m1 'model name' /proc/cpuinfo || true
+            echo "== memory"; free -b | head -2
+            echo "== disk"; df -B1 --output=target,size,avail / | tail -1
+            echo "== identity"; id
+            echo "== passwordless sudo"; sudo -n true 2>/dev/null && echo yes || echo no
+            echo "== cgroup fs"; stat -fc %T /sys/fs/cgroup
+            echo "== podman"; podman --version
+          } 2>&1 | tee "$P3_OUT/specs.txt"
+
+      - name: Gate 1 - host facts as provided (informational)
+        timeout-minutes: 3
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host > "$P3_OUT/gate1.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate1.rc"; cat "$P3_OUT/gate1.txt"; echo "gate1 exit=$rc"
+
+      - name: TEMPORARY VM ADMINISTRATION (sudo) - start a systemd user manager for the runner account
+        timeout-minutes: 3
+        run: |
+          set -uo pipefail
+          # The only privileged step (as in the VE-2 guide). It starts no container.
+          sudo loginctl enable-linger "$(id -un)"
+          for i in $(seq 1 30); do [ -S "/run/user/$(id -u)/bus" ] && break; sleep 1; done
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+
+      - name: Gate 2 - host facts with a user manager (stops the job on failure)
+        timeout-minutes: 3
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host > "$P3_OUT/gate2.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate2.rc"; cat "$P3_OUT/gate2.txt"; exit "$rc"
+
+      - name: Gate 3 - enforcement probe on the digest-pinned base (stops the job on failure)
+        timeout-minutes: 8
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          podman run --help 2>&1 | grep -E -- '--passwd ' || { echo "podman lacks --passwd"; echo 3 > "$P3_OUT/gate3.rc"; exit 3; }
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host --probe --evidence "$P3_OUT/probe.json" > "$P3_OUT/gate3.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate3.rc"; tail -n 5 "$P3_OUT/gate3.txt"
+          [ -s "$P3_OUT/probe.json" ] && cat "$P3_OUT/probe.json"
+          exit "$rc"
+
+      - name: Phase C - fetch the SHA-256-verified wheel cache (native architecture)
+        timeout-minutes: 5
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/image_tool.py fetch-wheels --arch "$(uname -m)" --cache "$RUNNER_TEMP/wheels" > "$P3_OUT/wheels.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/wheels.rc"; cat "$P3_OUT/wheels.txt"; du -sb "$RUNNER_TEMP/wheels"; exit "$rc"
+
+      - name: Phase C - build 1 (rootless builder, offline, digest-pinned base)
+        timeout-minutes: 20
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py build --wheel-cache "$RUNNER_TEMP/wheels" --evidence "$P3_OUT/build1.json" > "$P3_OUT/build1.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/build1.rc"; tail -n 60 "$P3_OUT/build1.txt"; exit "$rc"
+
+      - name: Phase C - verify build 1 (config, contents, runtime enforcement, inert entrypoint)
+        timeout-minutes: 8
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          TAG="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$P3_OUT/build1.json")"
+          rc=0; python3 -I -B scripts/p3/rootless.py verify "$TAG" --evidence "$P3_OUT/verify1.json" > "$P3_OUT/verify1.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/verify1.rc"; tail -n 40 "$P3_OUT/verify1.txt"; exit "$rc"
+
+      - name: Phase D - clean build 2 with identical verified inputs
+        timeout-minutes: 20
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          TAG="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$P3_OUT/build1.json")"
+          podman tag "$TAG" localhost/ip-build1 && podman rmi "$TAG"
+          rc=0; python3 -I -B scripts/p3/rootless.py build --wheel-cache "$RUNNER_TEMP/wheels" --evidence "$P3_OUT/build2.json" > "$P3_OUT/build2.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/build2.rc"; tail -n 20 "$P3_OUT/build2.txt"; exit "$rc"
+
+      - name: Phase D - compare build 1 and build 2 (IDs, digests, layers; member diff if they differ)
+        timeout-minutes: 15
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          TAG="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["tag"])' "$P3_OUT/build2.json")"
+          rc=0; python3 -I -B scripts/p3/rootless.py compare localhost/ip-build1 "$TAG" --evidence "$P3_OUT/compare.json" > "$P3_OUT/compare.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/compare.rc"; cat "$P3_OUT/compare.txt"
+          podman rmi "$TAG"
+          exit "$rc"
+
+      - name: Phase E - start-up benchmark of verified build 1 (warm 30, cold 10)
+        timeout-minutes: 15
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py measure-startup localhost/ip-build1 --warm 30 --cold 10 --evidence "$P3_OUT/startup.json" > "$P3_OUT/startup.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/startup.rc"; cat "$P3_OUT/startup.txt"; exit "$rc"
+
+      - name: Phase E - hash-pinned golden fixtures inside verified build 1 (numbers, exact hermetic charts, render environment)
+        timeout-minutes: 15
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py golden localhost/ip-build1 --evidence "$P3_OUT/golden.json" > "$P3_OUT/golden.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/golden.rc"; cat "$P3_OUT/golden.txt"; exit "$rc"
+
+      - name: Phase E - OS package inventory of verified build 1
+        timeout-minutes: 5
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0; python3 -I -B scripts/p3/rootless.py os-packages localhost/ip-build1 --evidence "$P3_OUT/ospkgs.json" > "$P3_OUT/ospkgs.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/ospkgs.rc"
+          python3 -I -c 'import json,sys; [print(p["name"], p["version"], p["arch"]) for p in json.load(open(sys.argv[1]))["packages"]]' "$P3_OUT/ospkgs.json" || cat "$P3_OUT/ospkgs.txt"
+          exit "$rc"
+
+      - name: Readiness tests, including the workflow-policy test (must run, never skip)
+        if: always()
+        timeout-minutes: 8
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0
+          { python3 -m venv "$RUNNER_TEMP/venv" \
+            && "$RUNNER_TEMP/venv/bin/pip" install -q --disable-pip-version-check pytest==9.1.1 pyyaml==6.0.3 \
+            && PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/venv/bin/python" -m pytest --noconftest -q -p no:cacheprovider -rsA \
+               tests/v2/p3/test_rootless_p35b.py tests/v2/p3/test_image_p35a.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
+          grep -q "^PASSED tests/v2/p3/test_image_p35a.py::test_no_ci_workflow_except_the_approved_probe" "$P3_OUT/tests.txt" \
+            || { echo "workflow-policy test did not PASS"; [ "$rc" = 0 ] && rc=4; }
+          echo "$rc" > "$P3_OUT/tests.rc"
+          grep -E "^(SKIPPED|FAILED|ERROR)|^PASSED tests/v2/p3/test_image_p35a.py::test_no_ci_workflow|passed|failed" "$P3_OUT/tests.txt" | tail -n 30
+          exit "$rc"
+
+      - name: Evidence report (fails the job unless every stage passed)
+        if: always()
+        timeout-minutes: 2
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0; python3 -I -B scripts/p3/ci_report.py "$P3_OUT" > "$P3_OUT/report.md" || rc=$?
+          cat "$P3_OUT/report.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "$rc"

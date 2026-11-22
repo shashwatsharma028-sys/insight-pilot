@@ -1,0 +1,263 @@
+{
+ "_note": "Pre-reviewed, fixed golden analysis fixtures (tests/v2/golden/scenarios.py, final attempt of every task expected to complete). They are hand-written test fixtures, not LLM-generated or user-controlled code. rootless.py golden runs only code whose SHA-256 is listed here, on dataset copies whose SHA-256 is listed here. Chart references are the decoded-pixel SHA-256 values measured on the host in P3.5a with both Pillow 12.3.0 (env B) and 13.0.0 (lock-only venv); they were identical.",
+ "_provenance": {
+  "chart": "P3.5a host reference, PRESERVED UNCHANGED. Rendered by workload_compat.py through the V1 executor, which passes os.environ to the child: the development host's MATPLOTLIBRC=/etc/matplotlib (text.hinting: no_hinting) and its system font LiberationSans-Regular.ttf (109 system fonts) leaked into the rendering. Reproduced exactly on the host (experiment A). Not used for acceptance.",
+  "chart_hermetic": "Acceptance reference (exact decoded-pixel SHA-256, no tolerance). Rendered on the development host with the lock-only venv, no MATPLOTLIBRC and system fonts hidden (private mount namespace), i.e. the render_environment below; reproduced by scripts/p3/hermetic_reference.py. Independently corroborated: GitHub Actions run 45031896461 (container, ubuntu-24.04) produced the identical 7 hashes and sizes.",
+  "render_environment": "The exact environment both references must come from; golden() fails if a run differs."
+ },
+ "fixtures": [
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "d3a2f5d6a037b6343481ebbce35431f376a68744d332a5052179b89a8507224e",
+    "size": [
+     1006,
+     688
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "77937cc948b3d3b0e9a2d030df5be32c4fa7fe5ed908b9bba34c9b3dc24d6f03",
+    "size": [
+     1014,
+     696
+    ]
+   },
+   "code_sha256": "5031824ee402b3e11eb18148e13be86135881b65cbd61da7cd573013b452290a",
+   "dataset": "attendance",
+   "dataset_file": "attendance_data.csv",
+   "dataset_sha256": "2fe0b859f92219a49a5431ff2403a471356b00bb6f66187a6eec2874da8bd26e",
+   "task_id": "att_t1",
+   "title": "Attendance Status Breakdown"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "702b0059b1cf1a77319911d0be3d67d1829a391881e2157f741803d0e89cf58e",
+    "size": [
+     969,
+     737
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "0043ac544d824ac70e0880dfa5d257e637946b966628ebe0a4211f057470cab3",
+    "size": [
+     970,
+     753
+    ]
+   },
+   "code_sha256": "0fa89225a520541cce820aacbffb31b57835b23773d7ba63350487b62b3e9a04",
+   "dataset": "attendance",
+   "dataset_file": "attendance_data.csv",
+   "dataset_sha256": "2fe0b859f92219a49a5431ff2403a471356b00bb6f66187a6eec2874da8bd26e",
+   "task_id": "att_t2",
+   "title": "Hours Worked by Department"
+  },
+  {
+   "chart": null,
+   "chart_hermetic": null,
+   "code_sha256": "c19100eefba41a0394702085d9121b90612598a06927f147624a076ccac29f67",
+   "dataset": "attendance",
+   "dataset_file": "attendance_data.csv",
+   "dataset_sha256": "2fe0b859f92219a49a5431ff2403a471356b00bb6f66187a6eec2874da8bd26e",
+   "task_id": "att_t3",
+   "title": "GPS Location Mismatches"
+  },
+  {
+   "chart": null,
+   "chart_hermetic": null,
+   "code_sha256": "6eef7e7d091b46e2a827ae7d091644631fc8c7355d4c332b470527589241b455",
+   "dataset": "ecommerce",
+   "dataset_file": "ecommerce_timeseries.csv",
+   "dataset_sha256": "102eccf6775442efc96a94fda0436cfcc96901a5089cb07bf32ba9729e94b09a",
+   "task_id": "eco_t1",
+   "title": "Revenue Overview"
+  },
+  {
+   "chart": null,
+   "chart_hermetic": null,
+   "code_sha256": "cb01b728d64a8881ec86f6646ca215f2b815568e77c102e18010029eb82e43e3",
+   "dataset": "ecommerce",
+   "dataset_file": "ecommerce_timeseries.csv",
+   "dataset_sha256": "102eccf6775442efc96a94fda0436cfcc96901a5089cb07bf32ba9729e94b09a",
+   "task_id": "eco_t2",
+   "title": "Weekend vs Weekday Revenue"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "05e8ac73d9b3b3c1e9ed5443f891c4b94dfaa40d0db7ca70b97682e94403432d",
+    "size": [
+     1006,
+     646
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "6aca4634ba4351bc6cbccff23916df0d45dfae30b2d227c6f0bd30f1507280cc",
+    "size": [
+     1014,
+     649
+    ]
+   },
+   "code_sha256": "75d3cff830fe6bcafafdb747f471217b6a121b2c87f673342011f0463ec3023a",
+   "dataset": "ecommerce",
+   "dataset_file": "ecommerce_timeseries.csv",
+   "dataset_sha256": "102eccf6775442efc96a94fda0436cfcc96901a5089cb07bf32ba9729e94b09a",
+   "task_id": "eco_t3",
+   "title": "Monthly Revenue Trend"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "ead9c9c27a1cc78fa9996247f32c26401c662f738c97089ae3d5d3dbbae6ad7e",
+    "size": [
+     1000,
+     624
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "2f45c06610fd2b110d132528eed92eb337963b173dc300e17e16955b1a47dbfe",
+    "size": [
+     1005,
+     626
+    ]
+   },
+   "code_sha256": "f38bbabaa270ee1bbc9bc318f1d8b578b995380494d3b04153833b217538b689",
+   "dataset": "sales",
+   "dataset_file": "sales_data.csv",
+   "dataset_sha256": "c5ac406600fe86e5a929e5132af87e4737c7185c167adb5d7b15d8d2d5894563",
+   "task_id": "sales_t1",
+   "title": "Sales Overview"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "3ab63bdaf444eb5a3a32a5bba0eafd0a3b852216e5569ab400257eb56887d4ee",
+    "size": [
+     982,
+     674
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "34d22c1f3f2f8b7fe7a828c90e76af0aad8ee0637ae883c22e0751259f8f8c2d",
+    "size": [
+     986,
+     683
+    ]
+   },
+   "code_sha256": "5932decf9c82c438732327b1abfa810ce806cc84e10ec1285397db3610cea78e",
+   "dataset": "sales",
+   "dataset_file": "sales_data.csv",
+   "dataset_sha256": "c5ac406600fe86e5a929e5132af87e4737c7185c167adb5d7b15d8d2d5894563",
+   "task_id": "sales_t2",
+   "title": "Regional Sales Comparison"
+  },
+  {
+   "chart": null,
+   "chart_hermetic": null,
+   "code_sha256": "935265282db25198d5bc6add294664f35bf7f1fc6db92f2badd5b914297e505c",
+   "dataset": "sales",
+   "dataset_file": "sales_data.csv",
+   "dataset_sha256": "c5ac406600fe86e5a929e5132af87e4737c7185c167adb5d7b15d8d2d5894563",
+   "task_id": "sales_t3",
+   "title": "Target Attainment"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "29e6b36f069f25eba827d0a35c23bc33dc90b3a60cf000a6bac9593579e26aaf",
+    "size": [
+     1009,
+     624
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "4d55bc29362e3ef577b9e01f2d7fe857940406e4fcab9f0affa690c0fbf3d861",
+    "size": [
+     1016,
+     626
+    ]
+   },
+   "code_sha256": "35ae55c97658d91bc2d26d51d931517d33b0e15847ef28f680c2b467a0d69252",
+   "dataset": "student",
+   "dataset_file": "student_data.csv",
+   "dataset_sha256": "3259adb09dbbedeafd91802f2285dcf3a89cde407088387e495d7dea99b4fc7f",
+   "task_id": "stu_t1",
+   "title": "Score Overview"
+  },
+  {
+   "chart": null,
+   "chart_hermetic": null,
+   "code_sha256": "8a67297226efa5075d906c99867bef97215595bdeb6a5fec045fdfb877544e58",
+   "dataset": "student",
+   "dataset_file": "student_data.csv",
+   "dataset_sha256": "3259adb09dbbedeafd91802f2285dcf3a89cde407088387e495d7dea99b4fc7f",
+   "task_id": "stu_t2",
+   "title": "Scores by Subject"
+  },
+  {
+   "chart": {
+    "mode": "RGBA",
+    "pixels_sha256": "aef6a48a57dd58a2257b6afe3b77e078c72bc238c4fddcc80ce6ca7631d98992",
+    "size": [
+     987,
+     599
+    ]
+   },
+   "chart_hermetic": {
+    "mode": "RGBA",
+    "pixels_sha256": "1bb7f6f145b219c82dce097ef190c16cd01f8fa3728660c7fc40091caa20dc93",
+    "size": [
+     992,
+     600
+    ]
+   },
+   "code_sha256": "21cc7837cfa4c78922c6a7bb291d60b789f5793a92c4447e7a82fad647f184c1",
+   "dataset": "student",
+   "dataset_file": "student_data.csv",
+   "dataset_sha256": "3259adb09dbbedeafd91802f2285dcf3a89cde407088387e495d7dea99b4fc7f",
+   "task_id": "stu_t3",
+   "title": "Study Hours vs Score"
+  }
+ ],
+ "render_environment": {
+  "backend": "Agg",
+  "figure.dpi": 120.0,
+  "figure.figsize": [
+   10.0,
+   6.0
+  ],
+  "font.family": [
+   "sans-serif"
+  ],
+  "font.sans-serif": [
+   "Arial",
+   "Liberation Sans",
+   "DejaVu Sans",
+   "Bitstream Vera Sans",
+   "sans-serif"
+  ],
+  "font_file": "mpl-data:fonts/ttf/DejaVuSans.ttf",
+  "font_sha256": "3fdf69cabf06049ea70a00b5919340e2ce1e6d02b0cc3c4b44fb6801bd1e0d22",
+  "freetype": "2.14.3",
+  "freetype_build": "local",
+  "matplotlib": "3.11.1",
+  "matplotlibrc": "mpl-data:matplotlibrc",
+  "pillow": "13.0.0",
+  "rc_env": [
+   "MPLBACKEND",
+   "MPLCONFIGDIR"
+  ],
+  "savefig.dpi": "figure",
+  "system_fonts": 0,
+  "text.antialiased": true,
+  "text.hinting": "default",
+  "text.hinting_factor": null
+ },
+ "schema": "insightpilot.golden-fixtures/1"
+}

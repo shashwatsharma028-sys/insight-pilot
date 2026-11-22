@@ -10,9 +10,10 @@ Contract (P0):
   IP_HITL_* variable raises FeatureFlagError instead of silently falling back
   to a default. A typo must never quietly disable a security control.
 - The "secure" deployment profile refuses any configuration that would run
-  untrusted code without OS/container isolation (validate()), and
-  resolve_sandbox_backend() never falls back to the legacy executor once
-  hardened execution has been requested.
+  untrusted code without OS/container isolation (validate()). Hardened
+  execution exists only as the container backend: IP_FF_SANDBOX_HARDENED=1
+  requires IP_SANDBOX_BACKEND=container in every profile, and
+  resolve_sandbox_backend() never falls back to the legacy executor.
 """
 
 from dataclasses import dataclass, asdict, fields
@@ -56,7 +57,7 @@ _SPEC = {
 class FeatureFlags:
     deployment_profile: str = "exam"      # exam = V1-compatible; secure = V2 hardened deployment
     sandbox_hardened: bool = False        # P3
-    sandbox_backend: str = "subprocess"   # P3: "container" = OS-isolated backend
+    sandbox_backend: str = "subprocess"   # "subprocess" = unchanged V1 (hardening off only); "container" = rootless OS isolation
     guardrails: str = "off"               # P2
     tracing: bool = False                 # P5
     verifier: str = "off"                 # P6
@@ -130,6 +131,11 @@ def validate(flags: FeatureFlags) -> None:
     if flags.sandbox_backend == "container" and not flags.sandbox_hardened:
         raise FeatureFlagError(
             "IP_SANDBOX_BACKEND=container requires IP_FF_SANDBOX_HARDENED=1")
+    if flags.sandbox_hardened and flags.sandbox_backend != "container":
+        raise InsecureConfigurationError(
+            "IP_FF_SANDBOX_HARDENED=1 requires IP_SANDBOX_BACKEND=container: "
+            "there is no hardened subprocess mode; the V1 subprocess runs only "
+            "when hardening is off")
     if flags.hitl_code_review != "off" and not flags.hitl_v2:
         raise FeatureFlagError("IP_HITL_CODE_REVIEW requires IP_FF_HITL_V2=1")
     if flags.hitl_checkpointer != "none" and not flags.hitl_v2:
@@ -158,6 +164,7 @@ def resolve_sandbox_backend(flags: FeatureFlags,
     Decide which executor runs generated code.
 
     Returns "legacy" only when hardened execution was NOT requested (V1).
+    When it is requested the backend is always "container" (validate()).
     Once hardened execution is requested, an unavailable backend raises
     InsecureConfigurationError: there is no silent fallback to the
     unisolated legacy executor, in any profile.
