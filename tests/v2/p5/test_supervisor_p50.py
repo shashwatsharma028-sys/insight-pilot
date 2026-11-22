@@ -285,3 +285,57 @@ def test_runs_are_deterministic_apart_from_timings():
         out = sup.run(_path("sales"))
         return json.dumps({k: out[k] for k in ("messages", "events", "lessons", "final")}, sort_keys=True)
     assert run() == run()
+
+
+# ── single-step supervisor checks (added after mutation testing: M11, M17, M18) ──
+
+def _mid_analysis_state():
+    """State just after the Supervisor dispatched analysis attempt 1 of stu_t1, plus the analyst's real reply."""
+    from multi_agent.supervisor import DEFAULT_LIMITS, _new_task
+    sup, *_ = _team("student")
+    plan = scripted.plan_for("student")
+    profile = dsmod.profile(dsmod.load(_path("student")))
+    ids = [t["id"] for t in plan["tasks"]]
+    tasks = {i: _new_task() for i in ids}
+    tasks["stu_t1"].update(attempts=1, status="running")
+    req = c.envelope(5, c.SUPERVISOR, c.ANALYST, "analysis_request",
+                     {"task": plan["tasks"][0], "profile": profile, "dataset_path": _path("student"), "attempt": 1,
+                      "feedback": []}, "stu_t1", 1)
+    payload = sup.analyst.run(req["payload"])
+    reply = c.envelope(6, c.ANALYST, c.SUPERVISOR, "analysis_result", payload, "stu_t1", 1, reply_to=5)
+    state = {"dataset_path": _path("student"), "limits": dict(DEFAULT_LIMITS), "profile": profile, "plan": plan,
+             "plan_attempts": 1, "plan_feedback": [], "approved_task_ids": ids, "task_index": 0, "tasks": tasks,
+             "seq": 6, "steps": 3, "status": None, "pending": reply,
+             "awaiting": {"seq": 5, "recipient": c.ANALYST, "kind": "analysis_request", "task_id": "stu_t1",
+                          "attempt": 1}}
+    return sup, state
+
+
+def test_supervisor_step_accepts_a_matching_reply():
+    sup, state = _mid_analysis_state()
+    out = sup.supervise(state)
+    assert [e["type"] for e in out["events"]] == ["handoff_accepted"]
+    assert out["pending"]["kind"] == "verification_request" and out["route"] == c.VERIFIER
+
+
+@pytest.mark.parametrize("tamper", [
+    lambda e: e.update(reply_to=4),                   # answers an older request
+    lambda e: e.update(attempt=2),                    # claims to be another attempt
+    lambda e: e.update(task_id="stu_t2"),             # claims to be another task (payload unchanged)
+])
+def test_supervisor_step_rejects_a_mismatched_reply_envelope(tamper):
+    sup, state = _mid_analysis_state()
+    tamper(state["pending"])
+    out = sup.supervise(state)
+    assert [e["type"] for e in out["events"]] == ["handoff_rejected"]
+    t = out["tasks"]["stu_t1"]
+    assert t["analysis"] is None and t["history"][-1]["outcome"] == "rejected"
+    assert out["pending"]["kind"] == "analysis_request" and out["pending"]["attempt"] == 2
+
+
+def test_duplicate_claim_lines_are_an_error_even_when_one_value_is_correct():
+    from multi_agent.agents import parse_claims
+    claims, errors, unplanned = parse_claims("CLAIM a=1\nCLAIM a=2\nCLAIM b=3\nCLAIM z=9\nnoise", {"a", "b"})
+    assert claims == {"b": 3} and errors == {"a": "claim reported more than once"} and unplanned == ["z"]
+    claims, errors, _ = parse_claims("CLAIM a=999\nCLAIM a=1", {"a"})
+    assert "a" not in claims and "a" in errors
