@@ -270,7 +270,10 @@ def test_execution_contracts_are_unchanged():
     import dataclasses
     from v2.execution.results import ExecutionResult
     from v2.execution.runtime import ExecutionRequest
-    assert [f.name for f in dataclasses.fields(ExecutionRequest)] == ["run_id", "task_id", "code", "limits"]
+    # P5.1A (approved) adds the path-free dataset identity and the trusted-prelude selector.
+    # The pin stays exact: any further change must update this list deliberately.
+    assert [f.name for f in dataclasses.fields(ExecutionRequest)] == [
+        "run_id", "task_id", "code", "limits", "dataset", "prelude"]
     assert [f.name for f in dataclasses.fields(ExecutionResult)] == [
         "run_id", "isolation", "outcome", "stdout", "stderr", "stdout_truncated", "stderr_truncated",
         "chart_path", "chart_rejected_reason", "duration_ms"]

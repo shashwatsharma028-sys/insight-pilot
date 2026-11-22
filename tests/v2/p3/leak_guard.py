@@ -25,8 +25,11 @@ import pytest
 
 import agent.nodes.executor as _node_module
 import sandbox.executor as _v1_module
+import sandbox_v2.executor as _lazy_module       # P5.1A: the tripwire also covers the P4.1 executor
 
 ORIGINAL_V1_EXECUTE_CODE = _v1_module.execute_code
+ORIGINAL_LAZY_EXECUTE_CODE = _lazy_module.execute_code
+assert ORIGINAL_LAZY_EXECUTE_CODE.__module__ == "sandbox_v2.executor", "P4.1 executor already rebound at import"
 assert _node_module.execute_code is ORIGINAL_V1_EXECUTE_CODE, "V1 executor already rebound at import"
 assert ORIGINAL_V1_EXECUTE_CODE.__module__ == "sandbox.executor"
 
@@ -63,6 +66,9 @@ def restore_and_report() -> list:
     if _node_module.execute_code is not ORIGINAL_V1_EXECUTE_CODE:
         problems.append("agent.nodes.executor.execute_code is not the original V1 function")
         _node_module.execute_code = ORIGINAL_V1_EXECUTE_CODE
+    if _lazy_module.execute_code is not ORIGINAL_LAZY_EXECUTE_CODE:
+        problems.append("sandbox_v2.executor.execute_code is not the original P4.1 function")
+        _lazy_module.execute_code = ORIGINAL_LAZY_EXECUTE_CODE
 
     current = _streamlit_options()
     if current != BASELINE_STREAMLIT_OPTIONS:

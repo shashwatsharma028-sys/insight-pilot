@@ -14,32 +14,46 @@ and both execution paths work unchanged.
   (SandboxUnavailableError / SandboxProtocolError). Nothing falls back to V1.
 - Artifact extraction is not implemented yet, so a result carrying a chart is
   rejected as a protocol error.
+
+P5.1A (shared by both callers: executor_node and the P5 ContainerExecutionPort):
+- Dataset identity: after the scan and the size check, the dataset is checked
+  READ-ONLY with DatasetAuthorizer.identify (demo-only policy, descriptor-
+  relative open, digest == pin). A policy failure raises
+  DatasetNotAuthorizedError; nothing reaches the runtime. The request carries
+  only a DatasetIdentity (name, digest, size): never the host path.
+- expected_sha256 (optional, P5): the digest the caller profiled. It must
+  equal the verified digest, or DatasetNotAuthorizedError is raised.
+- prelude (optional): a PreludeId for the trusted in-image runner.
 """
 
 import secrets
 import threading
 
-from v2.execution.errors import SandboxProtocolError, SandboxUnavailableError
+from v2.execution.errors import DatasetNotAuthorizedError, SandboxProtocolError, SandboxUnavailableError
 from v2.execution.isolation import IsolationLevel
 from v2.execution.limits import DEFAULT_LIMITS, MIB, Limits
 from v2.execution.results import ExecutionOutcome, ExecutionResult
-from v2.execution.runtime import ExecutionRequest
+from v2.execution.runtime import DatasetIdentity, ExecutionRequest, PreludeId
 
 _CHART_MARKER = "CHART_SAVED:"
 
 
 class HardenedDispatcher:
-    def __init__(self, runtime, limits: Limits = DEFAULT_LIMITS):
+    def __init__(self, runtime, limits: Limits = DEFAULT_LIMITS, authorizer=None):
         if getattr(runtime, "isolation", None) is not IsolationLevel.ROOTLESS_CONTAINER:
             raise SandboxUnavailableError("the hardened dispatcher requires an OS-isolated container runtime")
         if not isinstance(limits, Limits):
             raise TypeError("limits must be Limits")
+        if authorizer is None:
+            from v2.execution.datasets import DatasetAuthorizer
+            authorizer = DatasetAuthorizer(limits=limits)
         self.runtime = runtime
         self.limits = limits
+        self.authorizer = authorizer
         self._lock = threading.Lock()
         self.calls = 0
 
-    def __call__(self, code, csv_path, task_id):
+    def __call__(self, code, csv_path, task_id, *, expected_sha256=None, prelude=PreludeId.V1):
         from agent.rules_engine import scan_code_safety
         from agent.state import ErrorType
 
@@ -54,8 +68,16 @@ class HardenedDispatcher:
             return (False, f"Generated code exceeds the {self.limits.code_bytes // MIB} MiB size limit.",
                     None, ErrorType.RUNTIME)
 
+        if not isinstance(prelude, PreludeId):
+            raise TypeError("prelude must be a PreludeId")
+        authorized = self.authorizer.identify(csv_path)      # policy -> DatasetNotAuthorizedError
+        if expected_sha256 is not None and expected_sha256 != authorized.sha256:
+            raise DatasetNotAuthorizedError(
+                "Dataset not authorised: its verified SHA-256 differs from the profiled identity")
         request = ExecutionRequest(run_id=secrets.token_hex(16), task_id=str(task_id),
-                                   code=code, limits=self.limits)
+                                   code=code, limits=self.limits,
+                                   dataset=DatasetIdentity(authorized.name, authorized.sha256, authorized.size),
+                                   prelude=prelude)
         try:
             result = self.runtime.execute(request)
         except SandboxUnavailableError:

@@ -135,29 +135,11 @@ class DatasetAuthorizer:
     def _authorize_into(self, csv_path, workspace) -> AuthorizedDataset:
         name = self.check_path(csv_path)
         expected = self._approved[name]
-        dir_fd = src_fd = dst_fd = None
+        fds = []
+        dst_fd = None
         created = False
         try:
-            try:
-                dir_fd = os.open(self._data_dir, _OPEN_DIR)
-            except OSError as exc:
-                _refuse(f"the approved data directory cannot be opened safely ({exc.strerror})")
-            dir_st = os.fstat(dir_fd)
-            if dir_st.st_uid != os.geteuid() or dir_st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
-                _refuse("the approved data directory is not owned by this user or is group/world-writable")
-            try:
-                src_fd = os.open(name, _OPEN_DATASET, dir_fd=dir_fd)
-            except OSError as exc:
-                _refuse(f"the dataset cannot be opened safely ({exc.strerror})")
-            before = os.fstat(src_fd)
-            if not stat.S_ISREG(before.st_mode):
-                _refuse("not a regular file")
-            if before.st_nlink != 1:
-                _refuse(f"unexpected link count {before.st_nlink} (hard links are not allowed)")
-            if before.st_uid != os.geteuid():
-                _refuse("the file is not owned by this user")
-            if not 0 < before.st_size <= self._limits.dataset_bytes:
-                _refuse(f"size {before.st_size} is outside 1..{self._limits.dataset_bytes} bytes")
+            src_fd, before = self._open_source(name, fds)
 
             dst_fd = workspace.create_input(WORKSPACE_DATASET_NAME)
             created = True
@@ -192,8 +174,88 @@ class DatasetAuthorizer:
             created = False          # keep the verified copy
             return result
         finally:
-            for fd in (dst_fd, src_fd, dir_fd):
+            for fd in [dst_fd] + fds[::-1]:
                 if fd is not None:
                     os.close(fd)
             if created:
                 workspace.remove_input(WORKSPACE_DATASET_NAME)
+
+    # ── shared descriptor-relative open (used by the copy and by identify) ──
+    def _open_source(self, name, fds):
+        """
+        Open the approved directory and `name` relative to it, with every
+        ownership, type, link-count and size check. Each descriptor is
+        appended to `fds` as soon as it exists; the caller closes them.
+        Returns (src_fd, fstat before reading).
+        """
+        try:
+            fds.append(os.open(self._data_dir, _OPEN_DIR))
+        except OSError as exc:
+            _refuse(f"the approved data directory cannot be opened safely ({exc.strerror})")
+        dir_fd = fds[-1]
+        dir_st = os.fstat(dir_fd)
+        if dir_st.st_uid != os.geteuid() or dir_st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+            _refuse("the approved data directory is not owned by this user or is group/world-writable")
+        try:
+            fds.append(os.open(name, _OPEN_DATASET, dir_fd=dir_fd))
+        except OSError as exc:
+            _refuse(f"the dataset cannot be opened safely ({exc.strerror})")
+        src_fd = fds[-1]
+        before = os.fstat(src_fd)
+        if not stat.S_ISREG(before.st_mode):
+            _refuse("not a regular file")
+        if before.st_nlink != 1:
+            _refuse(f"unexpected link count {before.st_nlink} (hard links are not allowed)")
+        if before.st_uid != os.geteuid():
+            _refuse("the file is not owned by this user")
+        if not 0 < before.st_size <= self._limits.dataset_bytes:
+            _refuse(f"size {before.st_size} is outside 1..{self._limits.dataset_bytes} bytes")
+        return src_fd, before
+
+    # ── read-only identity check (P5.1A; used by the hardened dispatcher) ──
+    def identify(self, csv_path) -> AuthorizedDataset:
+        """
+        Verify, WITHOUT copying, that `csv_path` names an approved dataset
+        whose current bytes match its pin, using the same checks as
+        authorize_into (string checks, descriptor-relative open, fstat before
+        and after, bounded read, digest). Policy failures raise
+        DatasetNotAuthorizedError; I/O failures raise SandboxUnavailableError.
+        The returned identity carries no path.
+        """
+        try:
+            return self._identify(csv_path)
+        except OSError as exc:
+            raise SandboxUnavailableError(
+                f"dataset identity check failed ({type(exc).__name__}: {exc.strerror or exc})") from exc
+
+    def _identify(self, csv_path) -> AuthorizedDataset:
+        name = self.check_path(csv_path)
+        expected = self._approved[name]
+        fds = []
+        try:
+            src_fd, before = self._open_source(name, fds)
+            digest = hashlib.sha256()
+            read = 0
+            cap = self._limits.dataset_bytes
+            while True:
+                chunk = os.read(src_fd, min(COPY_CHUNK, cap + 1 - read))
+                if not chunk:
+                    break
+                read += len(chunk)
+                if read > cap:
+                    _refuse("the dataset grew beyond the size limit while it was read")
+                digest.update(chunk)
+                if self._after_chunk is not None:
+                    self._after_chunk(read)
+            after = os.fstat(src_fd)
+            unchanged = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) == \
+                        (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+            if not unchanged or read != before.st_size:
+                _refuse("the dataset changed while it was being read")
+            actual = digest.hexdigest()
+            if actual != expected:
+                _refuse("the content does not match the approved SHA-256")
+            return AuthorizedDataset(name=name, sha256=actual, size=read)
+        finally:
+            for fd in fds[::-1]:
+                os.close(fd)

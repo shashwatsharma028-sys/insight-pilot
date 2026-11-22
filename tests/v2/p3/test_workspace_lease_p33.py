@@ -83,20 +83,39 @@ def test_new_modules_read_no_environment_and_are_not_wired_into_production():
         used = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)} | \
                {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
         assert not {"environ", "getenv", "putenv", "system", "popen", "Popen", "exec", "eval"} & used, rel
+    # P5.1A (approved, narrow): the dispatcher may use DatasetAuthorizer.identify, a READ-ONLY
+    # identity check, and nothing else from P3.3. Workspace and lease stay unwired everywhere.
+    allowed_in = {"v2/execution/dispatch.py": ({"v2.execution.datasets"}, {"DatasetAuthorizer"})}
     for rel in ["v2/launch_app.py", "v2/execution/bootstrap.py", "v2/execution/binding.py",
                 "v2/execution/dispatch.py", "v2/execution/runtime.py", "v2/execution/__init__.py"]:
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             tree = ast.parse(f.read())
-        modules = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
-        assert not modules & {"v2.execution.datasets", "v2.execution.workspace", "v2.execution.lease"}, rel
-        names = {a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) for a in n.names}
+        ok_modules, ok_names = allowed_in.get(rel, (set(), set()))
+        imports = [n for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)]
+        modules = {n.module for n in imports}
+        assert not (modules - ok_modules) & {"v2.execution.datasets", "v2.execution.workspace",
+                                             "v2.execution.lease"}, rel
+        names = {a.name for n in imports for a in n.names}
         assert not names & {"datasets", "workspace", "lease"}, rel
+        for n in imports:
+            if n.module in ok_modules:
+                assert {a.name for a in n.names} <= ok_names, rel
+        if rel in allowed_in:
+            attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+            assert "identify" in attrs, rel
+            assert not attrs & {"authorize_into", "create_input", "write_code", "acquire", "cleanup"}, rel
 
 
-def test_execution_request_still_carries_no_dataset():
+def test_execution_request_still_carries_no_dataset_path():
+    """P5.1A (approved): the request may carry the dataset IDENTITY, never a host path."""
     import dataclasses
-    from v2.execution.runtime import ExecutionRequest
-    assert [f.name for f in dataclasses.fields(ExecutionRequest)] == ["run_id", "task_id", "code", "limits"]
+    from v2.execution.runtime import DatasetIdentity, ExecutionRequest
+    assert [f.name for f in dataclasses.fields(ExecutionRequest)] == [
+        "run_id", "task_id", "code", "limits", "dataset", "prelude"]
+    assert [f.name for f in dataclasses.fields(DatasetIdentity)] == ["name", "sha256", "size"]
+    for bad in ("/home/user/data/sales_data.csv", "../sales_data.csv", "data/sales_data.csv", "sales.CSV", ""):
+        with pytest.raises(ValueError):
+            DatasetIdentity(bad, "0" * 64, 1)
 
 
 # ── run identifiers ──────────────────────────────────────────────────────────

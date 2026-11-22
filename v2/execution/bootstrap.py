@@ -22,6 +22,14 @@ a hardened backend alone does not make the application secure.
 
 `streamlit run ui/app.py` never imports this module and is not protected by
 it (see docs/v2/P3_SECURE_EXECUTION_DESIGN.md, deployment boundary).
+
+P5.1A:
+- IP_FF_ORCHESTRATOR=v2 (the P5 multi-agent orchestrator) is accepted only
+  TOGETHER with hardened container execution; on its own it is still refused.
+  It never relaxes any other prerequisite.
+- hardened_dispatcher() gives the P5 ContainerExecutionPort the one process-
+  wide dispatcher, or raises SandboxUnavailableError (fail closed) unless the
+  mode is HARDENED and the binding is intact.
 """
 
 import logging
@@ -40,6 +48,8 @@ P2_GUARDRAILS_IMPLEMENTED = False
 REQUIRED_STREAMLIT_OPTIONS = (("server.fileWatcherType", "none"), ("server.runOnSave", False))
 
 _HARDENING_FIELDS = {"sandbox_hardened", "sandbox_backend", "deployment_profile"}
+# Accepted only together with sandbox_hardened (P5.1A): the P5 orchestrator.
+_REQUIRES_HARDENING_FIELDS = {"orchestrator"}
 _log = logging.getLogger("insightpilot.v2.bootstrap")
 
 
@@ -150,6 +160,21 @@ def _check_every_run(env, options) -> Mode:
     return _state.mode
 
 
+def hardened_dispatcher():
+    """The process-wide hardened dispatcher; SandboxUnavailableError unless HARDENED and intact."""
+    from v2.execution import binding
+    from v2.execution.errors import SandboxUnavailableError
+    with _LOCK:
+        if _state.mode is not Mode.HARDENED or _state.dispatcher is None:
+            raise SandboxUnavailableError(
+                f"hardened execution is not active in this process (mode {_state.mode.value}); "
+                "there is no unisolated fallback")
+        drift = binding.verify()
+        if drift:
+            raise SandboxUnavailableError("the hardened executor binding is not intact: " + "; ".join(drift))
+        return _state.dispatcher
+
+
 # ── Test-only entry points ───────────────────────────────────────────────────
 
 def _require_pytest() -> None:
@@ -249,10 +274,14 @@ def _prerequisite_problems(flags: FeatureFlags, options, runtime) -> list:
     if flags.deployment_profile == "secure" and not P2_GUARDRAILS_IMPLEMENTED:
         problems.append("IP_DEPLOYMENT_PROFILE=secure needs the P2 guardrails, which are not "
                         "implemented; a hardened backend alone does not make the application secure")
+    accepted = _HARDENING_FIELDS | (_REQUIRES_HARDENING_FIELDS if flags.sandbox_hardened else set())
     other = sorted(names[f] for f, v in flags.as_dict().items()
-                   if f not in _HARDENING_FIELDS and v != getattr(defaults, f))
+                   if f not in accepted and v != getattr(defaults, f))
     if other:
         problems.append("not integrated yet: " + ", ".join(other))
+    for f in sorted(_REQUIRES_HARDENING_FIELDS):
+        if getattr(flags, f) != getattr(defaults, f) and not flags.sandbox_hardened:
+            problems.append(f"{names[f]} requires hardened container execution (IP_FF_SANDBOX_HARDENED=1)")
     if flags.sandbox_hardened:            # validate() guarantees backend == "container"
         problems.extend(_streamlit_option_problems(options))
         if runtime is None:
