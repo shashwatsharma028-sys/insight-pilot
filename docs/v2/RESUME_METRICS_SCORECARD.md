@@ -1,4 +1,4 @@
-# InsightPilot: resume metrics scorecard (P4.0)
+# InsightPilot: resume metrics scorecard (P4.0 + P4.1)
 
 **Rule:** every number here is a reproducible measurement from a committed file. Anything that was not measured is listed as such. Nothing is extrapolated.
 
@@ -42,9 +42,30 @@
 | Interpreter start-up vs prelude imports | 13.5 ms vs 1.07–1.26 s (two measurement sets) | `sandbox_overhead.json` |
 | seaborn import cost alone | ≈ 0.50 s per execution (cumulative 570 → 1,071 ms) | `sandbox_overhead.json` |
 | A/A paired comparison (two independent baseline runs) | no false positive: wall time median difference +156 ms, 95% CI [−197, +419] ms, sign p=0.82 (n=20); sandbox +33 ms, CI [−13, +105], p=0.46 (n=65) | `aa_v1_vs_v1/` |
-| Offline test suite on this branch | **334 passed, 13 xfailed** (the 13 strict-xfail V1 security cases), 0 failed, 1 warning (as before) at `3a8a6147`; baseline before P4.0: 270 passed, 13 xfailed | full-suite run |
-| P4.0 tests | 64 (57 unit/edge-case, 7 integration through the real pipeline) | `tests/v2/p4/` |
-| Mutation checks on the P4.0 harness | 16/16 deliberately broken variants detected. 2 survived at first and exposed weak tests, which were fixed | `docs/v2/p4/mutation_checks.md` |
+| Offline test suite on this branch | after P4.1: **377 passed, 13 xfailed** (the 13 strict-xfail V1 security cases unchanged), 0 failed, 1 warning (pre-existing) at `d9618925`; after P4.0: 334 passed, 13 xfailed at `3a8a6147`; baseline before P4.0: 270 passed, 13 xfailed | full-suite runs |
+| P4.0 + P4.1 tests | 107: P4.0 64 (57 unit/edge-case, 7 integration); P4.1 43 (prelude, V1 parity, adversarial, variants, gates, full-workload integration) | `tests/v2/p4/` |
+| Mutation checks | P4.0: 16/16 (2 survived at first and exposed weak tests, which were fixed); P4.1: 16/16 | `docs/v2/p4/mutation_checks.md` |
+
+## P4.1: lazy-seaborn V2 sandbox prelude (measured A/B, `docs/v2/p4/P41_LAZY_SEABORN.md`)
+
+**Design:**
+- one session on the same machine, environment and workload fingerprint (`3ea65684…`), commit `d9618925` with a clean tree;
+- 4 datasets × 12 repetitions × 3 variants (`v1`, `v2-lazy-seaborn`, `v1-control`) = 144 runs;
+- dataset-level interleaving, with the variant order cycling through all permutations (each variant in each position 16 times).
+
+**Command:**
+```bash
+python -m evaluation ab --out <dir> --reps 12 --variants v1,v2-lazy-seaborn,v1-control
+```
+
+| Metric | V1 | V2 (lazy seaborn) | Paired result (V2 − V1) |
+|---|---|---|---|
+| Pipeline wall time, median / p95 (n=48 each) | 4,341.0 / 5,926.7 ms | **2,519.2** / 3,612.9 ms | median paired diff **−1,812.2 ms**, 95% CI [−2,048.2, −1,621.9]; V2 faster in 48/48 pairs; exact sign test p=7.1×10⁻¹⁵; change of medians **−42.0%** (denominator: V1 median 4,341.1 ms) |
+| Sandbox execution, median / p95 (n=192 each; 36 safety-blocked calls of ~0.1 ms included) | 1,265.7 / 1,609.4 ms | **727.0** / 980.9 ms | over 156 executed pairs: **−570.8 ms**, CI [−594.3, −540.9]; 156/156; p=2.2×10⁻⁴⁷; **−42.8%** (denominator: V1 paired median 1,316.8 ms) |
+| Control: V1 vs V1-control | n/a | n/a | wall −14.3 ms, CI [−134.9, +110.2], p=0.67; sandbox +8.2 ms, CI [−22.9, +36.2], p=0.69: no significant difference |
+| Prelude only (import overhead) | 1,211.9 ms | 639.2 ms | −572.7 ms; with first use of `sns`: 1,189.7 ms, no penalty beyond V1 |
+| Correctness gates | 28/28, 20/20, 12/12 + 1/1 blocked, 7/7 charts, 12/12 reports, 4/4 snapshots | identical, **7/7 charts pixel-identical** | no regression in any of 16 gates (retries 4, executions 16, failed 4, blocked 3 and LLM calls 32, all equal) |
+| Mock token estimates per pass | 44,490 / 3,002 | 44,490 / 3,002 | unchanged; estimates only, not cost |
 
 ## Defensible resume bullets
 
@@ -54,11 +75,12 @@ Each bullet is supported by the measurements above.
 - Designed explicit **token provenance**, separating provider-reported tokens from character estimates and mock calls. Per-call accounting reconciles exactly with the existing token monitor and makes it impossible to report mock estimates as cost.
 - Implemented a **fair paired-benchmark protocol**: workload fingerprinting, correctness-regression guards, paired bootstrap confidence intervals and exact sign tests. An A/A test on real timings showed no false-positive "improvement".
 - **Profiled the agent pipeline.** The sandboxed code-execution subprocess accounts for **~98% of wall time**, and ~1.1–1.3 s of each ~1.3 s execution is library import overhead (interpreter start-up is 13.5 ms). The profiling identified a **~0.5 s per-execution** import that the workloads never use, as a measured optimisation target.
-- Produced benchmark reports in JSON, CSV and Markdown, backed by 64 tests (unit, edge-case, integration) and 16 mutation checks, all detected. V1 behaviour was preserved against committed snapshots.
+- Produced benchmark reports in JSON, CSV and Markdown, backed by 107 tests (unit, edge-case, integration) and 32 mutation checks, all detected. V1 behaviour was preserved against committed snapshots.
+- **Cut median end-to-end pipeline latency by 42% (4.34 s → 2.52 s) and median sandbox execution time by 43%** in an offline, counterbalanced A/B benchmark: 144 runs on one machine, V2 faster in 48/48 paired runs, 95% CI of the paired difference [−2.05, −1.62] s. The change was an opt-in lazy-import sandbox prelude, with zero correctness regressions (28/28 answers, 20/20 quality values, 7/7 pixel-identical charts) and a same-session A/A control showing no effect.
 
 ## Do NOT claim (not measured)
 
-- **Speedups:** no optimisation has been implemented. The ~0.5 s seaborn figure is an import measurement, not a pipeline speedup.
+- **Speedups beyond what was measured:** the 42% is for this offline workload, whose fixtures never use seaborn; that is the best case. Code that uses `sns` pays the import on first use, at no more than V1. It was measured on one 4-CPU machine with the V1 subprocess sandbox. Do not generalise it to other hardware, real-LLM workloads or the P3 container backend.
 - **Money:** no cost savings and no token reductions.
 - **Model quality:** nothing about LLM accuracy, answer quality or real-model behaviour. The LLM was scripted.
 - **Provider numbers:** no provider latency and no provider token counts.
