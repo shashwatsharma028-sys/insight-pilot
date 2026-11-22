@@ -119,6 +119,7 @@ def canonicalize_png(data, limits):
     """(png_bytes, None) re-encoded without metadata, or (None, reason). Pillow restricted to PNG."""
     import warnings
     from PIL import Image
+    saved_max = Image.MAX_IMAGE_PIXELS            # process-global in Pillow: always restored
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -138,6 +139,8 @@ def canonicalize_png(data, limits):
         return None, "dimensions_exceeded"
     except Exception:
         return None, "decode_failed"
+    finally:
+        Image.MAX_IMAGE_PIXELS = saved_max
     png = out.getvalue()
     if len(png) > limits.chart_bytes:
         return None, "too_large"

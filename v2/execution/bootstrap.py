@@ -33,6 +33,7 @@ P5.1A:
 """
 
 import logging
+import os
 import sys
 import threading
 from enum import Enum
@@ -40,7 +41,7 @@ from enum import Enum
 from config.feature_flags import FeatureFlagError, FeatureFlags, flag_environment_variables, load_flags
 from v2.execution.isolation import IsolationLevel
 
-STAGE = "P3.2b"
+STAGE = "P3.6"
 P2_GUARDRAILS_IMPLEMENTED = False
 
 # Streamlit settings the hardened launch path requires: no module reloading
@@ -204,6 +205,52 @@ def install_for_tests(runtime, env=None, options=None):
         problems = _prerequisite_problems(flags, options, runtime=runtime)
         if problems:
             _fail(_refusal_text(flags, problems))
+
+        from v2.execution import binding
+        from v2.execution.dispatch import HardenedDispatcher
+        dispatcher = HardenedDispatcher(runtime)
+        binding.install(dispatcher)
+        _state.mode = Mode.HARDENED
+        _state.runtime = runtime
+        _state.dispatcher = dispatcher
+        return dispatcher
+
+
+def install_for_validation(runtime, env, options=None):
+    """
+    P3.6: the ONLY way to reach HARDENED mode with the real ContainerRuntime, for container-marked
+    validation suites (VE-1 / VE-2). Production (ensure_ready) is unchanged and still refuses.
+
+    Refuses unless ALL hold: running under pytest; IP_TEST_REQUIRE_CONTAINER=1; effective uid is
+    not 0; `runtime` is exactly v2.execution.container_runtime.ContainerRuntime (no subclass, no
+    test double); the hardened flags and every prerequisite; and runtime.preflight() passes.
+    `env` is REQUIRED and explicit (the validation suite passes it): this module never reads the
+    process environment itself, so no environment variable can supply or enable a runtime.
+    """
+    _require_pytest()
+    from v2.execution.container_runtime import ContainerRuntime
+    if not hasattr(env, "get"):
+        raise TypeError("install_for_validation needs an explicit env mapping")
+    problems = []
+    if env.get("IP_TEST_REQUIRE_CONTAINER") != "1":
+        problems.append("IP_TEST_REQUIRE_CONTAINER=1 is required for container validation")
+    if os.geteuid() == 0:
+        problems.append("container validation must run as an unprivileged user (euid 0 refused)")
+    if type(runtime) is not ContainerRuntime or getattr(runtime, "is_test_double", True) is not False:
+        problems.append("install_for_validation accepts only the real ContainerRuntime (no subclass or double)")
+    if problems:
+        raise BootstrapRefused("container validation refused: " + "; ".join(problems))
+    with _LOCK:
+        if _state.mode is not Mode.UNINITIALIZED:
+            raise RuntimeError("the bootstrap is already initialised; reset it first")
+        _state.init_count += 1
+        flags = _load(env)
+        _state.flags = flags
+        if not flags.sandbox_hardened:
+            _fail("install_for_validation requires IP_FF_SANDBOX_HARDENED=1 and IP_SANDBOX_BACKEND=container")
+        prereq = _prerequisite_problems(flags, options, runtime=runtime)      # includes runtime.preflight()
+        if prereq:
+            _fail(_refusal_text(flags, prereq))
 
         from v2.execution import binding
         from v2.execution.dispatch import HardenedDispatcher

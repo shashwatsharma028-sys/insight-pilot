@@ -312,3 +312,11 @@ def test_the_supervisor_and_runner_import_closure_is_exactly_the_planned_image_l
     out = subprocess.run([sys.executable, "-I", "-B", "-c", code], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr
     assert set(out.stdout.strip().split(",")) == IMAGE_LAYOUT_MODULES
+
+
+def test_stage_a_leaves_no_global_pillow_state_behind():
+    from PIL import Image
+    before = Image.MAX_IMAGE_PIXELS
+    supervisor.canonicalize_png(png((32, 32)), Limits(chart_max_side=16, chart_max_pixels=256))
+    supervisor.canonicalize_png(b"garbage", DEFAULT_LIMITS)
+    assert Image.MAX_IMAGE_PIXELS == before

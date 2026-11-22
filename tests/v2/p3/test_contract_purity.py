@@ -81,6 +81,7 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/image/runtime/supervisor.py",
     "v2/execution/image/runtime/runner.py",
     "v2/execution/image/runtime/selftest.py",
+    "v2/execution/container_runtime.py",  # P3.6-3: rootless Podman runtime (fake podman tests only)
 ]
 
 

@@ -89,7 +89,8 @@ def test_no_new_subprocess_launch_sites_outside_the_known_executors():
     allowed = {"sandbox/executor.py", "sandbox_v2/executor.py", "scripts/p3/rootless.py", "scripts/p3/image_tool.py",
                "scripts/p3/workload_compat.py", "scripts/p3/hermetic_reference.py", "scripts/p3/ci_report.py",
                "scripts/p3/image_inspect.py", "evaluation/harness.py",
-               "v2/execution/image/runtime/supervisor.py"}          # P3.6-2: PID 1 starts the runner child
+               "v2/execution/image/runtime/supervisor.py",          # P3.6-2: PID 1 starts the runner child
+               "v2/execution/container_runtime.py"}                 # P3.6-3: starts only the podman CLI
     offenders = set()
     for dirpath, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
@@ -238,6 +239,8 @@ P36_P3_FILES = {
     "v2/execution/image/runtime/supervisor.py", "v2/execution/image/runtime/runner.py",
     "v2/execution/image/runtime/selftest.py", "v2/execution/image/runtime/preludes.json",
     "scripts/p3/gen_preludes.py", "tests/v2/p3/test_image_p35a.py",
+    # P3.6-3: the runtime and its validation-only bootstrap entry point
+    "v2/execution/container_runtime.py", "tests/v2/p3/test_bootstrap_p3.py",
 }
 
 

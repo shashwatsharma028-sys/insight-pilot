@@ -60,8 +60,13 @@ def publish_chart(decoded, chart_store, task_id, run_id, limits=DEFAULT_LIMITS):
         return None, exc.reason
 
 
-def result_from_frame(decoded, *, run_id, duration_ms, chart_path=None, chart_rejected_reason=None) -> ExecutionResult:
-    if decoded.run_id != run_id:
+def result_from_frame(decoded, *, run_id, duration_ms, chart_path=None, chart_rejected_reason=None,
+                      frame_run_id=None) -> ExecutionResult:
+    """
+    run_id: the request's run id (reported in the result). frame_run_id: the container's run id that
+    the frame must echo (the workspace's own id); it defaults to run_id.
+    """
+    if decoded.run_id != (run_id if frame_run_id is None else frame_run_id):
         raise SandboxProtocolError("the result frame belongs to a different run")
     outcome = outcome_of(decoded)
     if outcome is not ExecutionOutcome.SUCCEEDED:

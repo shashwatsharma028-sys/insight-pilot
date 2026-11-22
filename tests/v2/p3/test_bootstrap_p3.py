@@ -194,7 +194,8 @@ def test_binding_install_is_reachable_only_from_install_for_tests():
     callers = [fn.name for fn in tree.body if isinstance(fn, ast.FunctionDef)
                for node in ast.walk(fn) if isinstance(node, ast.Call)
                and isinstance(node.func, ast.Attribute) and node.func.attr == "install"]
-    assert callers == ["install_for_tests"]
+    # P3.6-3 (approved R5): install_for_validation is the one additional, validation-only entry point.
+    assert callers == ["install_for_tests", "install_for_validation"]
 
 
 def test_install_for_tests_refuses_outside_pytest():
