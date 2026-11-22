@@ -601,7 +601,7 @@ def test_no_ci_workflow_except_the_approved_probe():
     found = sorted(os.path.relpath(os.path.join(d, f), gh).replace(os.sep, "/")
                    for d, _, fs in os.walk(gh) for f in fs)
     assert found == [APPROVED_WORKFLOW]
-    yaml = pytest.importorskip("yaml")
+    import yaml                                                   # required: this check must never be skipped
     text = _read(os.path.join(gh, APPROVED_WORKFLOW))
     wf = yaml.safe_load(text)
     on = wf.get(True, wf.get("on"))
@@ -609,9 +609,10 @@ def test_no_ci_workflow_except_the_approved_probe():
     assert wf["permissions"] == {"contents": "read"}
     assert list(wf["jobs"]) == ["probe"]
     job = wf["jobs"]["probe"]
-    assert job["runs-on"] == "ubuntu-24.04" and job["timeout-minutes"] <= 20
+    assert job["runs-on"] == "ubuntu-24.04" and job["timeout-minutes"] <= 60
     assert all("uses" not in step for step in job["steps"])            # no third-party actions
-    assert all(step.get("timeout-minutes") for step in job["steps"])
+    assert all(0 < step.get("timeout-minutes", 0) <= 20 for step in job["steps"])
+    assert {step.get("if") for step in job["steps"]} <= {None, "always()"}
     assert "secrets." not in text and "pull_request" not in text and "schedule" not in text
     assert "workflow_dispatch" not in text
     envs = [k for step in job["steps"] for k in (step.get("env") or {})]
@@ -621,6 +622,9 @@ def test_no_ci_workflow_except_the_approved_probe():
     assert not re.search(r"(^|[;&|(]\s*)(sudo\s+)?(docker|podman)\s+(run|build|pull|create|exec)\b(?!\s+--help\b)",
                          runs, re.M)
     code = "\n".join(ln for ln in runs.splitlines() if not ln.strip().startswith("#"))
+    direct = re.findall(r"(?:^|[;&|(]|&&)\s*podman\s+(\S+(?:\s+\S+)?)", code, re.M)
+    assert {d.split()[0] for d in direct} <= {"--version", "run", "tag", "rmi"}, direct
+    assert all(d == "run --help" for d in direct if d.split()[0] == "run"), direct
     executed = re.findall(r"(?:^|[;&|]|\$\()\s*sudo\s+([^;&|)\n]*)", code, re.M)  # sudo as a command, not in text
     assert executed and all(c.startswith(("loginctl enable-linger", "-n true")) for c in executed), executed
     assert sum(c.startswith("loginctl enable-linger") for c in executed) == 1   # the one marked admin step

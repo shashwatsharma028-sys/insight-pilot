@@ -608,6 +608,147 @@ def test_os_package_inventory_runs_with_the_same_isolation_options(staged):
         rl.os_packages("localhost/img", facts=facts(uid=0), runner=DpkgFake())
 
 
+# ── reproducibility comparison ──────────────────────────────────────────────
+
+def _write_oci_dir(root, layers):
+    """A minimal OCI image directory with the given layer tar files (member name -> (bytes, mtime))."""
+    import io
+    import tarfile
+    blobs = os.path.join(root, "blobs", "sha256")
+    os.makedirs(blobs)
+
+    def put(data):
+        h = hashlib.sha256(data).hexdigest()
+        with open(os.path.join(blobs, h), "wb") as f:
+            f.write(data)
+        return "sha256:" + h
+    digests = []
+    for members in layers:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as tar:
+            for name, (data, mtime) in members.items():
+                ti = tarfile.TarInfo(name)
+                ti.size, ti.mtime, ti.mode = len(data), mtime, 0o644
+                tar.addfile(ti, io.BytesIO(data))
+        digests.append(put(buf.getvalue()))
+    manifest = put(json.dumps({"layers": [{"digest": d} for d in digests]}).encode())
+    with open(os.path.join(root, "index.json"), "w") as f:
+        json.dump({"manifests": [{"digest": manifest}]}, f)
+    return digests
+
+
+class CompareFake(FakePodman):
+    def __init__(self, images, oci_layers):
+        super().__init__()
+        self.images, self.oci_layers = images, oci_layers
+
+    def __call__(self, argv, **kw):
+        self.calls.append({"argv": list(argv), "env": dict(kw.get("env") or {})})
+        if argv[1:3] == ["image", "inspect"]:
+            return types.SimpleNamespace(returncode=0, stdout=json.dumps([self.images[argv[3]]]).encode(), stderr=b"")
+        if argv[1:3] == ["image", "save"]:
+            _write_oci_dir(argv[argv.index("-o") + 1], self.oci_layers[argv[-1]])
+            return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+        raise AssertionError(f"unexpected podman call {argv}")
+
+
+def test_identical_builds_are_reported_identical_without_saving():
+    img = {"Id": "a" * 64, "Digest": "sha256:" + "d" * 64, "Size": 5, "RootFS": {"Layers": ["sha256:1", "sha256:2"]}}
+    fake = CompareFake({"A": img, "B": dict(img)}, {})
+    res = rl.compare_images("A", "B", facts=GOOD_FACTS, runner=fake)
+    assert res["same_id"] and res["same_layers"] and res["layer_diffs"] == []
+    assert all(c["argv"][1:3] == ["image", "inspect"] for c in fake.calls)
+
+
+def test_differing_builds_get_a_member_level_layer_diff():
+    base = {"usr/bin/python3": (b"py", 0)}
+    la = [base, {"site/a.py": (b"x", 0), "site/same.py": (b"s", 0), "site/only_a": (b"1", 0)}]
+    lb = [base, {"site/a.py": (b"x", 1700000000), "site/same.py": (b"s", 0), "site/only_b": (b"2", 0)}]
+    imgs = {"A": {"Id": "a" * 64, "RootFS": {"Layers": ["sha256:base", "sha256:la"]}},
+            "B": {"Id": "b" * 64, "RootFS": {"Layers": ["sha256:base", "sha256:lb"]}}}
+    res = rl.compare_images("A", "B", facts=GOOD_FACTS, runner=CompareFake(imgs, {"A": la, "B": lb}))
+    assert not res["same_id"] and not res["same_layers"] and res["layer_count"] == [2, 2]
+    first, second = res["layer_diffs"]
+    assert first["same"] is True and "diff" not in first
+    d = second["diff"]
+    assert d["only_in_a"] == 1 and d["only_in_b"] == 1 and d["changed"] == 1
+    assert d["changed_by_field"] == {"mtime": 1} and d["examples_changed"][0]["name"] == "site/a.py"
+
+
+def test_compare_refuses_on_an_unsuitable_host():
+    fake = CompareFake({}, {})
+    with pytest.raises(rl.Refused):
+        rl.compare_images("A", "B", facts=facts(uid=0), runner=fake)
+    assert fake.calls == []
+
+
+def test_build_evidence_records_identity_size_duration_and_lock(staged):
+    built = _good_image_inspect(Digest="sha256:" + "e" * 64, Size=123, Created="2026-11-22T00:00:00Z",
+                                RootFS={"Layers": ["sha256:1"]})
+    ev = rl.build("/cache", facts=GOOD_FACTS, runner=FakePodman(built=built))
+    for key in ("tag", "image_id", "digest", "size", "created", "rootfs_layers", "lock_sha256", "context_sha256",
+                "build_seconds"):
+        assert key in ev, key
+    assert ev["lock_sha256"] == LOCK_SHA and ev["size"] == 123 and ev["rootfs_layers"] == ["sha256:1"]
+
+
+def test_golden_cli_writes_evidence_even_when_it_fails(monkeypatch, tmp_path):
+    monkeypatch.setattr(rl, "golden", lambda image: {"ok": False, "tasks": {}, "answers": {}})
+    out = tmp_path / "golden.json"
+    assert rl.main(["golden", "localhost/img", "--evidence", str(out)]) == 1
+    assert json.loads(out.read_text())["ok"] is False
+
+
+# ── CI evidence report ──────────────────────────────────────────────────────
+
+def _load_ci_report():
+    spec = importlib.util.spec_from_file_location("p35b_ci_report", os.path.join(SCRIPTS, "ci_report.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_ci_report_passes_only_when_every_required_stage_passed(tmp_path):
+    cr = _load_ci_report()
+    for stage, _ in cr.STAGES:
+        (tmp_path / f"{stage}.rc").write_text("0")
+    (tmp_path / "build1.json").write_text(json.dumps({"tag": "t", "image_id": "i", "size": 1048576,
+                                                       "build_seconds": 12.5, "lock_sha256": LOCK_SHA}))
+    (tmp_path / "startup.json").write_text(json.dumps({"warm": {"n": 30, "median_ms": 400.0, "p95_ms": 450.0,
+                                                                "min_ms": 380.0, "max_ms": 470.0},
+                                                       "cold": None, "cold_definition": "x"}))
+    (tmp_path / "golden.json").write_text(json.dumps({"ok": True, "answers": {"sales": {"checked": 7, "mismatches": {},
+                                                                                         "missing": []}},
+                                                      "tasks": {"t1": {"exit": 0, "chart": None,
+                                                                       "chart_matches_reference": True}}}))
+    text, ok = cr.report(str(tmp_path))
+    assert ok and "VERDICT: every stage ran and passed" in text
+    assert "size 1048576 bytes (1.0 MiB)" in text and "warm: n=30, median 400.0 ms, p95 450.0 ms" in text
+    assert "7/7 golden answers match" in text and "vulnerability scan" not in text      # no ospkgs.json here
+
+
+@pytest.mark.parametrize("change", ["missing", "failed"])
+def test_ci_report_never_turns_a_missing_or_failed_stage_into_a_pass(tmp_path, change):
+    cr = _load_ci_report()
+    for stage, _ in cr.STAGES:
+        (tmp_path / f"{stage}.rc").write_text("0")
+    if change == "missing":
+        os.unlink(tmp_path / "golden.rc")
+    else:
+        (tmp_path / "verify1.rc").write_text("2")
+    text, ok = cr.report(str(tmp_path))
+    assert not ok and "NOT all stages passed" in text
+    assert ("NOT RUN" if change == "missing" else "FAIL (exit 2)") in text
+
+
+def test_ci_report_gate1_is_informational_only(tmp_path):
+    cr = _load_ci_report()
+    for stage, _ in cr.STAGES:
+        (tmp_path / f"{stage}.rc").write_text("0")
+    (tmp_path / "gate1.rc").write_text("1")
+    assert cr.report(str(tmp_path))[1] is True
+
+
 # ── startup statistics ──────────────────────────────────────────────────────
 
 def test_percentiles_use_the_nearest_rank_and_report_sample_counts():
@@ -692,7 +833,7 @@ def test_golden_runs_mount_dataset_copies_read_only_and_bound_outputs(staged):
 
 @pytest.mark.parametrize("args", [["build", "--wheel-cache", "/nonexistent"], ["verify", "localhost/none"],
                                   ["measure-startup", "localhost/none"], ["golden", "localhost/none"],
-                                  ["os-packages", "localhost/none"]])
+                                  ["os-packages", "localhost/none"], ["compare", "localhost/a", "localhost/b"]])
 def test_cli_refuses_here_when_this_host_is_unsuitable(args):
     live = rl.gather_facts()
     if not rl.evaluate_host(live):

@@ -15,6 +15,9 @@ InsightPilot P3.5b: rootless build and validation driver (development only).
                                 and the enforcement probe pass.
   verify IMAGE [--evidence F]   Image config, image contents, runtime-enforced
                                 properties and the inert entrypoint.
+  compare IMAGE_A IMAGE_B [--evidence F]
+                                Reproducibility: image IDs, digests, RootFS layers; if layers
+                                differ, a member-level diff of each differing layer pair.
   measure-startup IMAGE [--warm N] [--cold N]
   os-packages IMAGE [--evidence F]
                                 Debian package inventory of the image (dpkg-query in
@@ -453,7 +456,9 @@ def build(wheel_cache, arch=None, *, facts=None, runner=None):
         raise Refused(problems)
     img = data[0]
     evidence.update(tag=tag, image_id=img.get("Id"), digest=img.get("Digest"), size=img.get("Size"),
-                    context_sha256=ctx_digest, context_files=len(files), build_seconds=round(seconds, 1))
+                    created=img.get("Created"), rootfs_layers=(img.get("RootFS") or {}).get("Layers"),
+                    lock_sha256=lock_sha, context_sha256=ctx_digest, context_files=len(files),
+                    build_seconds=round(seconds, 1))
     return evidence
 
 
@@ -475,6 +480,85 @@ def verify(image, *, facts=None, runner=None):
     if problems:
         raise Refused(problems)
     return {"image": image, "image_id": data[0].get("Id"), "size": data[0].get("Size"), "report": report}
+
+
+def _oci_layers(oci_dir):
+    """Layer blob paths of an OCI image directory written by `podman image save --format oci-dir`."""
+    def blob(digest):
+        algo, hexd = digest.split(":", 1)
+        return os.path.join(oci_dir, "blobs", algo, hexd)
+    index = _json(os.path.join(oci_dir, "index.json"))
+    manifest = _json(blob(index["manifests"][0]["digest"]))
+    return [(layer["digest"], blob(layer["digest"])) for layer in manifest["layers"]]
+
+
+def layer_members(path):
+    """{name: (type, mode, uid, gid, size, mtime, linkname, sha256)} for one layer tar (any compression)."""
+    import tarfile
+    out = {}
+    with tarfile.open(path, "r:*") as tar:
+        for m in tar:
+            digest = None
+            if m.isfile():
+                h = hashlib.sha256()
+                f = tar.extractfile(m)
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    h.update(chunk)
+                digest = h.hexdigest()
+            out[m.name] = (m.type.decode() if isinstance(m.type, bytes) else str(m.type), m.mode, m.uid, m.gid,
+                           m.size, int(m.mtime), m.linkname, digest)
+    return out
+
+
+FIELDS = ("type", "mode", "uid", "gid", "size", "mtime", "linkname", "content")
+
+
+def diff_members(a, b, examples=15):
+    only_a, only_b = sorted(set(a) - set(b)), sorted(set(b) - set(a))
+    changed, by_field = [], {f: 0 for f in FIELDS}
+    for name in sorted(set(a) & set(b)):
+        diffs = [f for f, x, y in zip(FIELDS, a[name], b[name]) if x != y]
+        if diffs:
+            changed.append((name, diffs))
+            for f in diffs:
+                by_field[f] += 1
+    return {"only_in_a": len(only_a), "only_in_b": len(only_b), "changed": len(changed),
+            "changed_by_field": {k: v for k, v in by_field.items() if v},
+            "examples_only_in_a": only_a[:examples], "examples_only_in_b": only_b[:examples],
+            "examples_changed": [{"name": n, "fields": f, "a": list(a[n]), "b": list(b[n])}
+                                 for n, f in changed[:examples]]}
+
+
+def compare_images(image_a, image_b, *, facts=None, runner=None):
+    facts = facts if facts is not None else gather_facts(runner=runner)
+    problems = evaluate_host(facts)
+    if problems:
+        raise Refused(problems)
+    info = {}
+    for key, image in (("a", image_a), ("b", image_b)):
+        data, _ = _image_env_names(image, runner=runner)
+        img = data[0]
+        info[key] = {"image": image, "id": img.get("Id"), "digest": img.get("Digest"), "size": img.get("Size"),
+                     "created": img.get("Created"), "layers": (img.get("RootFS") or {}).get("Layers") or []}
+    result = {"a": info["a"], "b": info["b"], "same_id": info["a"]["id"] == info["b"]["id"],
+              "same_layers": info["a"]["layers"] == info["b"]["layers"], "layer_diffs": []}
+    if not result["same_layers"]:
+        with tempfile.TemporaryDirectory() as tmp:
+            dirs = {}
+            for key in ("a", "b"):
+                dirs[key] = os.path.join(tmp, key)
+                r = _run(["podman", "image", "save", "--format", "oci-dir", "-o", dirs[key], info[key]["image"]],
+                         env=podman_env(), timeout=900, runner=runner)
+                if r.returncode != 0:
+                    raise Refused([f"image save failed: {r.stderr[-300:]!r}"])
+            la, lb = _oci_layers(dirs["a"]), _oci_layers(dirs["b"])
+            result["layer_count"] = [len(la), len(lb)]
+            for i, ((da, pa), (db, pb)) in enumerate(zip(la, lb)):
+                entry = {"index": i, "a": da, "b": db, "same": da == db}
+                if da != db:
+                    entry["diff"] = diff_members(layer_members(pa), layer_members(pb))
+                result["layer_diffs"].append(entry)
+    return result
 
 
 def percentile(samples, q):
@@ -648,6 +732,11 @@ def main(argv=None):
     b = sub.add_parser("build")
     b.add_argument("--wheel-cache", required=True)
     b.add_argument("--arch")
+    b.add_argument("--evidence")
+    cmp_ = sub.add_parser("compare")
+    cmp_.add_argument("image_a")
+    cmp_.add_argument("image_b")
+    cmp_.add_argument("--evidence")
     for name in ("verify", "measure-startup", "golden", "os-packages"):
         s = sub.add_parser(name)
         s.add_argument("image")
@@ -678,15 +767,14 @@ def main(argv=None):
             result = build(a.wheel_cache, a.arch)
         elif a.cmd == "verify":
             result = verify(a.image)
+        elif a.cmd == "compare":
+            result = compare_images(a.image_a, a.image_b)
         elif a.cmd == "measure-startup":
             result = measure_startup(a.image, a.warm, a.cold)
         elif a.cmd == "os-packages":
             result = os_packages(a.image)
         else:
             result = golden(a.image)
-            if not result["ok"]:
-                print(json.dumps(result, indent=1))
-                return 1
     except Refused as exc:
         print(f"{a.cmd}: REFUSED", file=sys.stderr)
         for line in exc.problems:
@@ -697,6 +785,8 @@ def main(argv=None):
         with open(a.evidence, "w", encoding="utf-8") as f:
             f.write(text + "\n")
     print(text)
+    if a.cmd == "golden" and not result["ok"]:
+        return 1                                  # evidence is written either way
     return 0
 
 
