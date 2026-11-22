@@ -102,7 +102,7 @@ All runs were offline, with no API key, in environment B (CPython 3.11.18; langg
 | Before P5.1A: P5 branch | 551 passed, 13 xfailed |
 | Before P5.1A: combined P5 + P3 tree | 1550 passed + 1 known guard conflict (C5), 13 xfailed |
 | Full suite at `f82fea28` | **1602 passed, 13 xfailed, 0 failed, 0 skipped** (3 warnings: the known Streamlit AppTest stale-widget restart) |
-| Full suite at the final commit | see the handoff (same suite, re-run after the last test-only commit) |
+| Full suite at `d7074884` (final code and tests; only this table row changed afterwards) | **1608 passed, 13 xfailed, 0 failed, 0 skipped** (3 warnings: the known Streamlit AppTest stale-widget restart) |
 | New P5.1A tests (`tests/v2/p51/`) | 57 |
 | Mutation checks (§ below) | 27/27 detected (3 after adding tests) |
 | Real `streamlit run ui/app.py` (headless, no key) | health `ok`; Chromium page title "InsightPilot"; UI rendered; 0 Streamlit exceptions; 0 page errors |
