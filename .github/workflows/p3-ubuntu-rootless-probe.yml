@@ -1,0 +1,168 @@
+# InsightPilot V2 P3.5b: one-time feasibility probe of the GitHub-hosted ubuntu-24.04 runner.
+#
+# Question: can this runner serve as a rootless container validation host?
+# The answer comes from the existing gate in scripts/p3/rootless.py (host
+# facts plus a real enforcement probe container) and from the offline P3.5b
+# readiness tests.
+#
+# What this workflow does NOT do:
+# - build the sandbox image;
+# - run generated or user-controlled code;
+# - use rootful Docker or Podman;
+# - use secrets, cloud credentials or third-party actions;
+# - claim isolation if the probe fails: the job then FAILS.
+#
+# Its only privileged action is the clearly marked temporary VM administration step
+# (enable-linger, so the runner account gets a systemd user manager); it
+# never runs a container. `sudo -n true` is used only as a no-op check of
+# whether the runner account has passwordless sudo, which the report records.
+
+name: p3-ubuntu-rootless-probe
+
+on:
+  push:
+    branches: [feature/v2-github-ubuntu-probe]
+    paths: [.github/workflows/p3-ubuntu-rootless-probe.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p3-ubuntu-rootless-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Fetch the exact pushed commit (read-only token, this step only, no third-party action)
+        timeout-minutes: 3
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          mkdir -p "$P3_OUT"
+          git init -q "$GITHUB_WORKSPACE/src"
+          cd "$GITHUB_WORKSPACE/src"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH="$(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c "http.extraheader=AUTHORIZATION: basic ${AUTH}" fetch -q --depth 1 origin "$GITHUB_SHA"
+          unset AUTH
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "commit: $(git rev-parse HEAD)" | tee "$P3_OUT/commit.txt"
+
+      - name: Record runner specifications (read-only)
+        timeout-minutes: 2
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          {
+            echo "== os-release"; grep -E '^(PRETTY_NAME|VERSION_ID)=' /etc/os-release
+            echo "== kernel"; uname -srvm
+            echo "== architecture"; uname -m
+            echo "== cpu"; nproc; grep -m1 'model name' /proc/cpuinfo || true
+            echo "== memory"; free -b | head -2
+            echo "== disk"; df -B1 --output=target,size,avail / /tmp "$HOME" /mnt 2>/dev/null || df -B1 /
+            echo "== identity"; id
+            echo "== passwordless sudo"; sudo -n true 2>/dev/null && echo yes || echo no
+            echo "== docker group member"; id -nG | tr ' ' '\n' | grep -qx docker && echo yes || echo no
+            echo "== cgroup fs"; stat -fc %T /sys/fs/cgroup
+            echo "== this process"; grep -E '^(NoNewPrivs|Seccomp|CapEff):' /proc/self/status
+            echo "== userns sysctls"
+            for k in user/max_user_namespaces kernel/unprivileged_userns_clone kernel/apparmor_restrict_unprivileged_userns; do
+              printf '%s=%s\n' "$k" "$(cat /proc/sys/$k 2>/dev/null || echo absent)"; done
+            echo "== subuid/subgid"; grep -E "^($(id -un)|$(id -u)):" /etc/subuid /etc/subgid || echo "no entries for $(id -un)"
+            echo "== newuidmap/newgidmap"; ls -l /usr/bin/newuidmap /usr/bin/newgidmap 2>&1 || true
+            echo "== podman"; command -v podman && podman --version || echo "podman not installed"
+            echo "== DOCKER_HOST/CONTAINER_HOST set?"; for v in DOCKER_HOST CONTAINER_HOST CONTAINER_CONNECTION; do [ -n "${!v:-}" ] && echo "$v is set" || echo "$v unset"; done
+            echo "== delegated controllers (before admin)"
+            cat "/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers" 2>&1 || true
+          } 2>&1 | tee "$P3_OUT/specs.txt"
+
+      - name: Gate 1 - host facts as provided (rootless.py check-host, no changes)
+        timeout-minutes: 3
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host > "$P3_OUT/gate1.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate1.rc"; cat "$P3_OUT/gate1.txt"; echo "gate1 exit=$rc"
+
+      - name: TEMPORARY VM ADMINISTRATION (sudo) - start a systemd user manager for the runner account
+        timeout-minutes: 3
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          # The only privileged step. It does what the VE-2 guide does with
+          # loginctl enable-linger. It changes no security expectation, and it
+          # never starts a container.
+          sudo loginctl enable-linger "$(id -un)"
+          for i in $(seq 1 30); do [ -S "/run/user/$(id -u)/bus" ] && break; sleep 1; done
+          ls -l "/run/user/$(id -u)/bus" 2>&1 || true
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus" >> "$GITHUB_ENV"
+          echo "== delegated controllers (after admin)"
+          cat "/sys/fs/cgroup/user.slice/user-$(id -u).slice/user@$(id -u).service/cgroup.controllers" 2>&1 | tee "$P3_OUT/delegation.txt" || true
+
+      - name: Gate 2 - host facts after the user manager exists (rootless.py check-host)
+        timeout-minutes: 3
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host > "$P3_OUT/gate2.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate2.rc"; cat "$P3_OUT/gate2.txt"; echo "gate2 exit=$rc"
+
+      - name: Gate 3 - enforcement probe (real rootless container on the digest-pinned base; inspector only)
+        timeout-minutes: 8
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host --probe > "$P3_OUT/gate3.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/gate3.rc"; cat "$P3_OUT/gate3.txt"; echo "gate3 exit=$rc"
+
+      - name: Existing P3.5b readiness tests (offline logic, pytest without the V1 conftest)
+        timeout-minutes: 5
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          rc=0
+          { python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install -q --disable-pip-version-check pytest==9.1.1 \
+            && PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/venv/bin/python" -m pytest --noconftest -q -p no:cacheprovider \
+               tests/v2/p3/test_rootless_p35b.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/tests.rc"; tail -n 25 "$P3_OUT/tests.txt"; echo "tests exit=$rc"
+
+      - name: Evidence report (pass/fail; fails the job unless the enforcement probe passed)
+        if: always()
+        timeout-minutes: 2
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          r() { cat "$P3_OUT/$1.rc" 2>/dev/null || echo "not run"; }
+          verdict() { [ "$1" = "0" ] && echo PASS || echo "FAIL ($1)"; }
+          {
+            echo "## P3.5b GitHub ubuntu-24.04 feasibility"
+            echo; cat "$P3_OUT/commit.txt" 2>/dev/null
+            echo; echo "| Gate | Result |"; echo "|---|---|"
+            echo "| 1. host facts as provided | $(verdict "$(r gate1)") |"
+            echo "| 2. host facts with a user manager (after sudo enable-linger) | $(verdict "$(r gate2)") |"
+            echo "| 3. enforcement probe (real container) | $(verdict "$(r gate3)") |"
+            echo "| P3.5b readiness tests | $(verdict "$(r tests)") |"
+            echo; echo "Runner account: passwordless sudo=$(sudo -n true 2>/dev/null && echo yes || echo no), docker group=$(id -nG | tr ' ' '\n' | grep -qx docker && echo yes || echo no)."
+            echo "A root-equivalent account cannot replace the VE-2 unprivileged accounts for non-root filesystem validation, whatever the gates say."
+            echo; echo "### Unavailable prerequisites (gate 2)"; echo '```'
+            grep -E '^  - ' "$P3_OUT/gate2.txt" 2>/dev/null || echo "(none reported)"; echo '```'
+            echo; echo "### Enforcement probe output (gate 3, tail)"; echo '```'
+            tail -n 40 "$P3_OUT/gate3.txt" 2>/dev/null || echo "(not run)"; echo '```'
+            echo; echo "### Runner"; echo '```'; cat "$P3_OUT/specs.txt" 2>/dev/null; echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$(r gate3)" = "0" ] && [ "$(r tests)" = "0" ]; then
+            echo "VERDICT: the runner passed the P3.5b enforcement gate (isolation enforced for the probe only)"
+          else
+            echo "VERDICT: NOT a validated host - isolation NOT established"; exit 1
+          fi
