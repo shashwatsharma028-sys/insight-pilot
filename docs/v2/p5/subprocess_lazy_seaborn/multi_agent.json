@@ -1,0 +1,4711 @@
+{
+ "cases": [
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1642,
+     "request_payload_chars": 811,
+     "requests": 3,
+     "response_chars": 517
+    },
+    "data_analyst_agent": {
+     "llm_calls": 7,
+     "prompt_chars": 8193,
+     "request_payload_chars": 9535,
+     "requests": 7,
+     "response_chars": 1536
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2634,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "clean-sales",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 18,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 18,
+    "requests": 18
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 3,
+    "executions": 7,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 795.9,
+      "median_ms": 679.3,
+      "min_ms": 0.2,
+      "n": 7,
+      "p95_ms": 795.9
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.3,
+      "median_ms": 0.3,
+      "min_ms": 0.3,
+      "n": 1,
+      "p95_ms": 0.3
+     },
+     "supervisor": {
+      "max_ms": 1.1,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 19,
+      "p95_ms": 1.1
+     },
+     "verification_agent": {
+      "max_ms": 0.9,
+      "median_ms": 0.4,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 0.9
+     }
+    },
+    "pipeline_ms": 3012.7,
+    "sandbox_executions": {
+     "max_ms": 795.7,
+     "median_ms": 753.3,
+     "min_ms": 679.2,
+     "n": 4,
+     "p95_ms": 795.7
+    }
+   },
+   "lessons": 4,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 3,
+    "failed_tasks": 1,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed_with_failures",
+   "steps": 18,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "sales_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t4": {
+     "analysis_attempts": 3,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "failed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 410,
+        "output_tokens": 127
+       },
+       "data_analyst": {
+        "calls": 7,
+        "input_tokens": 2045,
+        "output_tokens": 383
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 2906,
+      "output_tokens": 852
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [sales_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [sales_t1 #1] | failed; 0 claim(s), 0 parse error(s)",
+    "  7 supervisor -> data_analyst_agent: analysis_request [sales_t1 #2] | 4 claim spec(s); 1 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [sales_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [sales_t1 #2] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [sales_t1 #2] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [sales_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [sales_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [sales_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [sales_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [sales_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [sales_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [sales_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [sales_t2 #1] | accepted: 2 verified",
+    " 19 supervisor -> business_insight_agent: insight_request [sales_t2 #1] | 2 verified claim(s) only",
+    " 20 business_insight_agent -> supervisor: insight_report [sales_t2 #1] | 2 insight(s)",
+    " 21 supervisor -> verification_agent: insight_check_request [sales_t2 #1] | 2 insight(s) to ground",
+    " 22 verification_agent -> supervisor: insight_check_report [sales_t2 #1] | accepted",
+    " 23 supervisor -> data_analyst_agent: analysis_request [sales_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 24 data_analyst_agent -> supervisor: analysis_result [sales_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 25 supervisor -> verification_agent: verification_request [sales_t3 #1] | 1 reported value(s) to recompute",
+    " 26 verification_agent -> supervisor: verification_report [sales_t3 #1] | accepted: 1 verified",
+    " 27 supervisor -> business_insight_agent: insight_request [sales_t3 #1] | 1 verified claim(s) only",
+    " 28 business_insight_agent -> supervisor: insight_report [sales_t3 #1] | 1 insight(s)",
+    " 29 supervisor -> verification_agent: insight_check_request [sales_t3 #1] | 1 insight(s) to ground",
+    " 30 verification_agent -> supervisor: insight_check_report [sales_t3 #1] | accepted",
+    " 31 supervisor -> data_analyst_agent: analysis_request [sales_t4 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 32 data_analyst_agent -> supervisor: analysis_result [sales_t4 #1] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 33 supervisor -> data_analyst_agent: analysis_request [sales_t4 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 34 data_analyst_agent -> supervisor: analysis_result [sales_t4 #2] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 35 supervisor -> data_analyst_agent: analysis_request [sales_t4 #3] | 1 claim spec(s); 2 feedback item(s)",
+    " 36 data_analyst_agent -> supervisor: analysis_result [sales_t4 #3] | blocked by safety scan; 0 claim(s), 0 parse error(s)"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1270,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1772,
+     "request_payload_chars": 941,
+     "requests": 3,
+     "response_chars": 642
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 3308,
+     "request_payload_chars": 3940,
+     "requests": 3,
+     "response_chars": 1019
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1808,
+     "request_payload_chars": 940,
+     "requests": 1,
+     "response_chars": 1191
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3009,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "clean-attendance",
+   "dataset": "attendance",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 14,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 14,
+    "requests": 14
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 965.8,
+      "median_ms": 886.0,
+      "min_ms": 885.0,
+      "n": 3,
+      "p95_ms": 965.8
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 51.5,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 15,
+      "p95_ms": 51.5
+     },
+     "verification_agent": {
+      "max_ms": 37.8,
+      "median_ms": 14.3,
+      "min_ms": 0.1,
+      "n": 6,
+      "p95_ms": 37.8
+     }
+    },
+    "pipeline_ms": 2914.5,
+    "sandbox_executions": {
+     "max_ms": 965.7,
+     "median_ms": 885.8,
+     "min_ms": 884.8,
+     "n": 3,
+     "p95_ms": 965.7
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed",
+   "steps": 14,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "att_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 441,
+        "output_tokens": 159
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 826,
+        "output_tokens": 253
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 452,
+        "output_tokens": 297
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1719,
+      "output_tokens": 709
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks att_t1, att_t2, att_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [att_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [att_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [att_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [att_t1 #1] | accepted: 3 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [att_t1 #1] | 3 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [att_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [att_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [att_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [att_t2 #1] | 3 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [att_t2 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [att_t2 #1] | 3 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [att_t2 #1] | accepted: 3 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [att_t2 #1] | 3 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [att_t2 #1] | 3 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [att_t2 #1] | 3 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [att_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [att_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [att_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [att_t3 #1] | 1 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [att_t3 #1] | accepted: 1 verified",
+    " 25 supervisor -> business_insight_agent: insight_request [att_t3 #1] | 1 verified claim(s) only",
+    " 26 business_insight_agent -> supervisor: insight_report [att_t3 #1] | 1 insight(s)",
+    " 27 supervisor -> verification_agent: insight_check_request [att_t3 #1] | 1 insight(s) to ground",
+    " 28 verification_agent -> supervisor: insight_check_report [att_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1190,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1746,
+     "request_payload_chars": 915,
+     "requests": 3,
+     "response_chars": 554
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 2841,
+     "request_payload_chars": 3258,
+     "requests": 3,
+     "response_chars": 998
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1609,
+     "request_payload_chars": 741,
+     "requests": 1,
+     "response_chars": 1115
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2873,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "clean-student",
+   "dataset": "student",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 14,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 14,
+    "requests": 14
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 1181.3,
+      "median_ms": 857.3,
+      "min_ms": 806.4,
+      "n": 3,
+      "p95_ms": 1181.3
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.3,
+      "median_ms": 0.3,
+      "min_ms": 0.3,
+      "n": 1,
+      "p95_ms": 0.3
+     },
+     "supervisor": {
+      "max_ms": 7.4,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 15,
+      "p95_ms": 7.4
+     },
+     "verification_agent": {
+      "max_ms": 5.2,
+      "median_ms": 1.8,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 5.2
+     }
+    },
+    "pipeline_ms": 2888.3,
+    "sandbox_executions": {
+     "max_ms": 1181.1,
+     "median_ms": 857.1,
+     "min_ms": 806.2,
+     "n": 3,
+     "p95_ms": 1181.1
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed",
+   "steps": 14,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "stu_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 435,
+        "output_tokens": 138
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 709,
+        "output_tokens": 248
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 402,
+        "output_tokens": 278
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1546,
+      "output_tokens": 664
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks stu_t1, stu_t2, stu_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [stu_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [stu_t1 #1] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [stu_t1 #1] | 4 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [stu_t1 #1] | accepted: 4 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [stu_t1 #1] | 4 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [stu_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [stu_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [stu_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [stu_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [stu_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [stu_t2 #1] | 2 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [stu_t2 #1] | accepted: 2 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [stu_t2 #1] | 2 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [stu_t2 #1] | 2 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [stu_t2 #1] | 2 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [stu_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [stu_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [stu_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [stu_t3 #1] | 1 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [stu_t3 #1] | accepted: 1 verified",
+    " 25 supervisor -> business_insight_agent: insight_request [stu_t3 #1] | 1 verified claim(s) only",
+    " 26 business_insight_agent -> supervisor: insight_report [stu_t3 #1] | 1 insight(s)",
+    " 27 supervisor -> verification_agent: insight_check_request [stu_t3 #1] | 1 insight(s) to ground",
+    " 28 verification_agent -> supervisor: insight_check_report [stu_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1265,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1585,
+     "request_payload_chars": 754,
+     "requests": 3,
+     "response_chars": 587
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 2747,
+     "request_payload_chars": 3158,
+     "requests": 3,
+     "response_chars": 832
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1545,
+     "request_payload_chars": 677,
+     "requests": 1,
+     "response_chars": 1183
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2670,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "clean-ecommerce",
+   "dataset": "ecommerce",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 14,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 14,
+    "requests": 14
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 824.5,
+      "median_ms": 815.7,
+      "min_ms": 676.3,
+      "n": 3,
+      "p95_ms": 824.5
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 1.7,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 15,
+      "p95_ms": 1.7
+     },
+     "verification_agent": {
+      "max_ms": 2.3,
+      "median_ms": 0.6,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 2.3
+     }
+    },
+    "pipeline_ms": 2339.6,
+    "sandbox_executions": {
+     "max_ms": 824.4,
+     "median_ms": 815.5,
+     "min_ms": 676.2,
+     "n": 3,
+     "p95_ms": 824.4
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed",
+   "steps": 14,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "eco_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 395,
+        "output_tokens": 145
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 686,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 386,
+        "output_tokens": 295
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1467,
+      "output_tokens": 647
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks eco_t1, eco_t2, eco_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [eco_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [eco_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [eco_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [eco_t1 #1] | accepted: 3 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [eco_t1 #1] | 3 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [eco_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [eco_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [eco_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [eco_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [eco_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [eco_t2 #1] | 2 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [eco_t2 #1] | accepted: 2 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [eco_t2 #1] | 2 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [eco_t2 #1] | 2 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [eco_t2 #1] | 2 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [eco_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [eco_t3 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [eco_t3 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [eco_t3 #1] | 2 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [eco_t3 #1] | accepted: 2 verified",
+    " 25 supervisor -> business_insight_agent: insight_request [eco_t3 #1] | 2 verified claim(s) only",
+    " 26 business_insight_agent -> supervisor: insight_report [eco_t3 #1] | 2 insight(s)",
+    " 27 supervisor -> verification_agent: insight_check_request [eco_t3 #1] | 2 insight(s) to ground",
+    " 28 verification_agent -> supervisor: insight_check_report [eco_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1642,
+     "request_payload_chars": 811,
+     "requests": 3,
+     "response_chars": 517
+    },
+    "data_analyst_agent": {
+     "llm_calls": 8,
+     "prompt_chars": 9293,
+     "request_payload_chars": 10830,
+     "requests": 8,
+     "response_chars": 3016
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3064,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "wrong-value-recovered",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 20,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 20,
+    "requests": 20
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 3,
+    "executions": 8,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 884.9,
+      "median_ms": 692.9,
+      "min_ms": 0.2,
+      "n": 8,
+      "p95_ms": 884.9
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.4,
+      "median_ms": 0.4,
+      "min_ms": 0.4,
+      "n": 1,
+      "p95_ms": 0.4
+     },
+     "supervisor": {
+      "max_ms": 1.2,
+      "median_ms": 0.3,
+      "min_ms": 0.1,
+      "n": 21,
+      "p95_ms": 0.4
+     },
+     "verification_agent": {
+      "max_ms": 0.8,
+      "median_ms": 0.7,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 0.8
+     }
+    },
+    "pipeline_ms": 3851.7,
+    "sandbox_executions": {
+     "max_ms": 884.7,
+     "median_ms": 759.0,
+     "min_ms": 640.0,
+     "n": 5,
+     "p95_ms": 884.7
+    }
+   },
+   "lessons": 5,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 4,
+    "failed_tasks": 1,
+    "insight_retries": 0,
+    "recovered_tasks": 2
+   },
+   "status": "completed_with_failures",
+   "steps": 20,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "sales_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t3": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t4": {
+     "analysis_attempts": 3,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "failed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 410,
+        "output_tokens": 127
+       },
+       "data_analyst": {
+        "calls": 8,
+        "input_tokens": 2320,
+        "output_tokens": 753
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 12,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 3181,
+      "output_tokens": 1222
+     }
+    },
+    "mock_calls": 12,
+    "provider_calls": 0,
+    "total_calls": 12
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [sales_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [sales_t1 #1] | failed; 0 claim(s), 0 parse error(s)",
+    "  7 supervisor -> data_analyst_agent: analysis_request [sales_t1 #2] | 4 claim spec(s); 1 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [sales_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [sales_t1 #2] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [sales_t1 #2] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [sales_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [sales_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [sales_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [sales_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [sales_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [sales_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [sales_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [sales_t2 #1] | accepted: 2 verified",
+    " 19 supervisor -> business_insight_agent: insight_request [sales_t2 #1] | 2 verified claim(s) only",
+    " 20 business_insight_agent -> supervisor: insight_report [sales_t2 #1] | 2 insight(s)",
+    " 21 supervisor -> verification_agent: insight_check_request [sales_t2 #1] | 2 insight(s) to ground",
+    " 22 verification_agent -> supervisor: insight_check_report [sales_t2 #1] | accepted",
+    " 23 supervisor -> data_analyst_agent: analysis_request [sales_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 24 data_analyst_agent -> supervisor: analysis_result [sales_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 25 supervisor -> verification_agent: verification_request [sales_t3 #1] | 1 reported value(s) to recompute",
+    " 26 verification_agent -> supervisor: verification_report [sales_t3 #1] | rejected: 1 refuted",
+    " 27 supervisor -> data_analyst_agent: analysis_request [sales_t3 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 28 data_analyst_agent -> supervisor: analysis_result [sales_t3 #2] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 29 supervisor -> verification_agent: verification_request [sales_t3 #2] | 1 reported value(s) to recompute",
+    " 30 verification_agent -> supervisor: verification_report [sales_t3 #2] | accepted: 1 verified",
+    " 31 supervisor -> business_insight_agent: insight_request [sales_t3 #1] | 1 verified claim(s) only",
+    " 32 business_insight_agent -> supervisor: insight_report [sales_t3 #1] | 1 insight(s)",
+    " 33 supervisor -> verification_agent: insight_check_request [sales_t3 #1] | 1 insight(s) to ground",
+    " 34 verification_agent -> supervisor: insight_check_report [sales_t3 #1] | accepted",
+    " 35 supervisor -> data_analyst_agent: analysis_request [sales_t4 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 36 data_analyst_agent -> supervisor: analysis_result [sales_t4 #1] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 37 supervisor -> data_analyst_agent: analysis_request [sales_t4 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 38 data_analyst_agent -> supervisor: analysis_result [sales_t4 #2] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 39 supervisor -> data_analyst_agent: analysis_request [sales_t4 #3] | 1 claim spec(s); 2 feedback item(s)",
+    " 40 data_analyst_agent -> supervisor: analysis_result [sales_t4 #3] | blocked by safety scan; 0 claim(s), 0 parse error(s)"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 8,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 1,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1642,
+     "request_payload_chars": 811,
+     "requests": 3,
+     "response_chars": 517
+    },
+    "data_analyst_agent": {
+     "llm_calls": 8,
+     "prompt_chars": 9458,
+     "request_payload_chars": 10996,
+     "requests": 8,
+     "response_chars": 3234
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3212,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "wrong-group-and-label-recovered",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 20,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 20,
+    "requests": 20
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 3,
+    "executions": 8,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 790.7,
+      "median_ms": 636.5,
+      "min_ms": 0.2,
+      "n": 8,
+      "p95_ms": 790.7
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 1.1,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 21,
+      "p95_ms": 0.4
+     },
+     "verification_agent": {
+      "max_ms": 1.0,
+      "median_ms": 0.6,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 1.0
+     }
+    },
+    "pipeline_ms": 3590.5,
+    "sandbox_executions": {
+     "max_ms": 790.5,
+     "median_ms": 730.4,
+     "min_ms": 603.8,
+     "n": 5,
+     "p95_ms": 790.5
+    }
+   },
+   "lessons": 5,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 4,
+    "failed_tasks": 1,
+    "insight_retries": 0,
+    "recovered_tasks": 2
+   },
+   "status": "completed_with_failures",
+   "steps": 20,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "sales_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t2": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t4": {
+     "analysis_attempts": 3,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "failed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 410,
+        "output_tokens": 127
+       },
+       "data_analyst": {
+        "calls": 8,
+        "input_tokens": 2361,
+        "output_tokens": 807
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 12,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 3222,
+      "output_tokens": 1276
+     }
+    },
+    "mock_calls": 12,
+    "provider_calls": 0,
+    "total_calls": 12
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [sales_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [sales_t1 #1] | failed; 0 claim(s), 0 parse error(s)",
+    "  7 supervisor -> data_analyst_agent: analysis_request [sales_t1 #2] | 4 claim spec(s); 1 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [sales_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [sales_t1 #2] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [sales_t1 #2] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [sales_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [sales_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [sales_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [sales_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [sales_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [sales_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [sales_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [sales_t2 #1] | rejected: 2 refuted",
+    " 19 supervisor -> data_analyst_agent: analysis_request [sales_t2 #2] | 2 claim spec(s); 2 feedback item(s)",
+    " 20 data_analyst_agent -> supervisor: analysis_result [sales_t2 #2] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 21 supervisor -> verification_agent: verification_request [sales_t2 #2] | 2 reported value(s) to recompute",
+    " 22 verification_agent -> supervisor: verification_report [sales_t2 #2] | accepted: 2 verified",
+    " 23 supervisor -> business_insight_agent: insight_request [sales_t2 #1] | 2 verified claim(s) only",
+    " 24 business_insight_agent -> supervisor: insight_report [sales_t2 #1] | 2 insight(s)",
+    " 25 supervisor -> verification_agent: insight_check_request [sales_t2 #1] | 2 insight(s) to ground",
+    " 26 verification_agent -> supervisor: insight_check_report [sales_t2 #1] | accepted",
+    " 27 supervisor -> data_analyst_agent: analysis_request [sales_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 28 data_analyst_agent -> supervisor: analysis_result [sales_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 29 supervisor -> verification_agent: verification_request [sales_t3 #1] | 1 reported value(s) to recompute",
+    " 30 verification_agent -> supervisor: verification_report [sales_t3 #1] | accepted: 1 verified",
+    " 31 supervisor -> business_insight_agent: insight_request [sales_t3 #1] | 1 verified claim(s) only",
+    " 32 business_insight_agent -> supervisor: insight_report [sales_t3 #1] | 1 insight(s)",
+    " 33 supervisor -> verification_agent: insight_check_request [sales_t3 #1] | 1 insight(s) to ground",
+    " 34 verification_agent -> supervisor: insight_check_report [sales_t3 #1] | accepted",
+    " 35 supervisor -> data_analyst_agent: analysis_request [sales_t4 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 36 data_analyst_agent -> supervisor: analysis_result [sales_t4 #1] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 37 supervisor -> data_analyst_agent: analysis_request [sales_t4 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 38 data_analyst_agent -> supervisor: analysis_result [sales_t4 #2] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 39 supervisor -> data_analyst_agent: analysis_request [sales_t4 #3] | 1 claim spec(s); 2 feedback item(s)",
+    " 40 data_analyst_agent -> supervisor: analysis_result [sales_t4 #3] | blocked by safety scan; 0 claim(s), 0 parse error(s)"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 9,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 2,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1270,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 2,
+     "prompt_chars": 1285,
+     "request_payload_chars": 731,
+     "requests": 2,
+     "response_chars": 551
+    },
+    "data_analyst_agent": {
+     "llm_calls": 5,
+     "prompt_chars": 5570,
+     "request_payload_chars": 6631,
+     "requests": 5,
+     "response_chars": 5180
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1808,
+     "request_payload_chars": 940,
+     "requests": 1,
+     "response_chars": 1191
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3659,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "wrong-value-persistent",
+   "dataset": "attendance",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 6,
+    "golden": {
+     "correct": 6,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 1
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 2,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 5,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.2,
+      "n": 2,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 828.2,
+      "median_ms": 714.8,
+      "min_ms": 611.7,
+      "n": 5,
+      "p95_ms": 828.2
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.2,
+      "n": 1,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 52.9,
+      "median_ms": 0.3,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 52.9
+     },
+     "verification_agent": {
+      "max_ms": 54.6,
+      "median_ms": 31.5,
+      "min_ms": 0.1,
+      "n": 7,
+      "p95_ms": 54.6
+     }
+    },
+    "pipeline_ms": 3835.7,
+    "sandbox_executions": {
+     "max_ms": 828.0,
+     "median_ms": 714.6,
+     "min_ms": 611.5,
+     "n": 5,
+     "p95_ms": 828.0
+    }
+   },
+   "lessons": 3,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 2,
+    "failed_tasks": 1,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed_with_failures",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "att_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t3": {
+     "analysis_attempts": 3,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "failed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 2,
+        "input_tokens": 320,
+        "output_tokens": 137
+       },
+       "data_analyst": {
+        "calls": 5,
+        "input_tokens": 1391,
+        "output_tokens": 1293
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 452,
+        "output_tokens": 297
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 2163,
+      "output_tokens": 1727
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks att_t1, att_t2, att_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [att_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [att_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [att_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [att_t1 #1] | accepted: 3 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [att_t1 #1] | 3 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [att_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [att_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [att_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [att_t2 #1] | 3 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [att_t2 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [att_t2 #1] | 3 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [att_t2 #1] | accepted: 3 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [att_t2 #1] | 3 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [att_t2 #1] | 3 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [att_t2 #1] | 3 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [att_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [att_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [att_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [att_t3 #1] | 1 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [att_t3 #1] | rejected: 1 refuted",
+    " 25 supervisor -> data_analyst_agent: analysis_request [att_t3 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [att_t3 #2] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [att_t3 #2] | 1 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [att_t3 #2] | rejected: 1 refuted",
+    " 29 supervisor -> data_analyst_agent: analysis_request [att_t3 #3] | 1 claim spec(s); 2 feedback item(s)",
+    " 30 data_analyst_agent -> supervisor: analysis_result [att_t3 #3] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 31 supervisor -> verification_agent: verification_request [att_t3 #3] | 1 reported value(s) to recompute",
+    " 32 verification_agent -> supervisor: verification_report [att_t3 #3] | rejected: 1 refuted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 9,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 6,
+    "tp": 3,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1190,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1746,
+     "request_payload_chars": 915,
+     "requests": 3,
+     "response_chars": 554
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 4017,
+     "request_payload_chars": 4580,
+     "requests": 4,
+     "response_chars": 2737
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1609,
+     "request_payload_chars": 741,
+     "requests": 1,
+     "response_chars": 1115
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3558,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "missing-and-malformed",
+   "dataset": "student",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 840.8,
+      "median_ms": 781.1,
+      "min_ms": 756.2,
+      "n": 4,
+      "p95_ms": 840.8
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 4.7,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 4.7
+     },
+     "verification_agent": {
+      "max_ms": 4.8,
+      "median_ms": 3.1,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 4.8
+     }
+    },
+    "pipeline_ms": 3201.7,
+    "sandbox_executions": {
+     "max_ms": 840.6,
+     "median_ms": 780.9,
+     "min_ms": 756.0,
+     "n": 4,
+     "p95_ms": 840.6
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "stu_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "stu_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 435,
+        "output_tokens": 138
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 1003,
+        "output_tokens": 682
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 402,
+        "output_tokens": 278
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1840,
+      "output_tokens": 1098
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks stu_t1, stu_t2, stu_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [stu_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [stu_t1 #1] | ran ok; 2 claim(s), 1 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [stu_t1 #1] | 2 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [stu_t1 #1] | rejected: 1 malformed, 1 missing, 2 verified",
+    "  9 supervisor -> data_analyst_agent: analysis_request [stu_t1 #2] | 4 claim spec(s); 2 feedback item(s)",
+    " 10 data_analyst_agent -> supervisor: analysis_result [stu_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    " 11 supervisor -> verification_agent: verification_request [stu_t1 #2] | 4 reported value(s) to recompute",
+    " 12 verification_agent -> supervisor: verification_report [stu_t1 #2] | accepted: 4 verified",
+    " 13 supervisor -> business_insight_agent: insight_request [stu_t1 #1] | 4 verified claim(s) only",
+    " 14 business_insight_agent -> supervisor: insight_report [stu_t1 #1] | 3 insight(s)",
+    " 15 supervisor -> verification_agent: insight_check_request [stu_t1 #1] | 3 insight(s) to ground",
+    " 16 verification_agent -> supervisor: insight_check_report [stu_t1 #1] | accepted",
+    " 17 supervisor -> data_analyst_agent: analysis_request [stu_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 18 data_analyst_agent -> supervisor: analysis_result [stu_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 19 supervisor -> verification_agent: verification_request [stu_t2 #1] | 2 reported value(s) to recompute",
+    " 20 verification_agent -> supervisor: verification_report [stu_t2 #1] | accepted: 2 verified",
+    " 21 supervisor -> business_insight_agent: insight_request [stu_t2 #1] | 2 verified claim(s) only",
+    " 22 business_insight_agent -> supervisor: insight_report [stu_t2 #1] | 2 insight(s)",
+    " 23 supervisor -> verification_agent: insight_check_request [stu_t2 #1] | 2 insight(s) to ground",
+    " 24 verification_agent -> supervisor: insight_check_report [stu_t2 #1] | accepted",
+    " 25 supervisor -> data_analyst_agent: analysis_request [stu_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [stu_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [stu_t3 #1] | 1 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [stu_t3 #1] | accepted: 1 verified",
+    " 29 supervisor -> business_insight_agent: insight_request [stu_t3 #1] | 1 verified claim(s) only",
+    " 30 business_insight_agent -> supervisor: insight_report [stu_t3 #1] | 1 insight(s)",
+    " 31 supervisor -> verification_agent: insight_check_request [stu_t3 #1] | 1 insight(s) to ground",
+    " 32 verification_agent -> supervisor: insight_check_report [stu_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 11,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 9,
+    "tp": 2,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1265,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1585,
+     "request_payload_chars": 754,
+     "requests": 3,
+     "response_chars": 587
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 3726,
+     "request_payload_chars": 4276,
+     "requests": 4,
+     "response_chars": 2489
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1545,
+     "request_payload_chars": 677,
+     "requests": 1,
+     "response_chars": 1183
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3221,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "non-finite",
+   "dataset": "ecommerce",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 900.6,
+      "median_ms": 860.7,
+      "min_ms": 811.6,
+      "n": 4,
+      "p95_ms": 900.6
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.4,
+      "median_ms": 0.4,
+      "min_ms": 0.4,
+      "n": 1,
+      "p95_ms": 0.4
+     },
+     "supervisor": {
+      "max_ms": 1.4,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 1.4
+     },
+     "verification_agent": {
+      "max_ms": 1.6,
+      "median_ms": 1.3,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 1.6
+     }
+    },
+    "pipeline_ms": 3463.1,
+    "sandbox_executions": {
+     "max_ms": 900.4,
+     "median_ms": 860.5,
+     "min_ms": 811.4,
+     "n": 4,
+     "p95_ms": 900.4
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "eco_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t3": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 395,
+        "output_tokens": 145
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 930,
+        "output_tokens": 621
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 386,
+        "output_tokens": 295
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1711,
+      "output_tokens": 1061
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks eco_t1, eco_t2, eco_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [eco_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [eco_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [eco_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [eco_t1 #1] | accepted: 3 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [eco_t1 #1] | 3 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [eco_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [eco_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [eco_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [eco_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [eco_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [eco_t2 #1] | 2 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [eco_t2 #1] | accepted: 2 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [eco_t2 #1] | 2 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [eco_t2 #1] | 2 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [eco_t2 #1] | 2 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [eco_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [eco_t3 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [eco_t3 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [eco_t3 #1] | 2 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [eco_t3 #1] | rejected: 1 malformed, 1 verified",
+    " 25 supervisor -> data_analyst_agent: analysis_request [eco_t3 #2] | 2 claim spec(s); 1 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [eco_t3 #2] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [eco_t3 #2] | 2 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [eco_t3 #2] | accepted: 2 verified",
+    " 29 supervisor -> business_insight_agent: insight_request [eco_t3 #1] | 2 verified claim(s) only",
+    " 30 business_insight_agent -> supervisor: insight_report [eco_t3 #1] | 2 insight(s)",
+    " 31 supervisor -> verification_agent: insight_check_request [eco_t3 #1] | 2 insight(s) to ground",
+    " 32 verification_agent -> supervisor: insight_check_report [eco_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 9,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 8,
+    "tp": 1,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1270,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1772,
+     "request_payload_chars": 941,
+     "requests": 3,
+     "response_chars": 642
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 4494,
+     "request_payload_chars": 5344,
+     "requests": 4,
+     "response_chars": 2696
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1808,
+     "request_payload_chars": 940,
+     "requests": 1,
+     "response_chars": 1191
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3636,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "duplicate-claim",
+   "dataset": "attendance",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 948.7,
+      "median_ms": 859.2,
+      "min_ms": 731.7,
+      "n": 4,
+      "p95_ms": 948.7
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.2,
+      "n": 1,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 55.0,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 55.0
+     },
+     "verification_agent": {
+      "max_ms": 44.1,
+      "median_ms": 25.6,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 44.1
+     }
+    },
+    "pipeline_ms": 3606.8,
+    "sandbox_executions": {
+     "max_ms": 948.4,
+     "median_ms": 859.0,
+     "min_ms": 731.5,
+     "n": 4,
+     "p95_ms": 948.4
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "att_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "att_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 441,
+        "output_tokens": 159
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 1122,
+        "output_tokens": 672
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 452,
+        "output_tokens": 297
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 2015,
+      "output_tokens": 1128
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks att_t1, att_t2, att_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [att_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [att_t1 #1] | ran ok; 2 claim(s), 1 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [att_t1 #1] | 2 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [att_t1 #1] | rejected: 1 malformed, 2 verified",
+    "  9 supervisor -> data_analyst_agent: analysis_request [att_t1 #2] | 3 claim spec(s); 1 feedback item(s)",
+    " 10 data_analyst_agent -> supervisor: analysis_result [att_t1 #2] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 11 supervisor -> verification_agent: verification_request [att_t1 #2] | 3 reported value(s) to recompute",
+    " 12 verification_agent -> supervisor: verification_report [att_t1 #2] | accepted: 3 verified",
+    " 13 supervisor -> business_insight_agent: insight_request [att_t1 #1] | 3 verified claim(s) only",
+    " 14 business_insight_agent -> supervisor: insight_report [att_t1 #1] | 3 insight(s)",
+    " 15 supervisor -> verification_agent: insight_check_request [att_t1 #1] | 3 insight(s) to ground",
+    " 16 verification_agent -> supervisor: insight_check_report [att_t1 #1] | accepted",
+    " 17 supervisor -> data_analyst_agent: analysis_request [att_t2 #1] | 3 claim spec(s); 0 feedback item(s)",
+    " 18 data_analyst_agent -> supervisor: analysis_result [att_t2 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 19 supervisor -> verification_agent: verification_request [att_t2 #1] | 3 reported value(s) to recompute",
+    " 20 verification_agent -> supervisor: verification_report [att_t2 #1] | accepted: 3 verified",
+    " 21 supervisor -> business_insight_agent: insight_request [att_t2 #1] | 3 verified claim(s) only",
+    " 22 business_insight_agent -> supervisor: insight_report [att_t2 #1] | 3 insight(s)",
+    " 23 supervisor -> verification_agent: insight_check_request [att_t2 #1] | 3 insight(s) to ground",
+    " 24 verification_agent -> supervisor: insight_check_report [att_t2 #1] | accepted",
+    " 25 supervisor -> data_analyst_agent: analysis_request [att_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [att_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [att_t3 #1] | 1 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [att_t3 #1] | accepted: 1 verified",
+    " 29 supervisor -> business_insight_agent: insight_request [att_t3 #1] | 1 verified claim(s) only",
+    " 30 business_insight_agent -> supervisor: insight_report [att_t3 #1] | 1 insight(s)",
+    " 31 supervisor -> verification_agent: insight_check_request [att_t3 #1] | 1 insight(s) to ground",
+    " 32 verification_agent -> supervisor: insight_check_report [att_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 10,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 9,
+    "tp": 1,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1270,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1772,
+     "request_payload_chars": 941,
+     "requests": 3,
+     "response_chars": 642
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 4502,
+     "request_payload_chars": 5352,
+     "requests": 4,
+     "response_chars": 2692
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1808,
+     "request_payload_chars": 940,
+     "requests": 1,
+     "response_chars": 1191
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3625,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "type-confusion",
+   "dataset": "attendance",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 960.7,
+      "median_ms": 924.8,
+      "min_ms": 694.4,
+      "n": 4,
+      "p95_ms": 960.7
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.2,
+      "n": 1,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 52.2,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 52.2
+     },
+     "verification_agent": {
+      "max_ms": 36.3,
+      "median_ms": 24.9,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 36.3
+     }
+    },
+    "pipeline_ms": 3704.2,
+    "sandbox_executions": {
+     "max_ms": 960.5,
+     "median_ms": 924.5,
+     "min_ms": 694.3,
+     "n": 4,
+     "p95_ms": 960.5
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "att_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "att_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "att_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 441,
+        "output_tokens": 159
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 1124,
+        "output_tokens": 671
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 452,
+        "output_tokens": 297
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 2017,
+      "output_tokens": 1127
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks att_t1, att_t2, att_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [att_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [att_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [att_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [att_t1 #1] | rejected: 1 refuted, 2 verified",
+    "  9 supervisor -> data_analyst_agent: analysis_request [att_t1 #2] | 3 claim spec(s); 1 feedback item(s)",
+    " 10 data_analyst_agent -> supervisor: analysis_result [att_t1 #2] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 11 supervisor -> verification_agent: verification_request [att_t1 #2] | 3 reported value(s) to recompute",
+    " 12 verification_agent -> supervisor: verification_report [att_t1 #2] | accepted: 3 verified",
+    " 13 supervisor -> business_insight_agent: insight_request [att_t1 #1] | 3 verified claim(s) only",
+    " 14 business_insight_agent -> supervisor: insight_report [att_t1 #1] | 3 insight(s)",
+    " 15 supervisor -> verification_agent: insight_check_request [att_t1 #1] | 3 insight(s) to ground",
+    " 16 verification_agent -> supervisor: insight_check_report [att_t1 #1] | accepted",
+    " 17 supervisor -> data_analyst_agent: analysis_request [att_t2 #1] | 3 claim spec(s); 0 feedback item(s)",
+    " 18 data_analyst_agent -> supervisor: analysis_result [att_t2 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 19 supervisor -> verification_agent: verification_request [att_t2 #1] | 3 reported value(s) to recompute",
+    " 20 verification_agent -> supervisor: verification_report [att_t2 #1] | accepted: 3 verified",
+    " 21 supervisor -> business_insight_agent: insight_request [att_t2 #1] | 3 verified claim(s) only",
+    " 22 business_insight_agent -> supervisor: insight_report [att_t2 #1] | 3 insight(s)",
+    " 23 supervisor -> verification_agent: insight_check_request [att_t2 #1] | 3 insight(s) to ground",
+    " 24 verification_agent -> supervisor: insight_check_report [att_t2 #1] | accepted",
+    " 25 supervisor -> data_analyst_agent: analysis_request [att_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [att_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [att_t3 #1] | 1 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [att_t3 #1] | accepted: 1 verified",
+    " 29 supervisor -> business_insight_agent: insight_request [att_t3 #1] | 1 verified claim(s) only",
+    " 30 business_insight_agent -> supervisor: insight_report [att_t3 #1] | 1 insight(s)",
+    " 31 supervisor -> verification_agent: insight_check_request [att_t3 #1] | 1 insight(s) to ground",
+    " 32 verification_agent -> supervisor: insight_check_report [att_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 10,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 9,
+    "tp": 1,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1190,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1746,
+     "request_payload_chars": 915,
+     "requests": 3,
+     "response_chars": 554
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 2841,
+     "request_payload_chars": 3258,
+     "requests": 3,
+     "response_chars": 2296
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1609,
+     "request_payload_chars": 741,
+     "requests": 1,
+     "response_chars": 1115
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2873,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "within-tolerance",
+   "dataset": "student",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 14,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 14,
+    "requests": 14
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 756.9,
+      "median_ms": 746.7,
+      "min_ms": 622.8,
+      "n": 3,
+      "p95_ms": 756.9
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 4.9,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 15,
+      "p95_ms": 4.9
+     },
+     "verification_agent": {
+      "max_ms": 4.6,
+      "median_ms": 1.7,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 4.6
+     }
+    },
+    "pipeline_ms": 2160.9,
+    "sandbox_executions": {
+     "max_ms": 756.8,
+     "median_ms": 746.5,
+     "min_ms": 622.7,
+     "n": 3,
+     "p95_ms": 756.8
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed",
+   "steps": 14,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "stu_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 435,
+        "output_tokens": 138
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 709,
+        "output_tokens": 572
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 402,
+        "output_tokens": 278
+       }
+      },
+      "calls": 7,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1546,
+      "output_tokens": 988
+     }
+    },
+    "mock_calls": 7,
+    "provider_calls": 0,
+    "total_calls": 7
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks stu_t1, stu_t2, stu_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [stu_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [stu_t1 #1] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [stu_t1 #1] | 4 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [stu_t1 #1] | accepted: 4 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [stu_t1 #1] | 4 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [stu_t1 #1] | 3 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [stu_t1 #1] | 3 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [stu_t1 #1] | accepted",
+    " 13 supervisor -> data_analyst_agent: analysis_request [stu_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 14 data_analyst_agent -> supervisor: analysis_result [stu_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 15 supervisor -> verification_agent: verification_request [stu_t2 #1] | 2 reported value(s) to recompute",
+    " 16 verification_agent -> supervisor: verification_report [stu_t2 #1] | accepted: 2 verified",
+    " 17 supervisor -> business_insight_agent: insight_request [stu_t2 #1] | 2 verified claim(s) only",
+    " 18 business_insight_agent -> supervisor: insight_report [stu_t2 #1] | 2 insight(s)",
+    " 19 supervisor -> verification_agent: insight_check_request [stu_t2 #1] | 2 insight(s) to ground",
+    " 20 verification_agent -> supervisor: insight_check_report [stu_t2 #1] | accepted",
+    " 21 supervisor -> data_analyst_agent: analysis_request [stu_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 22 data_analyst_agent -> supervisor: analysis_result [stu_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 23 supervisor -> verification_agent: verification_request [stu_t3 #1] | 1 reported value(s) to recompute",
+    " 24 verification_agent -> supervisor: verification_report [stu_t3 #1] | accepted: 1 verified",
+    " 25 supervisor -> business_insight_agent: insight_request [stu_t3 #1] | 1 verified claim(s) only",
+    " 26 business_insight_agent -> supervisor: insight_report [stu_t3 #1] | 1 insight(s)",
+    " 27 supervisor -> verification_agent: insight_check_request [stu_t3 #1] | 1 insight(s) to ground",
+    " 28 verification_agent -> supervisor: insight_check_report [stu_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1265,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1585,
+     "request_payload_chars": 754,
+     "requests": 3,
+     "response_chars": 587
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 3695,
+     "request_payload_chars": 4251,
+     "requests": 4,
+     "response_chars": 2325
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1545,
+     "request_payload_chars": 677,
+     "requests": 1,
+     "response_chars": 1183
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3197,
+     "requests": 7,
+     "response_chars": 0
+    }
+   },
+   "case": "outside-tolerance",
+   "dataset": "ecommerce",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 16,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 16,
+    "requests": 16
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 983.7,
+      "median_ms": 723.3,
+      "min_ms": 652.6,
+      "n": 4,
+      "p95_ms": 983.7
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.4,
+      "median_ms": 0.4,
+      "min_ms": 0.4,
+      "n": 1,
+      "p95_ms": 0.4
+     },
+     "supervisor": {
+      "max_ms": 1.4,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 17,
+      "p95_ms": 1.4
+     },
+     "verification_agent": {
+      "max_ms": 1.6,
+      "median_ms": 1.1,
+      "min_ms": 0.0,
+      "n": 7,
+      "p95_ms": 1.6
+     }
+    },
+    "pipeline_ms": 3110.3,
+    "sandbox_executions": {
+     "max_ms": 983.5,
+     "median_ms": 723.1,
+     "min_ms": 652.4,
+     "n": 4,
+     "p95_ms": 983.5
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 16,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "eco_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "eco_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 395,
+        "output_tokens": 145
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 923,
+        "output_tokens": 580
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 386,
+        "output_tokens": 295
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1704,
+      "output_tokens": 1020
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks eco_t1, eco_t2, eco_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [eco_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [eco_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [eco_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [eco_t1 #1] | rejected: 1 refuted, 2 verified",
+    "  9 supervisor -> data_analyst_agent: analysis_request [eco_t1 #2] | 3 claim spec(s); 1 feedback item(s)",
+    " 10 data_analyst_agent -> supervisor: analysis_result [eco_t1 #2] | ran ok; 3 claim(s), 0 parse error(s)",
+    " 11 supervisor -> verification_agent: verification_request [eco_t1 #2] | 3 reported value(s) to recompute",
+    " 12 verification_agent -> supervisor: verification_report [eco_t1 #2] | accepted: 3 verified",
+    " 13 supervisor -> business_insight_agent: insight_request [eco_t1 #1] | 3 verified claim(s) only",
+    " 14 business_insight_agent -> supervisor: insight_report [eco_t1 #1] | 3 insight(s)",
+    " 15 supervisor -> verification_agent: insight_check_request [eco_t1 #1] | 3 insight(s) to ground",
+    " 16 verification_agent -> supervisor: insight_check_report [eco_t1 #1] | accepted",
+    " 17 supervisor -> data_analyst_agent: analysis_request [eco_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 18 data_analyst_agent -> supervisor: analysis_result [eco_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 19 supervisor -> verification_agent: verification_request [eco_t2 #1] | 2 reported value(s) to recompute",
+    " 20 verification_agent -> supervisor: verification_report [eco_t2 #1] | accepted: 2 verified",
+    " 21 supervisor -> business_insight_agent: insight_request [eco_t2 #1] | 2 verified claim(s) only",
+    " 22 business_insight_agent -> supervisor: insight_report [eco_t2 #1] | 2 insight(s)",
+    " 23 supervisor -> verification_agent: insight_check_request [eco_t2 #1] | 2 insight(s) to ground",
+    " 24 verification_agent -> supervisor: insight_check_report [eco_t2 #1] | accepted",
+    " 25 supervisor -> data_analyst_agent: analysis_request [eco_t3 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 26 data_analyst_agent -> supervisor: analysis_result [eco_t3 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 27 supervisor -> verification_agent: verification_request [eco_t3 #1] | 2 reported value(s) to recompute",
+    " 28 verification_agent -> supervisor: verification_report [eco_t3 #1] | accepted: 2 verified",
+    " 29 supervisor -> business_insight_agent: insight_request [eco_t3 #1] | 2 verified claim(s) only",
+    " 30 business_insight_agent -> supervisor: insight_report [eco_t3 #1] | 2 insight(s)",
+    " 31 supervisor -> verification_agent: insight_check_request [eco_t3 #1] | 2 insight(s) to ground",
+    " 32 verification_agent -> supervisor: insight_check_report [eco_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 10,
+    "detection_rate": 1.0,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 9,
+    "tp": 1,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1642,
+     "request_payload_chars": 811,
+     "requests": 3,
+     "response_chars": 517
+    },
+    "data_analyst_agent": {
+     "llm_calls": 7,
+     "prompt_chars": 8193,
+     "request_payload_chars": 9535,
+     "requests": 7,
+     "response_chars": 2840
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2648,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "unplanned-claim",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 18,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 18,
+    "requests": 18
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 3,
+    "executions": 7,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 953.9,
+      "median_ms": 652.5,
+      "min_ms": 0.3,
+      "n": 7,
+      "p95_ms": 953.9
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.4,
+      "median_ms": 0.4,
+      "min_ms": 0.4,
+      "n": 1,
+      "p95_ms": 0.4
+     },
+     "supervisor": {
+      "max_ms": 1.5,
+      "median_ms": 0.3,
+      "min_ms": 0.1,
+      "n": 19,
+      "p95_ms": 1.5
+     },
+     "verification_agent": {
+      "max_ms": 1.0,
+      "median_ms": 0.4,
+      "min_ms": 0.1,
+      "n": 6,
+      "p95_ms": 1.0
+     }
+    },
+    "pipeline_ms": 3447.0,
+    "sandbox_executions": {
+     "max_ms": 953.7,
+     "median_ms": 903.6,
+     "min_ms": 652.2,
+     "n": 4,
+     "p95_ms": 953.7
+    }
+   },
+   "lessons": 4,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 3,
+    "failed_tasks": 1,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed_with_failures",
+   "steps": 18,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "sales_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t4": {
+     "analysis_attempts": 3,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "failed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 410,
+        "output_tokens": 127
+       },
+       "data_analyst": {
+        "calls": 7,
+        "input_tokens": 2045,
+        "output_tokens": 709
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 11,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 2906,
+      "output_tokens": 1178
+     }
+    },
+    "mock_calls": 11,
+    "provider_calls": 0,
+    "total_calls": 11
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [sales_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [sales_t1 #1] | failed; 0 claim(s), 0 parse error(s)",
+    "  7 supervisor -> data_analyst_agent: analysis_request [sales_t1 #2] | 4 claim spec(s); 1 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [sales_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [sales_t1 #2] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [sales_t1 #2] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [sales_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [sales_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [sales_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [sales_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [sales_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [sales_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [sales_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [sales_t2 #1] | accepted: 2 verified",
+    " 19 supervisor -> business_insight_agent: insight_request [sales_t2 #1] | 2 verified claim(s) only",
+    " 20 business_insight_agent -> supervisor: insight_report [sales_t2 #1] | 2 insight(s)",
+    " 21 supervisor -> verification_agent: insight_check_request [sales_t2 #1] | 2 insight(s) to ground",
+    " 22 verification_agent -> supervisor: insight_check_report [sales_t2 #1] | accepted",
+    " 23 supervisor -> data_analyst_agent: analysis_request [sales_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 24 data_analyst_agent -> supervisor: analysis_result [sales_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 25 supervisor -> verification_agent: verification_request [sales_t3 #1] | 1 reported value(s) to recompute",
+    " 26 verification_agent -> supervisor: verification_report [sales_t3 #1] | accepted: 1 verified",
+    " 27 supervisor -> business_insight_agent: insight_request [sales_t3 #1] | 1 verified claim(s) only",
+    " 28 business_insight_agent -> supervisor: insight_report [sales_t3 #1] | 1 insight(s)",
+    " 29 supervisor -> verification_agent: insight_check_request [sales_t3 #1] | 1 insight(s) to ground",
+    " 30 verification_agent -> supervisor: insight_check_report [sales_t3 #1] | accepted",
+    " 31 supervisor -> data_analyst_agent: analysis_request [sales_t4 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 32 data_analyst_agent -> supervisor: analysis_result [sales_t4 #1] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 33 supervisor -> data_analyst_agent: analysis_request [sales_t4 #2] | 1 claim spec(s); 1 feedback item(s)",
+    " 34 data_analyst_agent -> supervisor: analysis_result [sales_t4 #2] | blocked by safety scan; 0 claim(s), 0 parse error(s)",
+    " 35 supervisor -> data_analyst_agent: analysis_request [sales_t4 #3] | 1 claim spec(s); 2 feedback item(s)",
+    " 36 data_analyst_agent -> supervisor: analysis_result [sales_t4 #3] | blocked by safety scan; 0 claim(s), 0 parse error(s)"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1265,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 6,
+     "prompt_chars": 3364,
+     "request_payload_chars": 1720,
+     "requests": 6,
+     "response_chars": 1183
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 2747,
+     "request_payload_chars": 3158,
+     "requests": 3,
+     "response_chars": 832
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1545,
+     "request_payload_chars": 677,
+     "requests": 1,
+     "response_chars": 1183
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 3487,
+     "requests": 8,
+     "response_chars": 0
+    }
+   },
+   "case": "insight-faults",
+   "dataset": "ecommerce",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 18,
+    "agent_errors": 1,
+    "contract_acceptance_rate": 0.947368,
+    "rejected_by_contract": 0,
+    "replies": 19,
+    "requests": 19
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 2,
+    "tp": 3,
+    "unparseable_replies": 1
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 6,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 1002.5,
+      "median_ms": 607.2,
+      "min_ms": 606.3,
+      "n": 3,
+      "p95_ms": 1002.5
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.5,
+      "median_ms": 0.5,
+      "min_ms": 0.5,
+      "n": 1,
+      "p95_ms": 0.5
+     },
+     "supervisor": {
+      "max_ms": 1.7,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 20,
+      "p95_ms": 0.5
+     },
+     "verification_agent": {
+      "max_ms": 2.5,
+      "median_ms": 0.1,
+      "min_ms": 0.0,
+      "n": 8,
+      "p95_ms": 2.5
+     }
+    },
+    "pipeline_ms": 2248.3,
+    "sandbox_executions": {
+     "max_ms": 1002.3,
+     "median_ms": 607.0,
+     "min_ms": 606.1,
+     "n": 3,
+     "p95_ms": 1002.3
+    }
+   },
+   "lessons": 4,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 3,
+    "recovered_tasks": 0
+   },
+   "status": "completed_with_failures",
+   "steps": 19,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "eco_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 2,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 2,
+     "recovered": false,
+     "status": "completed"
+    },
+    "eco_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 2,
+     "recovered": false,
+     "status": "insight_rejected"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 6,
+        "input_tokens": 838,
+        "output_tokens": 294
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 686,
+        "output_tokens": 207
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 386,
+        "output_tokens": 295
+       }
+      },
+      "calls": 10,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1910,
+      "output_tokens": 796
+     }
+    },
+    "mock_calls": 10,
+    "provider_calls": 0,
+    "total_calls": 10
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks eco_t1, eco_t2, eco_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [eco_t1 #1] | 3 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [eco_t1 #1] | ran ok; 3 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [eco_t1 #1] | 3 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [eco_t1 #1] | accepted: 3 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [eco_t1 #1] | 3 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [eco_t1 #1] | 4 insight(s)",
+    " 11 supervisor -> verification_agent: insight_check_request [eco_t1 #1] | 4 insight(s) to ground",
+    " 12 verification_agent -> supervisor: insight_check_report [eco_t1 #1] | rejected: insight 3: cites claims that are not verified: churn_rate",
+    " 13 supervisor -> business_insight_agent: insight_request [eco_t1 #2] | 3 verified claim(s) only",
+    " 14 business_insight_agent -> supervisor: insight_report [eco_t1 #2] | 3 insight(s)",
+    " 15 supervisor -> verification_agent: insight_check_request [eco_t1 #2] | 3 insight(s) to ground",
+    " 16 verification_agent -> supervisor: insight_check_report [eco_t1 #2] | accepted",
+    " 17 supervisor -> data_analyst_agent: analysis_request [eco_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 18 data_analyst_agent -> supervisor: analysis_result [eco_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 19 supervisor -> verification_agent: verification_request [eco_t2 #1] | 2 reported value(s) to recompute",
+    " 20 verification_agent -> supervisor: verification_report [eco_t2 #1] | accepted: 2 verified",
+    " 21 supervisor -> business_insight_agent: insight_request [eco_t2 #1] | 2 verified claim(s) only",
+    " 22 business_insight_agent -> supervisor: insight_report [eco_t2 #1] | 2 insight(s)",
+    " 23 supervisor -> verification_agent: insight_check_request [eco_t2 #1] | 2 insight(s) to ground",
+    " 24 verification_agent -> supervisor: insight_check_report [eco_t2 #1] | rejected: insight 0: number 37.5% is not supported by its cited claims",
+    " 25 supervisor -> business_insight_agent: insight_request [eco_t2 #2] | 2 verified claim(s) only",
+    " 26 business_insight_agent -> supervisor: insight_report [eco_t2 #2] | 2 insight(s)",
+    " 27 supervisor -> verification_agent: insight_check_request [eco_t2 #2] | 2 insight(s) to ground",
+    " 28 verification_agent -> supervisor: insight_check_report [eco_t2 #2] | accepted",
+    " 29 supervisor -> data_analyst_agent: analysis_request [eco_t3 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 30 data_analyst_agent -> supervisor: analysis_result [eco_t3 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 31 supervisor -> verification_agent: verification_request [eco_t3 #1] | 2 reported value(s) to recompute",
+    " 32 verification_agent -> supervisor: verification_report [eco_t3 #1] | accepted: 2 verified",
+    " 33 supervisor -> business_insight_agent: insight_request [eco_t3 #1] | 2 verified claim(s) only",
+    " 34 business_insight_agent -> supervisor: agent_error [eco_t3 #1] | LLMOutputError: reply is not valid JSON: Expecting value",
+    " 35 supervisor -> business_insight_agent: insight_request [eco_t3 #2] | 2 verified claim(s) only",
+    " 36 business_insight_agent -> supervisor: insight_report [eco_t3 #2] | 3 insight(s)",
+    " 37 supervisor -> verification_agent: insight_check_request [eco_t3 #2] | 3 insight(s) to ground",
+    " 38 verification_agent -> supervisor: insight_check_report [eco_t3 #2] | rejected: insight 2: cites claims that are not verified: row_count"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1190,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1746,
+     "request_payload_chars": 915,
+     "requests": 3,
+     "response_chars": 554
+    },
+    "data_analyst_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 2841,
+     "request_payload_chars": 3258,
+     "requests": 3,
+     "response_chars": 998
+    },
+    "planning_agent": {
+     "llm_calls": 2,
+     "prompt_chars": 3299,
+     "request_payload_chars": 1569,
+     "requests": 2,
+     "response_chars": 2232
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2873,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "invalid-plan-recovered",
+   "dataset": "student",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 14,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 0.933333,
+    "rejected_by_contract": 1,
+    "replies": 15,
+    "requests": 15
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 3,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "business_insight_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.2
+     },
+     "data_analyst_agent": {
+      "max_ms": 927.6,
+      "median_ms": 915.0,
+      "min_ms": 690.0,
+      "n": 3,
+      "p95_ms": 927.6
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 2,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 8.5,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 16,
+      "p95_ms": 8.5
+     },
+     "verification_agent": {
+      "max_ms": 5.1,
+      "median_ms": 1.7,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 5.1
+     }
+    },
+    "pipeline_ms": 2575.0,
+    "sandbox_executions": {
+     "max_ms": 927.4,
+     "median_ms": 914.8,
+     "min_ms": 689.8,
+     "n": 3,
+     "p95_ms": 927.4
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 2
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "completed",
+   "steps": 15,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "stu_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "stu_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 435,
+        "output_tokens": 138
+       },
+       "data_analyst": {
+        "calls": 3,
+        "input_tokens": 709,
+        "output_tokens": 248
+       },
+       "planner": {
+        "calls": 2,
+        "input_tokens": 824,
+        "output_tokens": 557
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1968,
+      "output_tokens": 943
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> planning_agent: plan_request | planning attempt 2; 1 earlier problem(s)",
+    "  4 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  5 supervisor -> approval_gate: approval_request | tasks stu_t1, stu_t2, stu_t3",
+    "  6 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  7 supervisor -> data_analyst_agent: analysis_request [stu_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [stu_t1 #1] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [stu_t1 #1] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [stu_t1 #1] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [stu_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [stu_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [stu_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [stu_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [stu_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [stu_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [stu_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [stu_t2 #1] | accepted: 2 verified",
+    " 19 supervisor -> business_insight_agent: insight_request [stu_t2 #1] | 2 verified claim(s) only",
+    " 20 business_insight_agent -> supervisor: insight_report [stu_t2 #1] | 2 insight(s)",
+    " 21 supervisor -> verification_agent: insight_check_request [stu_t2 #1] | 2 insight(s) to ground",
+    " 22 verification_agent -> supervisor: insight_check_report [stu_t2 #1] | accepted",
+    " 23 supervisor -> data_analyst_agent: analysis_request [stu_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 24 data_analyst_agent -> supervisor: analysis_result [stu_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 25 supervisor -> verification_agent: verification_request [stu_t3 #1] | 1 reported value(s) to recompute",
+    " 26 verification_agent -> supervisor: verification_report [stu_t3 #1] | accepted: 1 verified",
+    " 27 supervisor -> business_insight_agent: insight_request [stu_t3 #1] | 1 verified claim(s) only",
+    " 28 business_insight_agent -> supervisor: insight_report [stu_t3 #1] | 1 insight(s)",
+    " 29 supervisor -> verification_agent: insight_check_request [stu_t3 #1] | 1 insight(s) to ground",
+    " 30 verification_agent -> supervisor: insight_check_report [stu_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "planning_agent": {
+     "llm_calls": 2,
+     "prompt_chars": 3689,
+     "request_payload_chars": 1959,
+     "requests": 2,
+     "response_chars": 2402
+    }
+   },
+   "case": "invalid-plan-persistent",
+   "dataset": "attendance",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 0,
+    "golden": null,
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 0,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 0.0,
+    "rejected_by_contract": 2,
+    "replies": 2,
+    "requests": 2
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 0,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 0,
+    "per_node": {
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 2,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 72.2,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 72.2
+     }
+    },
+    "pipeline_ms": 79.2,
+    "sandbox_executions": {
+     "max_ms": null,
+     "median_ms": null,
+     "min_ms": null,
+     "n": 0,
+     "p95_ms": null
+    }
+   },
+   "lessons": 2,
+   "plan": {
+    "accepted": false,
+    "attempts": 2
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "plan_invalid",
+   "steps": 2,
+   "strategy": "lazy-seaborn",
+   "tasks": {},
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "planner": {
+        "calls": 2,
+        "input_tokens": 922,
+        "output_tokens": 600
+       }
+      },
+      "calls": 2,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 922,
+      "output_tokens": 600
+     }
+    },
+    "mock_calls": 2,
+    "provider_calls": 0,
+    "total_calls": 2
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> planning_agent: plan_request | planning attempt 2; 1 earlier problem(s)",
+    "  4 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)"
+   ],
+   "verification": {
+    "accuracy": null,
+    "claims_checked": 0,
+    "detection_rate": null,
+    "false_rejection_rate": null,
+    "fn": 0,
+    "fp": 0,
+    "tn": 0,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    }
+   },
+   "case": "human-reject",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 0,
+    "golden": null,
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 2,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 2,
+    "requests": 2
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 0,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 0,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.4,
+      "median_ms": 0.4,
+      "min_ms": 0.4,
+      "n": 1,
+      "p95_ms": 0.4
+     },
+     "supervisor": {
+      "max_ms": 1.5,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 1.5
+     }
+    },
+    "pipeline_ms": 8.2,
+    "sandbox_executions": {
+     "max_ms": null,
+     "median_ms": null,
+     "min_ms": null,
+     "n": 0,
+     "p95_ms": null
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "rejected_by_human",
+   "steps": 2,
+   "strategy": "lazy-seaborn",
+   "tasks": {},
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 1,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 451,
+      "output_tokens": 342
+     }
+    },
+    "mock_calls": 1,
+    "provider_calls": 0,
+    "total_calls": 1
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'reject'"
+   ],
+   "verification": {
+    "accuracy": null,
+    "claims_checked": 0,
+    "detection_rate": null,
+    "false_rejection_rate": null,
+    "fn": 0,
+    "fp": 0,
+    "tn": 0,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1441,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 3,
+     "prompt_chars": 1642,
+     "request_payload_chars": 811,
+     "requests": 3,
+     "response_chars": 517
+    },
+    "data_analyst_agent": {
+     "llm_calls": 4,
+     "prompt_chars": 4532,
+     "request_payload_chars": 5294,
+     "requests": 4,
+     "response_chars": 1152
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1806,
+     "request_payload_chars": 938,
+     "requests": 1,
+     "response_chars": 1369
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 2634,
+     "requests": 6,
+     "response_chars": 0
+    }
+   },
+   "case": "human-edit-drops-task",
+   "dataset": "sales",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 7,
+    "golden": {
+     "correct": 7,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 0
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 15,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 15,
+    "requests": 15
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 3,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 4,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 3,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 743.5,
+      "median_ms": 676.0,
+      "min_ms": 582.3,
+      "n": 4,
+      "p95_ms": 743.5
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "supervisor": {
+      "max_ms": 1.4,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 16,
+      "p95_ms": 1.4
+     },
+     "verification_agent": {
+      "max_ms": 1.1,
+      "median_ms": 0.5,
+      "min_ms": 0.0,
+      "n": 6,
+      "p95_ms": 1.1
+     }
+    },
+    "pipeline_ms": 2703.9,
+    "sandbox_executions": {
+     "max_ms": 743.2,
+     "median_ms": 675.8,
+     "min_ms": 582.2,
+     "n": 4,
+     "p95_ms": 743.2
+    }
+   },
+   "lessons": 1,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 1,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 1
+   },
+   "status": "completed",
+   "steps": 15,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "sales_t1": {
+     "analysis_attempts": 2,
+     "insight_attempts": 1,
+     "recovered": true,
+     "status": "completed"
+    },
+    "sales_t2": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    },
+    "sales_t3": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "completed"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 3,
+        "input_tokens": 410,
+        "output_tokens": 127
+       },
+       "data_analyst": {
+        "calls": 4,
+        "input_tokens": 1131,
+        "output_tokens": 287
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 451,
+        "output_tokens": 342
+       }
+      },
+      "calls": 8,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 1992,
+      "output_tokens": 756
+     }
+    },
+    "mock_calls": 8,
+    "provider_calls": 0,
+    "total_calls": 8
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 4 task(s), 8 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks sales_t1, sales_t2, sales_t3, sales_t4",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'edit' keep ['sales_t1', 'sales_t2', 'sales_t3']",
+    "  5 supervisor -> data_analyst_agent: analysis_request [sales_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [sales_t1 #1] | failed; 0 claim(s), 0 parse error(s)",
+    "  7 supervisor -> data_analyst_agent: analysis_request [sales_t1 #2] | 4 claim spec(s); 1 feedback item(s)",
+    "  8 data_analyst_agent -> supervisor: analysis_result [sales_t1 #2] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  9 supervisor -> verification_agent: verification_request [sales_t1 #2] | 4 reported value(s) to recompute",
+    " 10 verification_agent -> supervisor: verification_report [sales_t1 #2] | accepted: 4 verified",
+    " 11 supervisor -> business_insight_agent: insight_request [sales_t1 #1] | 4 verified claim(s) only",
+    " 12 business_insight_agent -> supervisor: insight_report [sales_t1 #1] | 3 insight(s)",
+    " 13 supervisor -> verification_agent: insight_check_request [sales_t1 #1] | 3 insight(s) to ground",
+    " 14 verification_agent -> supervisor: insight_check_report [sales_t1 #1] | accepted",
+    " 15 supervisor -> data_analyst_agent: analysis_request [sales_t2 #1] | 2 claim spec(s); 0 feedback item(s)",
+    " 16 data_analyst_agent -> supervisor: analysis_result [sales_t2 #1] | ran ok; 2 claim(s), 0 parse error(s)",
+    " 17 supervisor -> verification_agent: verification_request [sales_t2 #1] | 2 reported value(s) to recompute",
+    " 18 verification_agent -> supervisor: verification_report [sales_t2 #1] | accepted: 2 verified",
+    " 19 supervisor -> business_insight_agent: insight_request [sales_t2 #1] | 2 verified claim(s) only",
+    " 20 business_insight_agent -> supervisor: insight_report [sales_t2 #1] | 2 insight(s)",
+    " 21 supervisor -> verification_agent: insight_check_request [sales_t2 #1] | 2 insight(s) to ground",
+    " 22 verification_agent -> supervisor: insight_check_report [sales_t2 #1] | accepted",
+    " 23 supervisor -> data_analyst_agent: analysis_request [sales_t3 #1] | 1 claim spec(s); 0 feedback item(s)",
+    " 24 data_analyst_agent -> supervisor: analysis_result [sales_t3 #1] | ran ok; 1 claim(s), 0 parse error(s)",
+    " 25 supervisor -> verification_agent: verification_request [sales_t3 #1] | 1 reported value(s) to recompute",
+    " 26 verification_agent -> supervisor: verification_report [sales_t3 #1] | accepted: 1 verified",
+    " 27 supervisor -> business_insight_agent: insight_request [sales_t3 #1] | 1 verified claim(s) only",
+    " 28 business_insight_agent -> supervisor: insight_report [sales_t3 #1] | 1 insight(s)",
+    " 29 supervisor -> verification_agent: insight_check_request [sales_t3 #1] | 1 insight(s) to ground",
+    " 30 verification_agent -> supervisor: insight_check_report [sales_t3 #1] | accepted"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 7,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 7,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  },
+  {
+   "agents": {
+    "approval_gate": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 1190,
+     "requests": 1,
+     "response_chars": 0
+    },
+    "business_insight_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 573,
+     "request_payload_chars": 296,
+     "requests": 1,
+     "response_chars": 236
+    },
+    "data_analyst_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1038,
+     "request_payload_chars": 1177,
+     "requests": 1,
+     "response_chars": 435
+    },
+    "planning_agent": {
+     "llm_calls": 1,
+     "prompt_chars": 1609,
+     "request_payload_chars": 741,
+     "requests": 1,
+     "response_chars": 1115
+    },
+    "verification_agent": {
+     "llm_calls": 0,
+     "prompt_chars": 0,
+     "request_payload_chars": 695,
+     "requests": 1,
+     "response_chars": 0
+    }
+   },
+   "case": "step-budget",
+   "dataset": "student",
+   "expectations": {
+    "met": true,
+    "problems": []
+   },
+   "final_answers": {
+    "accepted": 4,
+    "golden": {
+     "correct": 4,
+     "expected": 7,
+     "incorrect": 0,
+     "missing": 3
+    },
+    "incorrect_accepted": []
+   },
+   "handoffs": {
+    "accepted_by_contract": 5,
+    "agent_errors": 0,
+    "contract_acceptance_rate": 1.0,
+    "rejected_by_contract": 0,
+    "replies": 5,
+    "requests": 5
+   },
+   "insight_checks": {
+    "fn": 0,
+    "fp": 0,
+    "tn": 0,
+    "tp": 0,
+    "unparseable_replies": 0
+   },
+   "latency": {
+    "blocked_by_safety_scan": 0,
+    "executions": 1,
+    "per_node": {
+     "approval_gate": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "business_insight_agent": {
+      "max_ms": 0.1,
+      "median_ms": 0.1,
+      "min_ms": 0.1,
+      "n": 1,
+      "p95_ms": 0.1
+     },
+     "data_analyst_agent": {
+      "max_ms": 711.6,
+      "median_ms": 711.6,
+      "min_ms": 711.6,
+      "n": 1,
+      "p95_ms": 711.6
+     },
+     "finalize": {
+      "max_ms": 0.0,
+      "median_ms": 0.0,
+      "min_ms": 0.0,
+      "n": 1,
+      "p95_ms": 0.0
+     },
+     "planning_agent": {
+      "max_ms": 0.2,
+      "median_ms": 0.2,
+      "min_ms": 0.2,
+      "n": 1,
+      "p95_ms": 0.2
+     },
+     "supervisor": {
+      "max_ms": 6.9,
+      "median_ms": 0.2,
+      "min_ms": 0.1,
+      "n": 6,
+      "p95_ms": 6.9
+     },
+     "verification_agent": {
+      "max_ms": 4.5,
+      "median_ms": 4.5,
+      "min_ms": 4.5,
+      "n": 1,
+      "p95_ms": 4.5
+     }
+    },
+    "pipeline_ms": 733.5,
+    "sandbox_executions": {
+     "max_ms": 711.4,
+     "median_ms": 711.4,
+     "min_ms": 711.4,
+     "n": 1,
+     "p95_ms": 711.4
+    }
+   },
+   "lessons": 0,
+   "plan": {
+    "accepted": true,
+    "attempts": 1
+   },
+   "retries": {
+    "analysis_retries": 0,
+    "failed_tasks": 0,
+    "insight_retries": 0,
+    "recovered_tasks": 0
+   },
+   "status": "budget_exhausted",
+   "steps": 5,
+   "strategy": "lazy-seaborn",
+   "tasks": {
+    "stu_t1": {
+     "analysis_attempts": 1,
+     "insight_attempts": 1,
+     "recovered": false,
+     "status": "running"
+    },
+    "stu_t2": {
+     "analysis_attempts": 0,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "pending"
+    },
+    "stu_t3": {
+     "analysis_attempts": 0,
+     "insight_attempts": 0,
+     "recovered": false,
+     "status": "pending"
+    }
+   },
+   "tokens": {
+    "classes": {
+     "mock_scripted/estimated_chars_div_4": {
+      "anomalies": 0,
+      "by_skill": {
+       "business_insight": {
+        "calls": 1,
+        "input_tokens": 143,
+        "output_tokens": 59
+       },
+       "data_analyst": {
+        "calls": 1,
+        "input_tokens": 259,
+        "output_tokens": 108
+       },
+       "planner": {
+        "calls": 1,
+        "input_tokens": 402,
+        "output_tokens": 278
+       }
+      },
+      "calls": 3,
+      "cost_note": "not a provider call: tokens are character estimates of scripted prompts; never cost or savings",
+      "cost_usd_estimate": null,
+      "input_tokens": 804,
+      "output_tokens": 445
+     }
+    },
+    "mock_calls": 3,
+    "provider_calls": 0,
+    "total_calls": 3
+   },
+   "trace": [
+    "  1 supervisor -> planning_agent: plan_request | planning attempt 1; 0 earlier problem(s)",
+    "  2 planning_agent -> supervisor: plan | 3 task(s), 7 claim(s)",
+    "  3 supervisor -> approval_gate: approval_request | tasks stu_t1, stu_t2, stu_t3",
+    "  4 approval_gate -> supervisor: approval_decision | decision 'approve'",
+    "  5 supervisor -> data_analyst_agent: analysis_request [stu_t1 #1] | 4 claim spec(s); 0 feedback item(s)",
+    "  6 data_analyst_agent -> supervisor: analysis_result [stu_t1 #1] | ran ok; 4 claim(s), 0 parse error(s)",
+    "  7 supervisor -> verification_agent: verification_request [stu_t1 #1] | 4 reported value(s) to recompute",
+    "  8 verification_agent -> supervisor: verification_report [stu_t1 #1] | accepted: 4 verified",
+    "  9 supervisor -> business_insight_agent: insight_request [stu_t1 #1] | 4 verified claim(s) only",
+    " 10 business_insight_agent -> supervisor: insight_report [stu_t1 #1] | 3 insight(s)"
+   ],
+   "verification": {
+    "accuracy": 1.0,
+    "claims_checked": 4,
+    "detection_rate": null,
+    "false_rejection_rate": 0.0,
+    "fn": 0,
+    "fp": 0,
+    "tn": 4,
+    "tp": 0,
+    "unlabelled": 0
+   }
+  }
+ ],
+ "harness_version": "p5.0-multi-agent",
+ "mode": "subprocess",
+ "strategy": "lazy-seaborn",
+ "summary": {
+  "analysis_retries": 22,
+  "cases": 20,
+  "clean_runs_golden_correct": 28,
+  "clean_runs_golden_expected": 28,
+  "expectations_met": 20,
+  "failed_tasks": 5,
+  "handoffs": {
+   "accepted_by_contract": 282,
+   "agent_errors": 1,
+   "rejected_by_contract": 3,
+   "replies": 286
+  },
+  "incorrect_claims_accepted": 0,
+  "insight_checks": {
+   "fn": 0,
+   "fp": 0,
+   "tn": 49,
+   "tp": 3
+  },
+  "llm_calls": 154,
+  "provider_calls": 0,
+  "recovered_tasks": 12,
+  "verification": {
+   "accuracy": 1.0,
+   "claims_checked": 143,
+   "detection_rate": 1.0,
+   "false_rejection_rate": 0.0,
+   "fn": 0,
+   "fp": 0,
+   "tn": 131,
+   "tp": 12
+  }
+ }
+}

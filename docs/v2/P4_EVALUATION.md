@@ -2,6 +2,8 @@
 
 **Status:** P4.0 IMPLEMENTED on `feature/v2-p4-evaluation`, branched from `feature/insightpilot-v2` at `1fd3af3c`. **P4.1 (lazy-seaborn V2 sandbox prelude) is IMPLEMENTED and measured**: see `docs/v2/p4/P41_LAZY_SEABORN.md`. P4.2 is not started.
 
+**P5.0 extension:** `python -m evaluation multi-agent` evaluates the opt-in multi-agent prototype (`evaluation/multi_agent.py`; see `docs/v2/P5_MULTI_AGENT.md`). The P4 benchmark, its `HARNESS_VERSION` (`p4.1`) and the P4.1 evidence are unchanged.
+
 ## What it measures
 
 `evaluation/` runs the **unmodified V1 LangGraph pipeline** (ingest → plan → code generation → V1 subprocess sandbox → retry → interpretation → report) on the four demo datasets. It uses the scripted LLM from `tests/v2/mock_llm.py`, so there is no network, no API key and no cost.

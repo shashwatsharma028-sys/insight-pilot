@@ -1,4 +1,4 @@
-# InsightPilot: resume metrics scorecard (P4.0 + P4.1)
+# InsightPilot: resume metrics scorecard (P4.0 + P4.1 + P5.0)
 
 **Rule:** every number here is a reproducible measurement from a committed file. Anything that was not measured is listed as such. Nothing is extrapolated.
 
@@ -67,6 +67,21 @@ python -m evaluation ab --out <dir> --reps 12 --variants v1,v2-lazy-seaborn,v1-c
 | Correctness gates | 28/28, 20/20, 12/12 + 1/1 blocked, 7/7 charts, 12/12 reports, 4/4 snapshots | identical, **7/7 charts pixel-identical** | no regression in any of 16 gates (retries 4, executions 16, failed 4, blocked 3 and LLM calls 32, all equal) |
 | Mock token estimates per pass | 44,490 / 3,002 | 44,490 / 3,002 | unchanged; estimates only, not cost |
 
+## P5.0: multi-agent coordination prototype (scripted, `docs/v2/P5_MULTI_AGENT.md`)
+
+These are properties of the coordination and verification logic, measured on scripted agents with deliberately injected faults. They are **not** model-quality measurements. The results were identical in literal mode, with the real V1 subprocess and with the real lazy-seaborn subprocess (commit `e18c15f8`).
+
+| Measurement | Result | Evidence |
+|---|---|---|
+| Fault and control cases whose expected outcome was met | 20/20 | `docs/v2/p5/*/summary.md` |
+| Injected wrong claims detected by independent recomputation | 12/12 (detection rate 1.0) | the same |
+| Correct claims wrongly rejected | 0 of 131 | the same |
+| Incorrect claims accepted | 0 | the same |
+| Ungrounded insights rejected; grounded ones wrongly rejected | 3/3; 0 of 49 | the same |
+| Clean runs: golden answers accepted and correct | 28/28 | the same |
+| Mutation checks on the verifier, contracts, trust gate and Supervisor | 27/27 detected (3 after adding tests) | `docs/v2/p5/mutation_checks.md` |
+| Provider calls; cost | 0; none (mock character estimates only) | the same |
+
 ## Defensible resume bullets
 
 Each bullet is supported by the measurements above.
@@ -78,7 +93,13 @@ Each bullet is supported by the measurements above.
 - Produced benchmark reports in JSON, CSV and Markdown, backed by 107 tests (unit, edge-case, integration) and 32 mutation checks, all detected. V1 behaviour was preserved against committed snapshots.
 - **Cut median end-to-end pipeline latency by 42% (4.34 s → 2.52 s) and median sandbox execution time by 43%** in an offline, counterbalanced A/B benchmark: 144 runs on one machine, V2 faster in 48/48 paired runs, 95% CI of the paired difference [−2.05, −1.62] s. The change was an opt-in lazy-import sandbox prelude, with zero correctness regressions (28/28 answers, 20/20 quality values, 7/7 pixel-identical charts) and a same-session A/A control showing no effect.
 
+- Designed a **supervisor-led multi-agent prototype** (LangGraph) with four specialist agents, typed handoff contracts and a human approval gate. An LLM-free Verification Agent recomputes every reported number from the raw data. In 20 scripted fault-injection scenarios it **detected 12/12 injected wrong results, wrongly rejected 0 of 131 correct ones and let 0 incorrect claims through**, with bounded, feedback-driven retries. Untrusted model code is refused by the unhardened sandbox by construction (27/27 mutation checks detected).
+
 ## Do NOT claim (not measured)
+
+- **P5.0 multi-agent:**
+  - The verification and detection numbers come from scripted agents and injected faults. They are not real-model accuracy, and they do not show that a multi-agent system beats V1.
+  - No latency, token or cost comparison with V1 was made: the workloads differ.
 
 - **Speedups beyond what was measured:** the 42% is for this offline workload, whose fixtures never use seaborn; that is the best case. Code that uses `sns` pays the import on first use, at no more than V1. It was measured on one 4-CPU machine with the V1 subprocess sandbox. Do not generalise it to other hardware, real-LLM workloads or the P3 container backend.
 - **Money:** no cost savings and no token reductions.
