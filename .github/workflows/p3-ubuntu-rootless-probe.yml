@@ -5,6 +5,12 @@
 #   Podman-injected /etc/passwd and /etc/group bind mounts.
 # - Run 2 (45002558309, 98e29c04): with --passwd=false (approved), all three
 #   gates passed.
+# - Run 3 (45031896461, 83596758): every stage passed except the golden charts.
+#   The 7 chart hashes differed because the P3.5a references were rendered with
+#   the development host's MATPLOTLIBRC and system fonts
+#   (docs/v2/P3_CHART_REFERENCE_INVESTIGATION.md). Correction (approved): exact
+#   comparison against the hermetic chart_hermetic references, plus a
+#   mandatory render-environment check. Original references preserved.
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
@@ -176,7 +182,7 @@ jobs:
           rc=0; python3 -I -B scripts/p3/rootless.py measure-startup localhost/ip-build1 --warm 30 --cold 10 --evidence "$P3_OUT/startup.json" > "$P3_OUT/startup.txt" 2>&1 || rc=$?
           echo "$rc" > "$P3_OUT/startup.rc"; cat "$P3_OUT/startup.txt"; exit "$rc"
 
-      - name: Phase E - hash-pinned golden fixtures inside verified build 1
+      - name: Phase E - hash-pinned golden fixtures inside verified build 1 (numbers, exact hermetic charts, render environment)
         timeout-minutes: 15
         working-directory: src
         run: |
