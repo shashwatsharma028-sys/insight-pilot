@@ -212,6 +212,28 @@ class DatasetAuthorizer:
             _refuse(f"size {before.st_size} is outside 1..{self._limits.dataset_bytes} bytes")
         return src_fd, before
 
+    # ── staging by identity (P3.6-1; used by the container runtime) ──────────
+    def authorize_identity_into(self, identity, workspace) -> AuthorizedDataset:
+        """
+        Stage the dataset named by a DatasetIdentity (never a caller path) into `workspace`.
+        The copy is made by authorize_into from <trusted data dir>/<approved name>, and is kept only
+        if THREE digests agree: the approved pin, identity.sha256 (verified by the dispatcher's
+        identify() and profiled by P5), and the SHA-256 of the bytes actually copied; the size
+        must equal identity.size. Otherwise the copy is removed and DatasetNotAuthorizedError raised.
+        """
+        from v2.execution.runtime import DatasetIdentity
+        if not isinstance(identity, DatasetIdentity):
+            raise TypeError("identity must be a DatasetIdentity")
+        if identity.name not in self._approved:
+            _refuse("only the four bundled demonstration datasets are allowed in this build")
+        if identity.sha256 != self._approved[identity.name]:
+            _refuse("the requested identity does not match the approved SHA-256")
+        staged = self.authorize_into(os.path.join(self._data_dir, identity.name), workspace)
+        if (staged.name, staged.sha256, staged.size) != (identity.name, identity.sha256, identity.size):
+            workspace.remove_input(WORKSPACE_DATASET_NAME)
+            _refuse("the staged copy does not match the requested identity")
+        return staged
+
     # ── read-only identity check (P5.1A; used by the hardened dispatcher) ──
     def identify(self, csv_path) -> AuthorizedDataset:
         """

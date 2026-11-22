@@ -24,9 +24,17 @@ P5.1A (shared by both callers: executor_node and the P5 ContainerExecutionPort):
 - expected_sha256 (optional, P5): the digest the caller profiled. It must
   equal the verified digest, or DatasetNotAuthorizedError is raised.
 - prelude (optional): a PreludeId for the trusted in-image runner.
+
+P3.6-1: a chart is accepted only from a runtime that publishes through a ChartStore
+(runtime.chart_directory) and only at exactly the store's server-generated name for this
+task and run (chart_store.chart_filename), as a regular file that is not a symlink.
+Anything else stays a SandboxProtocolError. Runtimes without a chart store (every test
+double) still cannot return charts.
 """
 
+import os
 import secrets
+import stat
 import threading
 
 from v2.execution.errors import DatasetNotAuthorizedError, SandboxProtocolError, SandboxUnavailableError
@@ -100,7 +108,22 @@ class HardenedDispatcher:
         if result.outcome is ExecutionOutcome.BLOCKED_BY_SCANNER:
             raise SandboxProtocolError("only the dispatcher may report a scanner block")
         if result.chart_path is not None:
-            raise SandboxProtocolError("artifact extraction is not implemented; charts are not accepted yet")
+            self._check_chart_path(request, result.chart_path)
+
+    def _check_chart_path(self, request, path) -> None:
+        chart_dir = getattr(self.runtime, "chart_directory", None)
+        if not isinstance(chart_dir, str) or not chart_dir:
+            raise SandboxProtocolError("this runtime has no chart store; charts are not accepted")
+        from v2.execution.chart_store import chart_filename
+        expected = os.path.join(os.path.realpath(chart_dir), chart_filename(request.task_id, request.run_id))
+        if path != expected:
+            raise SandboxProtocolError("chart path is not the store-published name for this run")
+        try:
+            st = os.lstat(path)
+        except OSError:
+            raise SandboxProtocolError("the published chart does not exist") from None
+        if not stat.S_ISREG(st.st_mode) or st.st_nlink > 2:
+            raise SandboxProtocolError("the published chart is not a plain regular file")
 
     def _to_v1_tuple(self, result: ExecutionResult, ErrorType):
         import sandbox.executor as v1   # constants and classifier only; never v1.execute_code
@@ -109,7 +132,7 @@ class HardenedDispatcher:
             lines = [line for line in result.stdout.strip().splitlines()
                      if not line.startswith(_CHART_MARKER)]
             output = "\n".join(lines).strip()
-            return True, output or "Execution completed successfully.", None, None
+            return True, output or "Execution completed successfully.", result.chart_path, None
         if result.outcome is ExecutionOutcome.CODE_ERROR:
             stderr = result.stderr.strip()
             return False, stderr, None, v1.classify_error(stderr)

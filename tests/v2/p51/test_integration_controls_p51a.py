@@ -230,6 +230,9 @@ P36_P3_FILES = {
     # P3.6-0: evidence reconciliation (comment/docstring/limit alignment only)
     ".github/workflows/p3-ubuntu-rootless-probe.yml", "scripts/p3/rootless.py", "tests/v2/p3/test_rootless_p35b.py",
     "v2/__init__.py", "v2/execution/results.py", "v2/execution/image/image-expectations.json",
+    # P3.6-1: pure host components
+    "v2/execution/host_checks.py", "v2/execution/podman_argv.py", "v2/execution/result_mapping.py",
+    "tests/v2/p3/test_contract_purity.py",
 }
 
 

@@ -25,6 +25,8 @@ CONTRACT_MODULES = [
     "v2/execution/errors.py",
     "v2/execution/results.py",
     "v2/execution/runtime.py",     # P3.2b: request type and runtime interface
+    "v2/execution/host_checks.py",  # P3.6-1: pure host-suitability rules (moved from scripts/p3/rootless.py)
+    "v2/execution/podman_argv.py",  # P3.6-1: pure Podman argv builders and grammar
 ]
 ALLOWED_IMPORT_ROOTS = {"dataclasses", "enum", "typing", "re", "config", "v2"}
 ALLOWED_FROM_CONFIG = {"config.feature_flags"}
@@ -74,6 +76,7 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/chart_store.py",   # P3.4 (not wired into production yet)
     "v2/execution/supervisor_helpers.py",  # P3.4 pure helpers only
     "v2/execution/image/inert_entrypoint.py",  # P3.5a image entrypoint; inert (test_image_p35a.py)
+    "v2/execution/result_mapping.py",  # P3.6-1: decoded frame -> ExecutionResult; chart validation and publication
 ]
 
 

@@ -252,11 +252,19 @@ def test_p34_modules_are_not_wired_into_production():
                 "v2/execution/dispatch.py", "v2/execution/runtime.py", "v2/execution/__init__.py"]:
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             tree = ast.parse(f.read())
-        modules = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
-        names = {a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) for a in n.names}
+        imports = [n for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)]
+        # P3.6-1 (approved, narrow): the dispatcher may import ONLY the pure naming function
+        # chart_store.chart_filename, to check that a chart path is the store-published name.
+        allowed = {("v2/execution/dispatch.py", "v2.execution.chart_store"): {"chart_filename"}}
+        modules = {n.module for n in imports if (rel, n.module) not in allowed}
+        names = {a.name for n in imports for a in n.names}
         assert not modules & {"v2.execution.frame", "v2.execution.artifacts", "v2.execution.chart_store",
                               "v2.execution.supervisor_helpers"}, rel
-        assert not names & {"frame", "artifacts", "chart_store", "supervisor_helpers"}, rel
+        assert not names & {"frame", "artifacts", "chart_store", "supervisor_helpers", "ChartStore",
+                            "reencode_png", "decode_frame"}, rel
+        for n in imports:
+            if (rel, n.module) in allowed:
+                assert {a.name for a in n.names} <= allowed[(rel, n.module)], rel
 
 
 def test_production_hardened_execution_still_fails_closed():

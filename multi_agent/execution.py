@@ -213,8 +213,8 @@ class ContainerExecutionPort(ExecutionPort):
         result = dispatcher(code, dataset_path, task_id, expected_sha256=dataset_sha256, prelude=prelude)
         if not (isinstance(result, tuple) and len(result) == 4):
             raise ExecutionInfrastructureError("the hardened dispatcher returned an unexpected result")
-        if result[2] is not None:
-            raise ExecutionInfrastructureError("charts are not accepted from the hardened path yet")
+        if result[2] is not None and not (isinstance(result[2], str) and result[2]):
+            raise ExecutionInfrastructureError("the hardened dispatcher returned an invalid chart path")
         return _outcome_from_v1_tuple(result, self.name, self.isolation, self.clock() - t0)
 
 
