@@ -1,0 +1,21 @@
+{
+ "_note": "MEASURED: each script is the real sandbox wrapper text around trivial user code, run as 'python <file>' with the interpreter the sandbox uses; 21 rounds, order rotated per round, first round dropped (warm-up); ms",
+ "v1_prelude_only": {
+  "n": 20,
+  "median_ms": 1211.9,
+  "min_ms": 1042.3,
+  "max_ms": 1766.8
+ },
+ "v2_prelude_only": {
+  "n": 20,
+  "median_ms": 639.2,
+  "min_ms": 568.7,
+  "max_ms": 1042.6
+ },
+ "v2_prelude_plus_first_sns_use": {
+  "n": 20,
+  "median_ms": 1189.7,
+  "min_ms": 1092.6,
+  "max_ms": 1948.7
+ }
+}

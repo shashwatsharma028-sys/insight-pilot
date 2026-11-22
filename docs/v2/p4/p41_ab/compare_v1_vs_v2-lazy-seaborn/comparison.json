@@ -1,0 +1,177 @@
+{
+ "a": "v1",
+ "b": "v2-lazy-seaborn",
+ "claims": [
+  "pipeline_wall: median -1812.17 ms per pair (95% CI [-2048.24, -1621.91]), sign test p=0.0",
+  "sandbox_execution: median -570.82 ms per pair (95% CI [-594.25, -540.86]), sign test p=0.0"
+ ],
+ "correctness": {
+  "answers_correct": {
+   "a": 28,
+   "b": 28,
+   "delta": 0,
+   "regression": false
+  },
+  "behavior_matches_v1_snapshot": {
+   "a": 4,
+   "b": 4,
+   "delta": 0,
+   "regression": false
+  },
+  "chart_pixels_identical": {
+   "a": 7,
+   "b": 7,
+   "delta": 0,
+   "differing": [],
+   "regression": false
+  },
+  "charts_valid": {
+   "a": 7,
+   "b": 7,
+   "delta": 0,
+   "regression": false
+  },
+  "deterministic_datasets": {
+   "a": 4,
+   "b": 4,
+   "delta": 0,
+   "regression": false
+  },
+  "expected_failures_observed": {
+   "a": 1,
+   "b": 1,
+   "delta": 0,
+   "regression": false
+  },
+  "llm_calls": {
+   "a": 32,
+   "b": 32,
+   "delta": 0,
+   "regression": false
+  },
+  "quality_correct": {
+   "a": 20,
+   "b": 20,
+   "delta": 0,
+   "regression": false
+  },
+  "reports_valid": {
+   "a": 12,
+   "b": 12,
+   "delta": 0,
+   "regression": false
+  },
+  "retries_total": {
+   "a": 4,
+   "b": 4,
+   "delta": 0,
+   "regression": false
+  },
+  "run_errors_absent": {
+   "a": 0,
+   "b": 0,
+   "delta": 0,
+   "regression": false
+  },
+  "safety_blocked_executions": {
+   "a": 3,
+   "b": 3,
+   "delta": 0,
+   "regression": false
+  },
+  "sandbox_executions": {
+   "a": 16,
+   "b": 16,
+   "delta": 0,
+   "regression": false
+  },
+  "sandbox_failed_executions": {
+   "a": 4,
+   "b": 4,
+   "delta": 0,
+   "regression": false
+  },
+  "task_status_as_expected": {
+   "a": 13,
+   "b": 13,
+   "delta": 0,
+   "regression": false
+  },
+  "tasks_completed_of_expected": {
+   "a": 12,
+   "b": 12,
+   "delta": 0,
+   "regression": false
+  }
+ },
+ "environments_identical": true,
+ "latency": {
+  "pipeline_wall": {
+   "ci95_median_diff_ms": [
+    -2048.24,
+    -1621.91
+   ],
+   "median_a_ms": 4341.05,
+   "median_b_ms": 2519.22,
+   "median_diff_ms": -1812.17,
+   "n": 48,
+   "relative_change_of_medians": -0.4197,
+   "relative_median_paired_diff": -0.4174,
+   "sign_test_p": 0.0,
+   "verdict": "faster"
+  },
+  "sandbox_execution": {
+   "ci95_median_diff_ms": [
+    -594.25,
+    -540.86
+   ],
+   "median_a_ms": 1316.83,
+   "median_b_ms": 752.86,
+   "median_diff_ms": -570.82,
+   "n": 156,
+   "relative_change_of_medians": -0.4283,
+   "relative_median_paired_diff": -0.4335,
+   "sign_test_p": 0.0,
+   "verdict": "faster"
+  },
+  "unpaired_executions": 0
+ },
+ "llm_calls": {
+  "a": 32,
+  "b": 32,
+  "by_skill": {
+   "business_insights": {
+    "a": 12,
+    "b": 12
+   },
+   "code_generator": {
+    "a": 16,
+    "b": 16
+   },
+   "planner": {
+    "a": 4,
+    "b": 4
+   }
+  },
+  "delta": 0
+ },
+ "regressions": [],
+ "schema": "insightpilot.paired-comparison/1",
+ "tokens": {
+  "mock_scripted/estimated_chars_div_4": {
+   "a": {
+    "input": 44490,
+    "output": 3002
+   },
+   "b": {
+    "input": 44490,
+    "output": 3002
+   },
+   "input_delta": 0,
+   "note": "character estimates of scripted prompts: a change in PROMPT SIZE, not cost",
+   "output_delta": 0
+  }
+ },
+ "verdict": "improvement claims: pipeline_wall: median -1812.17 ms per pair (95% CI [-2048.24, -1621.91]), sign test p=0.0; sandbox_execution: median -570.82 ms per pair (95% CI [-594.25, -540.86]), sign test p=0.0",
+ "workload": "3ea6568486926ad46e7e3f453315cb802ec7784fd3af19e4364468c156267e28"
+}

@@ -1,6 +1,6 @@
 # InsightPilot V2: P4.0 evaluation and benchmarking foundation
 
-**Status:** IMPLEMENTED on `feature/v2-p4-evaluation`, branched from `feature/insightpilot-v2` at `1fd3af3c`. P4.1 is not started; it needs review.
+**Status:** P4.0 IMPLEMENTED on `feature/v2-p4-evaluation`, branched from `feature/insightpilot-v2` at `1fd3af3c`. **P4.1 (lazy-seaborn V2 sandbox prelude) is IMPLEMENTED and measured**: see `docs/v2/p4/P41_LAZY_SEABORN.md`. P4.2 is not started.
 
 ## What it measures
 
