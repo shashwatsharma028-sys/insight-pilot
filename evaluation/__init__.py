@@ -19,4 +19,4 @@ Nothing in V1 (agent/, sandbox/, utils/, ui/) imports this package. All
 outputs go to a caller-chosen directory, never to reports/ or lessons/.
 """
 
-HARNESS_VERSION = "p4.0"
+HARNESS_VERSION = "p4.1"     # p4.1: chart pixel hashes, execute_code variants, A/B runner

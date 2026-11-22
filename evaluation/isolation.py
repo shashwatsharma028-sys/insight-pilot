@@ -101,8 +101,13 @@ class Controller:
 
 
 @contextmanager
-def offline_run(scenario, workdir, clock=time.perf_counter):
-    """Yield (controller, executions, dirs) for one isolated run; restores everything on exit."""
+def offline_run(scenario, workdir, clock=time.perf_counter, execute_impl=None):
+    """
+    Yield (controller, executions, dirs) for one isolated run; restores everything on exit.
+
+    execute_impl: the sandbox implementation for this run (default: the V1 agent.nodes.executor.execute_code).
+    It is always called through the timing wrapper, so every variant is measured identically.
+    """
     import agent.graph  # noqa: F401  (imports every node module)
     import agent.memory.conversation  # noqa: F401
     import agent.nodes.executor as executor_node
@@ -155,7 +160,7 @@ def offline_run(scenario, workdir, clock=time.perf_counter):
         for name in patched:
             p.setattr(sys.modules[name], "get_llm", controller.get_llm)
 
-        real_execute = executor_node.execute_code
+        real_execute = execute_impl if execute_impl is not None else executor_node.execute_code
 
         def timed_execute(*args, **kwargs):
             t0 = clock()

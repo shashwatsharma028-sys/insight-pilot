@@ -22,6 +22,11 @@ def main(argv=None):
     r.add_argument("--reps", type=int, default=3)
     r.add_argument("--datasets", default="")
     r.add_argument("--variant", default="v1")
+    ab = sub.add_parser("ab", help="interleaved, counterbalanced multi-variant session plus comparisons")
+    ab.add_argument("--out", required=True)
+    ab.add_argument("--reps", type=int, default=6)
+    ab.add_argument("--datasets", default="")
+    ab.add_argument("--variants", default="v1,v2-lazy-seaborn,v1-control")
     c = sub.add_parser("compare")
     c.add_argument("a")
     c.add_argument("b")
@@ -44,6 +49,26 @@ def main(argv=None):
         s = result["summary"]
         ok = not s["errors"] and all(s["deterministic_across_repetitions"].values())
         return 0 if ok else 1
+    if a.cmd == "ab":
+        from evaluation import harness, paired, reports
+        ds = [d for d in a.datasets.split(",") if d] or None
+        variants = [v for v in a.variants.split(",") if v]
+        results = harness.run_ab_benchmark(out, variants=variants, datasets=ds, repetitions=a.reps)
+        worst = 0
+        for v, res in results.items():
+            reports.write_all(res, os.path.join(out, v))
+        for other in variants[1:]:
+            cmp = paired.compare(results[variants[0]], results[other])
+            d = os.path.join(out, f"compare_{variants[0]}_vs_{other}")
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, "comparison.json"), "w", encoding="utf-8") as f:
+                json.dump(cmp, f, indent=1, sort_keys=True)
+                f.write("\n")
+            with open(os.path.join(d, "comparison.md"), "w", encoding="utf-8") as f:
+                f.write(paired.markdown(cmp))
+            print(paired.markdown(cmp))
+            worst = max(worst, 1 if cmp["regressions"] else 0)
+        return worst
     from evaluation import paired
     with open(a.a, encoding="utf-8") as f:
         ra = json.load(f)

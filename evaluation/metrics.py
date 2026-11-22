@@ -5,6 +5,7 @@ Every function returns plain JSON-serialisable data. Answers use the golden
 tolerance (tests/v2/golden/compare.values_match: rel 1e-9, abs 1e-6).
 """
 
+import hashlib
 import json
 import math
 import os
@@ -112,7 +113,7 @@ def task_summary(rows) -> dict:
 
 def check_png(path, allowed_dir) -> dict:
     out = {"path_inside_output_dir": False, "exists": False, "png_signature": False, "decodes": False,
-           "width": None, "height": None}
+           "width": None, "height": None, "pixels_sha256": None}
     if not path:
         return out
     out["path_inside_output_dir"] = os.path.dirname(os.path.realpath(path)) == os.path.realpath(allowed_dir)
@@ -128,6 +129,7 @@ def check_png(path, allowed_dir) -> dict:
         with Image.open(path) as img:
             img.load()
             out["width"], out["height"] = img.size
+            out["pixels_sha256"] = hashlib.sha256(img.mode.encode() + img.tobytes()).hexdigest()
         out["decodes"] = out["width"] > 0 and out["height"] > 0
     except Exception:
         out["decodes"] = False

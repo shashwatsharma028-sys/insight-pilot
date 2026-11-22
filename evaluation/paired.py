@@ -61,7 +61,32 @@ CORRECTNESS = [
     ("reports_valid", lambda s: s["reports"]["valid"]),
     ("deterministic_datasets", lambda s: sum(s["deterministic_across_repetitions"].values())),
     ("run_errors_absent", lambda s: -len(s["errors"])),
+    ("behavior_matches_v1_snapshot", lambda s: s["behavior_matches_v1_snapshot"]),
 ]
+# Behaviour counts that must stay EQUAL (a change in either direction is a regression in behaviour).
+MUST_EQUAL = [
+    ("retries_total", lambda s: s["tasks"]["retries"]),
+    ("sandbox_executions", lambda s: s["sandbox_executions"]["total"]),
+    ("sandbox_failed_executions", lambda s: s["sandbox_executions"]["failed"]),
+    ("safety_blocked_executions", lambda s: s["sandbox_executions"]["blocked_by_safety_scan"]),
+    ("llm_calls", lambda s: s["llm_calls_per_benchmark_pass"]),
+]
+
+
+def chart_pixels(result) -> dict:
+    """(dataset, task) -> set of decoded-pixel SHA-256 values over all repetitions."""
+    out = {}
+    for r in result["runs"]:
+        for t, c in r["charts"]["per_task"].items():
+            out.setdefault(f"{r['dataset']}/{t}", set()).add(c.get("pixels_sha256"))
+    return out
+
+
+def compare_chart_pixels(a, b) -> dict:
+    pa, pb = chart_pixels(a), chart_pixels(b)
+    keys = sorted(set(pa) | set(pb))
+    differing = [k for k in keys if not (len(pa.get(k, ())) == 1 and pa.get(k) == pb.get(k) and None not in pa[k])]
+    return {"charts": len(keys), "identical": len(keys) - len(differing), "differing": differing}
 
 
 def sign_test(diffs):
@@ -99,6 +124,7 @@ def paired_latency(pairs, *, min_pairs=5, alpha=0.05, resamples=10000, seed=2026
     out = {"n": len(pairs), "median_a_ms": round(_median(a) * 1000, 2), "median_b_ms": round(_median(b) * 1000, 2),
            "median_diff_ms": round(_median(diffs) * 1000, 2),
            "relative_change_of_medians": round((_median(b) - _median(a)) / _median(a), 4) if _median(a) else None}
+    out["relative_median_paired_diff"] = round(_median(diffs) / _median(a), 4) if _median(a) else None
     if len(pairs) < min_pairs:
         out["verdict"] = "insufficient pairs"
         return out
@@ -143,6 +169,14 @@ def compare(a, b, **stats_kwargs):
     for name, get in CORRECTNESS:
         va, vb = get(sa), get(sb)
         correctness[name] = {"a": va, "b": vb, "delta": vb - va, "regression": vb < va}
+    for name, get in MUST_EQUAL:
+        va, vb = get(sa), get(sb)
+        correctness[name] = {"a": va, "b": vb, "delta": vb - va, "regression": vb != va}
+    pixels = compare_chart_pixels(a, b)
+    correctness["chart_pixels_identical"] = {"a": pixels["charts"], "b": pixels["identical"],
+                                             "delta": pixels["identical"] - pixels["charts"],
+                                             "regression": bool(pixels["differing"]),
+                                             "differing": pixels["differing"]}
     regressions = sorted(n for n, c in correctness.items() if c["regression"])
     exec_pairs, unpaired = _exec_pairs(a, b)
     latency = {"pipeline_wall": paired_latency(_run_pairs(a, b), **stats_kwargs),
@@ -186,13 +220,17 @@ def markdown(cmp) -> str:
              f"- **verdict: {cmp['verdict']}**", "", "| Correctness metric | A | B | Regression |", "|---|---|---|---|"]
     for name, c in cmp["correctness"].items():
         lines.append(f"| {name} | {c['a']} | {c['b']} | {'YES' if c['regression'] else 'no'} |")
-    lines += ["", "| Latency (paired) | n | median A ms | median B ms | median diff ms | 95% CI | sign p | verdict |",
-              "|---|---|---|---|---|---|---|---|"]
+    lines += ["", "| Latency (paired) | n | median A ms | median B ms | median paired diff (B-A) ms | 95% CI ms | "
+              "change of medians (B-A)/A | sign p | verdict |", "|---|---|---|---|---|---|---|---|---|"]
     for name in ("pipeline_wall", "sandbox_execution"):
         x = cmp["latency"][name]
+        rel = x.get("relative_change_of_medians")
         lines.append(f"| {name} | {x['n']} | {x.get('median_a_ms')} | {x.get('median_b_ms')} | "
-                     f"{x.get('median_diff_ms')} | {x.get('ci95_median_diff_ms')} | {x.get('sign_test_p')} | "
-                     f"{x['verdict']} |")
+                     f"{x.get('median_diff_ms')} | {x.get('ci95_median_diff_ms')} | "
+                     f"{'n/a' if rel is None else f'{rel * 100:+.1f}%'} | {x.get('sign_test_p')} | {x['verdict']} |")
+    lines.append("")
+    lines.append("Percentages use the baseline (A) median as the denominator. Verdicts need a 95% bootstrap CI of "
+                 "the median paired difference that excludes 0, an exact sign test p < 0.05 and at least 5 pairs.")
     lines += ["", f"- LLM calls: A {cmp['llm_calls']['a']}, B {cmp['llm_calls']['b']}"]
     for cls, t in cmp["tokens"].items():
         lines.append(f"- tokens `{cls}`: input {t['a']['input']} -> {t['b']['input']}, output {t['a']['output']} -> "

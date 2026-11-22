@@ -24,7 +24,8 @@ import sys
 import time
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, field
-from typing import Callable
+from itertools import permutations
+from typing import Callable, Optional
 
 from evaluation import HARNESS_VERSION, metrics, provenance
 from evaluation.isolation import offline_run
@@ -39,12 +40,28 @@ SAFE_MODE = False
 
 @dataclass(frozen=True)
 class Variant:
+    """
+    name/description; apply(ctx): a context manager entered around each run;
+    execute_factory(): returns the sandbox execute_code to use (None = the V1 implementation).
+    """
     name: str
     description: str
     apply: Callable = field(default=lambda ctx: nullcontext())
+    execute_factory: Optional[Callable] = None
 
 
-VARIANTS = {"v1": Variant("v1", "unchanged V1 LangGraph pipeline and V1 subprocess sandbox")}
+def _lazy_seaborn_executor():
+    from sandbox_v2.executor import execute_code
+    return execute_code
+
+
+VARIANTS = {
+    "v1": Variant("v1", "unchanged V1 LangGraph pipeline and V1 subprocess sandbox"),
+    "v1-control": Variant("v1-control", "identical to v1 under another name: the A/A control in interleaved A/B runs"),
+    "v2-lazy-seaborn": Variant("v2-lazy-seaborn", "V1 pipeline with the P4.1 V2 sandbox executor (lazy-seaborn "
+                               "prelude, sandbox_v2/); everything else unchanged",
+                               execute_factory=_lazy_seaborn_executor),
+}
 
 
 def register_variant(variant: Variant):
@@ -125,7 +142,8 @@ def run_once(dataset, repetition, out_dir, variant="v1", clock=time.perf_counter
     scenario = sc.SCENARIOS[dataset]
     workdir = os.path.join(out_dir, "runs", v.name, dataset, f"rep{repetition}")
     error = None
-    with offline_run(scenario, workdir, clock=clock) as (controller, executions, dirs):
+    execute_impl = v.execute_factory() if v.execute_factory else None
+    with offline_run(scenario, workdir, clock=clock, execute_impl=execute_impl) as (controller, executions, dirs):
         with v.apply({"dataset": dataset, "repetition": repetition, "dirs": dirs}):
             from agent.graph import analyst_graph
             t0 = clock()
@@ -170,7 +188,8 @@ def deterministic_view(run) -> dict:
                                 "llm_calls_by_skill", "tokens", "monitor", "behavior_matches_v1_snapshot")} | {
         "executions": [{k: e[k] for k in e if k != "seconds"} for e in run["executions"]],
         "charts": {"expected": run["charts"]["expected"], "valid": run["charts"]["valid"],
-                   "sizes": {t: (c["width"], c["height"]) for t, c in run["charts"]["per_task"].items()}},
+                   "sizes": {t: (c["width"], c["height"]) for t, c in run["charts"]["per_task"].items()},
+                   "pixels": {t: c.get("pixels_sha256") for t, c in run["charts"]["per_task"].items()}},
         "reports": {k: (run["reports"][k] if not isinstance(run["reports"].get(k), dict)
                         else run["reports"][k].get("valid")) for k in run["reports"]},
     }
@@ -217,6 +236,61 @@ def summarize(runs, datasets, repetitions) -> dict:
                                                                 for c in r["llm_calls"]]),
                     "by_dataset": by_ds},
     }
+
+
+def ab_schedule(variants, datasets, repetitions):
+    """
+    Dataset-level interleaving: for every (repetition, dataset) cell, all variants run back to back, in an
+    order that cycles through every permutation, so each variant takes each position equally often when
+    the number of cells is a multiple of len(variants)!.
+    """
+    perms = list(permutations(variants))
+    out, cell = [], 0
+    for rep in range(repetitions):
+        for ds in datasets:
+            for pos, v in enumerate(perms[cell % len(perms)]):
+                out.append({"repetition": rep, "dataset": ds, "variant": v, "position": pos, "cell": cell})
+            cell += 1
+    return out
+
+
+def schedule_balance(schedule) -> dict:
+    counts = {}
+    for s in schedule:
+        counts.setdefault(s["variant"], {}).setdefault(s["position"], 0)
+        counts[s["variant"]][s["position"]] += 1
+    return counts
+
+
+def run_ab_benchmark(out_dir, variants=("v1", "v2-lazy-seaborn", "v1-control"), datasets=None, repetitions=6,
+                     clock=time.perf_counter) -> dict:
+    """Run several variants interleaved and counterbalanced in ONE session; return {variant: result}."""
+    from tests.v2.golden import scenarios as sc
+    datasets = sorted(datasets or sc.SCENARIOS)
+    variants = list(variants)
+    if len(variants) < 2 or len(set(variants)) != len(variants):
+        raise ValueError("need at least two distinct variants")
+    for v in variants:
+        if v not in VARIANTS:
+            raise ValueError(f"unknown variant {v!r}")
+    if repetitions < 1:
+        raise ValueError("repetitions must be >= 1")
+    started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    schedule = ab_schedule(variants, datasets, repetitions)
+    runs = {v: [] for v in variants}
+    for i, s in enumerate(schedule):
+        r = run_once(s["dataset"], s["repetition"], out_dir, variant=s["variant"], clock=clock)
+        r["schedule_index"], r["schedule_position"] = i, s["position"]
+        runs[s["variant"]].append(r)
+    workload, env = workload_fingerprint(datasets), environment()
+    session = {"variants": variants, "cells": len(schedule) // len(variants), "runs": len(schedule),
+               "design": "dataset-level interleaving; variant order cycles through all permutations",
+               "position_balance": schedule_balance(schedule)}
+    return {v: {"schema": "insightpilot.benchmark/1", "harness": HARNESS_VERSION, "variant": v,
+                "variant_description": VARIANTS[v].description, "started_utc": started, "workload": workload,
+                "environment": env, "llm": "scripted mock (tests/v2/mock_llm.py); no provider calls are possible",
+                "ab_session": session, "summary": summarize(runs[v], datasets, repetitions), "runs": runs[v]}
+            for v in variants}
 
 
 def run_benchmark(out_dir, datasets=None, repetitions=3, variant="v1", clock=time.perf_counter) -> dict:
