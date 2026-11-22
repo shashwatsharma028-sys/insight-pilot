@@ -3,6 +3,7 @@ CLI (offline only):
 
     python -m evaluation run --out DIR [--reps N] [--datasets sales,student] [--variant v1]
     python -m evaluation compare A/benchmark.json B/benchmark.json --out DIR
+    python -m evaluation multi-agent --out DIR [--strategy v1|lazy-seaborn] [--mode subprocess|literal] [--cases a,b]
 
 Outputs never go to the repository's reports/ or lessons/ folders: --out is required.
 """
@@ -31,6 +32,11 @@ def main(argv=None):
     c.add_argument("a")
     c.add_argument("b")
     c.add_argument("--out", required=True)
+    m = sub.add_parser("multi-agent", help="P5.0 multi-agent prototype with scripted agents and injected faults")
+    m.add_argument("--out", required=True)
+    m.add_argument("--strategy", default="v1", choices=("v1", "lazy-seaborn"))
+    m.add_argument("--mode", default="subprocess", choices=("subprocess", "literal"))
+    m.add_argument("--cases", default="")
     a = ap.parse_args(argv)
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.abspath(a.out)
@@ -69,6 +75,24 @@ def main(argv=None):
             print(paired.markdown(cmp))
             worst = max(worst, 1 if cmp["regressions"] else 0)
         return worst
+    if a.cmd == "multi-agent":
+        from evaluation import multi_agent
+        cases = [x for x in a.cases.split(",") if x] or None
+        unknown = sorted(set(cases or []) - set(multi_agent.CASES))
+        if unknown:
+            print(f"unknown case(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        suite = multi_agent.run_suite(out, cases, a.strategy, a.mode)
+        os.makedirs(out, exist_ok=True)
+        with open(os.path.join(out, "multi_agent.json"), "w", encoding="utf-8") as f:
+            json.dump(suite, f, indent=1, sort_keys=True)
+            f.write("\n")
+        text = multi_agent.markdown(suite)
+        with open(os.path.join(out, "summary.md"), "w", encoding="utf-8") as f:
+            f.write(text)
+        print(text)
+        s = suite["summary"]
+        return 0 if s["expectations_met"] == s["cases"] and not s["incorrect_claims_accepted"] else 1
     from evaluation import paired
     with open(a.a, encoding="utf-8") as f:
         ra = json.load(f)
