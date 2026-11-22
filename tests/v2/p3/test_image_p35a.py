@@ -446,7 +446,11 @@ def test_image_directory_holds_only_reviewed_files():
     assert found == sorted(["Containerfile", "requirements.lock", "inert_entrypoint.py", "dependency-inventory.json",
                             "image-expectations.json", "base/base-image.json", "base/index.json",
                             "base/manifest-amd64.json", "base/manifest-arm64.json", "base/config-amd64.json",
-                            "base/config-arm64.json"])
+                            "base/config-arm64.json",
+                            # P3.6-2 (approved): trusted runtime SOURCE only; not in CONTEXT_FILES, so the
+                            # image built from this directory is unchanged and still inert until P3.6-4.
+                            "runtime/supervisor.py", "runtime/runner.py", "runtime/selftest.py",
+                            "runtime/preludes.json"])
 
 
 # ── 7. no unexpected executable entrypoints ─────────────────────────────────

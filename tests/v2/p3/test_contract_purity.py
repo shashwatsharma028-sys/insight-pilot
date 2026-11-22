@@ -77,6 +77,10 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/supervisor_helpers.py",  # P3.4 pure helpers only
     "v2/execution/image/inert_entrypoint.py",  # P3.5a image entrypoint; inert (test_image_p35a.py)
     "v2/execution/result_mapping.py",  # P3.6-1: decoded frame -> ExecutionResult; chart validation and publication
+    # P3.6-2: trusted in-image source (not in the build context until P3.6-4; tests/v2/p36)
+    "v2/execution/image/runtime/supervisor.py",
+    "v2/execution/image/runtime/runner.py",
+    "v2/execution/image/runtime/selftest.py",
 ]
 
 

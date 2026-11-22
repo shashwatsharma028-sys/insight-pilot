@@ -88,7 +88,8 @@ def test_every_executor_reference_in_the_repository_is_allowlisted():
 def test_no_new_subprocess_launch_sites_outside_the_known_executors():
     allowed = {"sandbox/executor.py", "sandbox_v2/executor.py", "scripts/p3/rootless.py", "scripts/p3/image_tool.py",
                "scripts/p3/workload_compat.py", "scripts/p3/hermetic_reference.py", "scripts/p3/ci_report.py",
-               "scripts/p3/image_inspect.py", "evaluation/harness.py"}
+               "scripts/p3/image_inspect.py", "evaluation/harness.py",
+               "v2/execution/image/runtime/supervisor.py"}          # P3.6-2: PID 1 starts the runner child
     offenders = set()
     for dirpath, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
@@ -233,6 +234,10 @@ P36_P3_FILES = {
     # P3.6-1: pure host components
     "v2/execution/host_checks.py", "v2/execution/podman_argv.py", "v2/execution/result_mapping.py",
     "tests/v2/p3/test_contract_purity.py",
+    # P3.6-2: trusted in-image source (outside the build context), prelude generator, image-listing guard
+    "v2/execution/image/runtime/supervisor.py", "v2/execution/image/runtime/runner.py",
+    "v2/execution/image/runtime/selftest.py", "v2/execution/image/runtime/preludes.json",
+    "scripts/p3/gen_preludes.py", "tests/v2/p3/test_image_p35a.py",
 }
 
 
