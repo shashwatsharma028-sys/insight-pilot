@@ -17,6 +17,14 @@
 # never runs a container. `sudo -n true` is used only as a no-op check of
 # whether the runner account has passwordless sudo, which the report records.
 
+# Run 1 (45001295990, commit 2f3e1fbb): gates 1-2 and the readiness tests
+# passed. The enforcement probe was REFUSED only for two unexpected bind mounts,
+# /etc/passwd and /etc/group (ext4 from /dev/mapper/cow-root): Podman injects
+# these for a --user that the image lacks. Correction (approved): every
+# container now gets --passwd=false. The mount allowlist is unchanged (no
+# relaxation). This revision also records Podman's own --passwd help text and
+# publishes the probe's enforced values.
+
 name: p3-ubuntu-rootless-probe
 
 on:
@@ -116,14 +124,25 @@ jobs:
           rc=0; python3 -I -B scripts/p3/rootless.py check-host > "$P3_OUT/gate2.txt" 2>&1 || rc=$?
           echo "$rc" > "$P3_OUT/gate2.rc"; cat "$P3_OUT/gate2.txt"; echo "gate2 exit=$rc"
 
+      - name: Podman --passwd support on this runner (help text only, no container)
+        timeout-minutes: 1
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
+          podman --version | tee "$P3_OUT/passwd_help.txt"
+          podman run --help 2>&1 | grep -E -- '--passwd|--group-entry' | tee -a "$P3_OUT/passwd_help.txt" || echo "no --passwd option listed" | tee -a "$P3_OUT/passwd_help.txt"
+
       - name: Gate 3 - enforcement probe (real rootless container on the digest-pinned base; inspector only)
         timeout-minutes: 8
         working-directory: src
         run: |
           set -uo pipefail
           P3_OUT="$RUNNER_TEMP/p3"; mkdir -p "$P3_OUT"
-          rc=0; python3 -I -B scripts/p3/rootless.py check-host --probe > "$P3_OUT/gate3.txt" 2>&1 || rc=$?
+          rc=0; python3 -I -B scripts/p3/rootless.py check-host --probe --evidence "$P3_OUT/probe.json" > "$P3_OUT/gate3.txt" 2>&1 || rc=$?
           echo "$rc" > "$P3_OUT/gate3.rc"; cat "$P3_OUT/gate3.txt"; echo "gate3 exit=$rc"
+          if [ -s "$P3_OUT/probe.json" ]; then
+            python3 -I -B -c 'import json,sys; r=json.load(open(sys.argv[1])); print(json.dumps({k: r[k] for k in ("uid","gid","euid","egid","groups","no_new_privs","seccomp","caps","uid_map","net_interfaces","routes","cgroup","write_probes","file_write_probes","env_names")}, indent=1)); print("mountpoints:", [m["mountpoint"] for m in r["mounts"]])' "$P3_OUT/probe.json" | tee "$P3_OUT/probe_summary.txt"
+          fi
 
       - name: Existing P3.5b readiness tests (offline logic, pytest without the V1 conftest)
         timeout-minutes: 5
@@ -134,7 +153,7 @@ jobs:
           rc=0
           { python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install -q --disable-pip-version-check pytest==9.1.1 \
             && PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/venv/bin/python" -m pytest --noconftest -q -p no:cacheprovider \
-               tests/v2/p3/test_rootless_p35b.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
+               tests/v2/p3/test_rootless_p35b.py tests/v2/p3/test_image_p35a.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
           echo "$rc" > "$P3_OUT/tests.rc"; tail -n 25 "$P3_OUT/tests.txt"; echo "tests exit=$rc"
 
       - name: Evidence report (pass/fail; fails the job unless the enforcement probe passed)
@@ -157,6 +176,9 @@ jobs:
             echo "A root-equivalent account cannot replace the VE-2 unprivileged accounts for non-root filesystem validation, whatever the gates say."
             echo; echo "### Unavailable prerequisites (gate 2)"; echo '```'
             grep -E '^  - ' "$P3_OUT/gate2.txt" 2>/dev/null || echo "(none reported)"; echo '```'
+            echo; echo "### Podman --passwd support"; echo '```'; cat "$P3_OUT/passwd_help.txt" 2>/dev/null; echo '```'
+            echo; echo "### Enforced values reported inside the probe container"; echo '```'
+            cat "$P3_OUT/probe_summary.txt" 2>/dev/null || echo "(no evidence: probe refused)"; echo '```'
             echo; echo "### Enforcement probe output (gate 3, tail)"; echo '```'
             tail -n 40 "$P3_OUT/gate3.txt" 2>/dev/null || echo "(not run)"; echo '```'
             echo; echo "### Runner"; echo '```'; cat "$P3_OUT/specs.txt" 2>/dev/null; echo '```'
