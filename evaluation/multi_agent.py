@@ -317,6 +317,8 @@ def _summary(m) -> str:
         return p["verdict"] + (f": {p['problems'][0]}" if p["problems"] else "")
     if k == "agent_error":
         return f"{p.get('error_type')}: {str(p.get('message'))[:80]}"
+    if k == "execution_terminated":
+        return f"{p.get('category')}: {p.get('error_class')}"
     return ""
 
 

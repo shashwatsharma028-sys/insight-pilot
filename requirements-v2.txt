@@ -1,0 +1,13 @@
+# InsightPilot V2-only environment (P5 multi-agent prototype, P5.1A).
+#
+# The examination build uses requirements.txt, which is deliberately UNCHANGED.
+# This file adds one exact LangGraph pair that is tested with the complete offline
+# regression suite (environment B, CPython 3.11.18; identical to docs/v2/ENV_B_PINS.txt).
+# Do not change these pins without re-running the full suite; see
+# docs/v2/P51_READINESS_REVIEW.md section 4 for the compatibility matrix.
+#
+#   python -m pip install -r requirements-v2.txt
+-r requirements.txt
+langgraph==1.2.9
+langgraph-checkpoint==4.1.1
+langchain-core==1.4.9

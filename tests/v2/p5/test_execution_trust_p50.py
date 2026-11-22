@@ -61,19 +61,29 @@ def test_hardened_flags_force_the_hardened_port_even_for_fixtures():
                       ex.LegacyV1SubprocessExecution)
 
 
-def test_hardened_placeholder_fails_closed_without_starting_a_process(no_process):
+def test_hardened_port_fails_closed_without_starting_a_process(no_process):
+    """P5.1A: without a HARDENED bootstrap the container port refuses; it never starts anything."""
+    from multi_agent.dataset import sha256_file
     port = ex.HardenedContainerExecution()
-    assert port.hardened is True
+    assert port.hardened is True and isinstance(port, ex.ContainerExecutionPort)
     with pytest.raises(ex.IsolationUnavailable):
+        port.execute("print(1)", SALES, "t", dataset_sha256=sha256_file(SALES))
+    from v2.execution.errors import DatasetNotAuthorizedError
+    with pytest.raises(DatasetNotAuthorizedError):           # no profiled identity: refused before anything
         port.execute("print(1)", SALES, "t")
     assert no_process == []
 
 
-def test_hardened_port_delegates_to_a_configured_backend():
-    class Backend:
-        def run(self, code, path, tid):
-            return ex.ExecutionOutcome(True, "CLAIM row_count=293", "", "", "", "fake", "container", 0.0, False)
-    assert ex.HardenedContainerExecution(Backend()).execute("x", SALES, "t").ok
+def test_hardened_port_has_no_injectable_backend_or_own_execution_logic():
+    """P5.0's injectable backend (an unvalidated second path) is gone: only the shared dispatcher remains."""
+    import inspect
+    assert list(inspect.signature(ex.ContainerExecutionPort).parameters) == ["strategy", "clock"]
+    with pytest.raises(ValueError):
+        ex.ContainerExecutionPort(object())
+    src = inspect.getsource(ex.ContainerExecutionPort)
+    for forbidden in ("subprocess", "Popen", "execute_code", ".run(", "backend"):
+        assert forbidden not in src
+    assert "hardened_dispatcher()" in src
 
 
 def test_analyst_refuses_a_provider_model_on_a_legacy_port():
@@ -94,17 +104,20 @@ def test_trust_is_rechecked_at_run_time():
 
 
 def test_provider_model_with_hardened_port_fails_closed_end_to_end(no_process):
+    """P5.1A: unavailable isolation terminates the run at the first attempt; it is never retried."""
     sup, calls = build_team(ProviderLikeLLM("sales", mode="literal"), ex.HardenedContainerExecution(),
                             scripted.approve_all)
     out = sup.run(SALES)
     f = out["final"]
-    assert f["status"] == "completed_with_failures"
-    assert f["accepted_claims"] == {}
-    assert all(t["status"] == "failed" and t["attempts"] == 3 for t in f["tasks"].values())
-    errors = [e for e in out["events"] if e["type"] == "agent_error"]
-    assert errors and all("IsolationUnavailable" in e["problems"][0] for e in errors)
+    assert f["status"] == "isolation_unavailable" and f["run_complete"] is False
+    assert f["accepted_claims"] == {} and f["verified_claims_for_review"] == {}
+    assert f["tasks"]["sales_t1"]["status"] == "aborted" and f["tasks"]["sales_t1"]["attempts"] == 1
+    assert all(t["attempts"] == 0 for k, t in f["tasks"].items() if k != "sales_t1")
+    terms = [e for e in out["events"] if e["type"] == "execution_terminated"]
+    assert [(e["category"], e["error_class"]) for e in terms] == [("isolation_unavailable", "IsolationUnavailable")]
+    assert [e for e in out["events"] if e["type"] == "agent_error"] == []
     assert no_process == []
-    assert not [c for c in calls if c["agent"] == "business_insight_agent"]
+    assert [c["agent"] for c in calls] == ["planning_agent", "data_analyst_agent"]
 
 
 def test_langchain_adapter_is_labelled_provider_and_untrusted():

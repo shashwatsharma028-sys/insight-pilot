@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from multi_agent import contracts as c
 from multi_agent import prompts
 from multi_agent import verification
-from multi_agent.execution import CodeTrust, UntrustedCodeRefused
+from multi_agent.execution import (CodeTrust, ExecutionInfrastructureError, ExecutionOutcome,
+                                   UntrustedCodeRefused, classify_execution_failure)
 from multi_agent.llm import LLMOutputError
 
 
@@ -130,7 +131,17 @@ class DataAnalystAgent:
         code = _unfence(reply.content)
         if len(code) > c.MAX_CODE_CHARS:
             raise LLMOutputError("generated code is too long")
-        outcome = self.execution.execute(code, req["dataset_path"], f"{task['id']}_a{req['attempt']}")
+        try:
+            outcome = self.execution.execute(code, req["dataset_path"], f"{task['id']}_a{req['attempt']}",
+                                             dataset_sha256=req["profile"]["dataset_sha256"])
+        except Exception as e:
+            if classify_execution_failure(e) is None:      # unknown port failure: fail closed, never retried
+                raise ExecutionInfrastructureError(f"execution port failed ({type(e).__name__})") from e
+            raise
+        if not isinstance(outcome, ExecutionOutcome):
+            raise ExecutionInfrastructureError("execution port returned something other than an ExecutionOutcome")
+        if self.execution.hardened and outcome.isolation != "rootless_container":
+            raise ExecutionInfrastructureError("hardened port reported a result without container isolation")
         execution = outcome.as_dict()
         execution["stdout"] = execution["stdout"][:c.MAX_STDOUT_CHARS]
         execution["error"] = execution["error"][:2000]

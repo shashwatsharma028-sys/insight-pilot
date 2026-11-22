@@ -41,7 +41,10 @@ ROUTES = {
     (SUPERVISOR, VERIFIER, "verification_request"), (VERIFIER, SUPERVISOR, "verification_report"),
     (SUPERVISOR, INSIGHT, "insight_request"), (INSIGHT, SUPERVISOR, "insight_report"),
     (SUPERVISOR, VERIFIER, "insight_check_request"), (VERIFIER, SUPERVISOR, "insight_check_report"),
-} | {(a, SUPERVISOR, "agent_error") for a in AGENTS}
+} | {(a, SUPERVISOR, "agent_error") for a in AGENTS} | {
+    # P5.1A: an infrastructure or policy failure of the execution port; terminates the run.
+    (ANALYST, SUPERVISOR, "execution_terminated"),
+}
 
 REPLY_KIND = {"plan_request": "plan", "approval_request": "approval_decision",
               "analysis_request": "analysis_result", "verification_request": "verification_report",
@@ -220,6 +223,21 @@ def validate_insight_check_report(payload, task):
         _require(problems, payload["verdict"] in ("accepted", "rejected"), "unknown verdict")
         _require(problems, (payload["verdict"] == "accepted") == (not payload["problems"]),
                  "verdict is inconsistent with the problems list")
+    return problems
+
+
+def validate_execution_terminated(payload):
+    """Built by the trusted node wrapper from the exception CLASS, never from model output."""
+    from multi_agent.execution import (EXECUTION_REFUSED, INFRASTRUCTURE_CLASSES, ISOLATION_UNAVAILABLE,
+                                       POLICY_CLASSES)
+    problems = []
+    if not _fields(problems, payload, "execution_terminated", ("category", "error_class", "message")):
+        return problems
+    allowed = {ISOLATION_UNAVAILABLE: INFRASTRUCTURE_CLASSES, EXECUTION_REFUSED: POLICY_CLASSES}
+    if _require(problems, payload["category"] in allowed, f"unknown category {payload['category']!r}"):
+        _require(problems, payload["error_class"] in allowed[payload["category"]],
+                 f"error_class {payload['error_class']!r} does not belong to {payload['category']!r}")
+    _str(problems, payload["message"], "message", 500, empty=True)
     return problems
 
 

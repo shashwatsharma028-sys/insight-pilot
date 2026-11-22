@@ -265,7 +265,7 @@ class LiteralPrintExecution(ExecutionPort):
     def __init__(self):
         self.calls = []
 
-    def execute(self, code, dataset_path, task_id):
+    def execute(self, code, dataset_path, task_id, dataset_sha256=None):
         from agent.rules_engine import scan_code_safety
         self.calls.append(task_id)
         out = dict(stdout="", error="", error_type="", chart_path="", backend=self.name,

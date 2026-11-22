@@ -26,7 +26,20 @@ Policies:
   back to the next attempt. Nothing is written to the repository's lessons/.
 
 Termination statuses: completed, completed_with_failures, rejected_by_human,
-plan_invalid, approval_failed, budget_exhausted, profile_failed.
+plan_invalid, approval_failed, budget_exhausted, profile_failed, and (P5.1A)
+isolation_unavailable and execution_refused.
+
+P5.1A execution-failure policy:
+- an infrastructure failure (isolation unavailable, protocol violation, the
+  V1 tripwire, an unexpected port error) or a policy refusal (dataset not
+  authorised, untrusted code on a disallowed port) reaches the Supervisor as
+  an execution_terminated handoff, built by the trusted node wrapper from the
+  exception class. The run terminates at once: no retry, no further task, no
+  insight call, no fallback executor;
+- only a COMPLETE run (completed, completed_with_failures) promotes verified
+  claims and insights to final findings. Any other termination keeps the
+  claims already verified by independent recomputation under
+  verified_claims_for_review, with accepted_claims empty and run_complete False.
 
 This graph is separate from agent/graph.py (the V1 graph), which is unchanged.
 """
@@ -37,16 +50,24 @@ import time
 from typing import Annotated, Optional, TypedDict
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import Command, interrupt
+
+try:
+    from langgraph.types import Command, interrupt
+except ImportError as exc:  # pragma: no cover - depends on the installed LangGraph
+    raise ImportError("multi_agent needs the V2 environment (requirements-v2.txt): this LangGraph has no "
+                      "langgraph.types.interrupt/Command") from exc
 
 from multi_agent import contracts as c
 from multi_agent import dataset as dsmod
+from multi_agent.execution import EXECUTION_REFUSED, ISOLATION_UNAVAILABLE, classify_execution_failure
 
 DEFAULT_GOAL = "Analyse this dataset and report the most important verified findings."
 DEFAULT_LIMITS = {"max_retries": 2, "max_plan_attempts": 2, "max_insight_attempts": 2, "max_steps": 200,
                   "max_feedback_items": 12}
-TERMINAL_STATUSES = ("completed", "completed_with_failures", "rejected_by_human", "plan_invalid",
-                     "approval_failed", "budget_exhausted", "profile_failed")
+COMPLETE_STATUSES = ("completed", "completed_with_failures")
+TERMINAL_STATUSES = COMPLETE_STATUSES + ("rejected_by_human", "plan_invalid", "approval_failed",
+                                         "budget_exhausted", "profile_failed",
+                                         "isolation_unavailable", "execution_refused")
 FINALIZE = "finalize"
 
 
@@ -136,8 +157,8 @@ class Supervisor:
 
     def start_interactive(self, dataset_path, thread_id, goal=DEFAULT_GOAL, limits=None):
         """Run until the human approval gate pauses. Returns (graph, config, state)."""
-        from langgraph.checkpoint.memory import InMemorySaver
-        graph = self.build(checkpointer=InMemorySaver())
+        from multi_agent.compat import in_memory_saver
+        graph = self.build(checkpointer=in_memory_saver())
         cfg = self.run_config(limits, thread_id)
         return graph, cfg, graph.invoke(self.initial_state(dataset_path, goal, limits), cfg)
 
@@ -168,7 +189,12 @@ class Supervisor:
             try:
                 payload, kind = call(env), c.REPLY_KIND[env["kind"]]
             except Exception as e:                                   # agent failure -> typed error handoff
-                payload, kind = {"error_type": type(e).__name__, "message": str(e)[:2000]}, "agent_error"
+                terminal = classify_execution_failure(e) if me == c.ANALYST else None
+                if terminal is not None:                             # infrastructure or policy: ends the run
+                    payload, kind = {"category": terminal[0], "error_class": terminal[1],
+                                     "message": str(e)[:500]}, "execution_terminated"
+                else:
+                    payload, kind = {"error_type": type(e).__name__, "message": str(e)[:2000]}, "agent_error"
             return self._reply(state, env, me, kind, payload)
         return node
 
@@ -219,8 +245,10 @@ class Supervisor:
         try:
             if aw is None:
                 raise c.HandoffRejected(["reply without an outstanding request"])
-            c.check_envelope(env, recipient=c.SUPERVISOR, kinds={c.REPLY_KIND[aw["kind"]], "agent_error"},
-                             reply_to=aw["seq"])
+            kinds = {c.REPLY_KIND[aw["kind"]], "agent_error"}
+            if aw["kind"] == "analysis_request":
+                kinds.add("execution_terminated")
+            c.check_envelope(env, recipient=c.SUPERVISOR, kinds=kinds, reply_to=aw["seq"])
             problems = []
             if env["sender"] != aw["recipient"]:
                 problems.append(f"reply from {env['sender']!r}, expected {aw['recipient']!r}")
@@ -235,6 +263,14 @@ class Supervisor:
                 self._step_failed(s, aw, ["invalid handoff: " + p for p in e.problems], lim, lessons)
             return
         payload, kind = env["payload"], env["kind"]
+        if kind == "execution_terminated":
+            problems = c.validate_execution_terminated(payload)
+            category = payload.get("category") if not problems else ISOLATION_UNAVAILABLE   # malformed: fail closed
+            events.append({"type": "execution_terminated", "seq": env["seq"], "category": category,
+                           "error_class": payload.get("error_class") if not problems else None,
+                           "problems": problems})
+            self._terminate_execution(s, category, payload.get("error_class") if not problems else "malformed")
+            return
         if kind == "agent_error":
             problems = c.validate_agent_error(payload) or [f"{payload['error_type']}: {payload['message']}"]
             events.append({"type": "agent_error", "agent": env["sender"], "seq": env["seq"], "problems": problems})
@@ -312,6 +348,17 @@ class Supervisor:
             self._fail_insight(s, lim, lessons, payload["problems"])
 
     # failure handling (bounded)
+
+    def _terminate_execution(self, s, category, error_class):
+        """Infrastructure or policy failure: stop the whole run now. Never retried."""
+        assert category in (ISOLATION_UNAVAILABLE, EXECUTION_REFUSED)
+        tid = self._current_id(s)
+        t = s["tasks"][tid]
+        t["analysis"], t["verification"], t["candidate_insights"] = None, None, None
+        t["status"], t["stage"] = "aborted", "done"
+        t["failure"] = f"run terminated: {category} ({error_class})"
+        t["history"].append({"stage": "analysis", "attempt": t["attempts"], "outcome": category})
+        s["status"] = category
 
     def _step_failed(self, s, aw, problems, lim, lessons):
         kind = aw["kind"]
@@ -436,22 +483,30 @@ class Supervisor:
         if not status:
             status = "completed" if ids and all(tasks[i]["status"] == "completed" for i in ids) else \
                 "completed_with_failures"
-        accepted = {}
+        verified = {}
         for i in ids:
-            accepted.update(tasks[i].get("verified_claims") or {})
+            if tasks[i]["status"] != "aborted":
+                verified.update(tasks[i].get("verified_claims") or {})
+        complete = status in COMPLETE_STATUSES
+        insights = [dict(x, task_id=i) for i in ids for x in (tasks[i].get("insights") or [])]
         events = state.get("events") or []
         final = {
             "status": status,
-            "accepted_claims": dict(sorted(accepted.items())),
+            "run_complete": complete,
+            # final findings only from a complete run; otherwise verified claims are kept for review only
+            "accepted_claims": dict(sorted(verified.items())) if complete else {},
+            "verified_claims_for_review": {} if complete else dict(sorted(verified.items())),
             "planned_task_ids": [t["id"] for t in (state.get("plan") or {}).get("tasks", [])],
             "approved_task_ids": ids,
             "tasks": {i: {k: tasks[i][k] for k in ("status", "attempts", "insight_attempts", "failure",
                                                     "verified_claims", "insights", "history")} for i in ids},
-            "insights": [dict(x, task_id=i) for i in ids for x in (tasks[i].get("insights") or [])],
+            "insights": insights if complete else [],
+            "insights_for_review": [] if complete else insights,
             "steps": state.get("steps", 0),
             "messages": len(state.get("messages") or []),
             "handoffs_rejected": sum(1 for e in events if e["type"] == "handoff_rejected"),
             "agent_errors": sum(1 for e in events if e["type"] == "agent_error"),
+            "execution_terminations": sum(1 for e in events if e["type"] == "execution_terminated"),
             "lessons": len(state.get("lessons") or []),
             "approval_note": state.get("approval_note"),
         }

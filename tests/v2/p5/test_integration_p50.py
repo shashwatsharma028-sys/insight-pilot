@@ -93,13 +93,27 @@ def _git(*args):
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
 
 
+# P5.1A (approved, narrow): the only protected path allowed to differ from the P4.1 base is the
+# P3 decision-D1 flag rule, and only with exactly the content approved on the P3 lineage
+# (blob of config/feature_flags.py at 4cd107e0). Any other change, or any other content, fails.
+APPROVED_P3_CHANGES = {"config/feature_flags.py": "dca46d69f3bf22b35bde88480293fc4a55e41c43"}
+PROTECTED = ("agent", "sandbox", "utils", "ui", "rules", "skills", "data", "lessons", "config", "sandbox_v2",
+             "tests/v2/golden", "requirements.txt")
+
+
 def test_no_protected_v1_path_differs_from_the_p41_base():
     probe = _git("cat-file", "-e", BASE + "^{commit}")
     if probe.returncode != 0:
         pytest.fail("P4.1 base commit not available in this checkout")
-    diff = _git("diff", "--name-only", BASE, "--", "agent", "sandbox", "utils", "ui", "rules", "skills", "data",
-                "lessons", "config", "sandbox_v2", "tests/v2/golden", "requirements.txt")
-    assert diff.returncode == 0 and diff.stdout.strip() == ""
+    diff = _git("diff", "--name-only", BASE, "--", *PROTECTED)
+    assert diff.returncode == 0
+    changed = set(diff.stdout.split())
+    assert changed <= set(APPROVED_P3_CHANGES), sorted(changed - set(APPROVED_P3_CHANGES))
+    for path in changed:
+        blob = _git("hash-object", path).stdout.strip()
+        assert blob == APPROVED_P3_CHANGES[path], f"{path} differs from the approved P3 content"
+    untracked = _git("ls-files", "--others", "--exclude-standard", "--", *PROTECTED).stdout.split()
+    assert untracked == [], untracked
 
 
 def test_no_v1_module_imports_multi_agent():
@@ -139,8 +153,8 @@ def test_multi_agent_requires_no_new_dependency():
                     elif isinstance(node, ast.Import):
                         imported |= {a.name.split(".")[0] for a in node.names}
     third_party = imported - {"csv", "hashlib", "os", "re", "math", "collections", "dataclasses", "json", "copy",
-                              "operator", "time", "typing", "enum", "multi_agent", "config", "sandbox",
-                              "sandbox_v2", "agent"}
+                              "operator", "time", "typing", "enum", "sys", "importlib",
+                              "multi_agent", "config", "sandbox", "sandbox_v2", "agent", "v2"}
     assert third_party == {"langgraph", "langchain_core"}
     assert "langgraph" in req and "langchain" in req
 
