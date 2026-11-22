@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import types
@@ -391,6 +392,7 @@ RUNTIME_DEFECTS = [
     ("proxy_env_upper", dict(env_names=sorted(BASE_ENV + ["HTTP_PROXY"])), "proxy variables"),
     ("secret_env", dict(env_names=sorted(BASE_ENV + ["GOOGLE_API_KEY"])), "secret-like"),
     ("unknown_env", dict(env_names=sorted(BASE_ENV + ["SSH_AUTH_SOCK"])), "unexpected environment"),
+    ("matplotlibrc_env", dict(env_names=sorted(BASE_ENV + ["MATPLOTLIBRC"])), "unexpected environment"),
     ("env_missing", dict(env_names=None), "environment names missing"),
 ]
 _ALIASES = {"1tmp": "/tmp", "opt": "/opt/ip", "root": "/", "passwd": "/etc/passwd",
@@ -697,6 +699,138 @@ def test_golden_cli_writes_evidence_even_when_it_fails(monkeypatch, tmp_path):
     out = tmp_path / "golden.json"
     assert rl.main(["golden", "localhost/img", "--evidence", str(out)]) == 1
     assert json.loads(out.read_text())["ok"] is False
+
+
+# ── golden chart references: hermetic rendering (run #3 investigation) ─────
+
+MANIFEST = json.load(open(rl.FIXTURES))
+P35A_CHART_ENTRIES_SHA256 = "b9b26ac6abb8e46864a24bd99089596fe4c599cf0296fecc61d23e5a64219bdc"     # the preserved P3.5a host references, frozen
+
+
+def test_p35a_host_references_are_preserved_unchanged():
+    frozen = hashlib.sha256(json.dumps([f["chart"] for f in MANIFEST["fixtures"]], sort_keys=True).encode()).hexdigest()
+    assert frozen == P35A_CHART_ENTRIES_SHA256
+    assert "MATPLOTLIBRC" in MANIFEST["_provenance"]["chart"] and "Not used for acceptance" in MANIFEST["_provenance"]["chart"]
+
+
+def test_hermetic_references_are_exact_and_differ_from_the_contaminated_ones():
+    charts = [f for f in MANIFEST["fixtures"] if f["chart"]]
+    assert len(charts) == 7
+    for f in MANIFEST["fixtures"]:
+        if f["chart"] is None:
+            assert f["chart_hermetic"] is None
+        else:
+            h = f["chart_hermetic"]
+            assert set(h) == {"size", "mode", "pixels_sha256"} and len(h["pixels_sha256"]) == 64 and h["mode"] == "RGBA"
+            assert h["pixels_sha256"] != f["chart"]["pixels_sha256"] and h["size"] != f["chart"]["size"]
+    assert "45031896461" in MANIFEST["_provenance"]["chart_hermetic"]
+
+
+def test_the_expected_render_environment_is_the_hermetic_one():
+    env = MANIFEST["render_environment"]
+    assert env["font_file"] == "mpl-data:fonts/ttf/DejaVuSans.ttf" and env["system_fonts"] == 0
+    assert env["matplotlibrc"] == "mpl-data:matplotlibrc" and env["rc_env"] == ["MPLBACKEND", "MPLCONFIGDIR"]
+    assert env["text.hinting"] == "default" and env["figure.dpi"] == 120.0 and env["figure.figsize"] == [10.0, 6.0]
+    assert (env["matplotlib"], env["pillow"]) == (rl.INVENTORY["packages"]["matplotlib"]["version"],
+                                                  rl.INVENTORY["packages"]["pillow"]["version"])
+
+
+LEAKS = [
+    ("matplotlibrc_env", {"rc_env": ["MATPLOTLIBRC", "MPLBACKEND", "MPLCONFIGDIR"]}, "rc_env"),
+    ("host_rc_file", {"matplotlibrc": "/etc/matplotlib/matplotlibrc"}, "matplotlibrc"),
+    ("system_fonts", {"system_fonts": 109}, "system_fonts"),
+    ("liberation_font", {"font_file": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                         "font_sha256": "4659bc0c58c5028dd488ec928d41d9265db43d9b669fc14ca8b0832daca7b144"}, "font_file"),
+    ("no_hinting", {"text.hinting": "no_hinting"}, "text.hinting"),
+    ("freetype", {"freetype": "2.13.2"}, "freetype"),
+    ("old_pillow", {"pillow": "12.3.0"}, "pillow"),
+    ("dpi", {"figure.dpi": 200.0}, "figure.dpi"),
+    ("extra_key", {"surprise": 1}, "surprise"),
+]
+
+
+@pytest.mark.parametrize("name,change,field", LEAKS, ids=[x[0] for x in LEAKS])
+def test_each_render_environment_leak_is_rejected(name, change, field):
+    env = dict(MANIFEST["render_environment"])
+    assert rl.check_render_env(env, MANIFEST["render_environment"]) == []
+    env.update(change)
+    problems = rl.check_render_env(env, MANIFEST["render_environment"])
+    assert any(field in p for p in problems), problems
+    assert rl.check_render_env(None, MANIFEST["render_environment"]) == ["render environment not reported"]
+
+
+def _entry(chart, env=None, exit_code=0):
+    return {"exit": exit_code, "chart": chart, "render_env": env if env is not None else dict(MANIFEST["render_environment"]),
+            "matplotlib_cache_warning": False}
+
+
+def test_chart_acceptance_is_exact_against_the_hermetic_reference_only():
+    fx = next(f for f in MANIFEST["fixtures"] if f["chart"])
+    env = MANIFEST["render_environment"]
+    assert rl.evaluate_golden_task(fx, _entry(dict(fx["chart_hermetic"])), env) is True
+    e = _entry(dict(fx["chart"]))
+    assert rl.evaluate_golden_task(fx, e, env) is False
+    assert e["chart_matches_p35a_host_reference"] is True and e["chart_matches_reference"] is False
+    near = dict(fx["chart_hermetic"], pixels_sha256="0" * 64)                     # one differing pixel is a failure
+    assert rl.evaluate_golden_task(fx, _entry(near), env) is False
+    leaky = dict(env, system_fonts=109)
+    e = _entry(dict(fx["chart_hermetic"]), env=leaky)
+    assert rl.evaluate_golden_task(fx, e, env) is False and e["render_env_problems"]
+    assert rl.evaluate_golden_task(fx, _entry(dict(fx["chart_hermetic"]), exit_code=1), env) is False
+    nochart = next(f for f in MANIFEST["fixtures"] if f["chart"] is None)
+    assert rl.evaluate_golden_task(nochart, _entry(None), env) is True
+    assert rl.evaluate_golden_task(nochart, _entry(dict(fx["chart_hermetic"])), env) is False
+
+
+def test_every_golden_script_reports_its_render_environment():
+    for fx, data, script in rl.golden_scripts():
+        assert script.endswith(rl.CHART_EPILOGUE)
+    for token in ("RENDERENV ", "findSystemFonts", "matplotlib_fname", "__freetype_version__", "text.hinting",
+                  "font_sha256", 'startswith(("MATPLOTLIB", "MPL"))'):
+        assert token in rl.CHART_EPILOGUE, token
+
+
+def test_render_output_parsing():
+    env = MANIFEST["render_environment"]
+    out = "GOLDEN x=1\nCHARTINFO 10x20 RGBA " + "a" * 64 + "\nRENDERENV " + json.dumps(env) + "\n"
+    chart, renv = rl.parse_render_output(out)
+    assert chart == {"size": [10, 20], "mode": "RGBA", "pixels_sha256": "a" * 64} and renv == env
+    assert rl.parse_render_output("RENDERENV {not json}\n") == (None, None)
+    assert rl.parse_render_output("") == (None, None)
+
+
+def test_golden_reports_numbers_and_charts_separately(staged):
+    hermetic = {f["task_id"]: f for f in MANIFEST["fixtures"]}
+
+    class RenderFake(FakePodman):
+        env = MANIFEST["render_environment"]
+
+        def __call__(self, argv, input=None, **kw):
+            super().__call__(argv, input=input, **kw)
+            tid = re.search(rb'CHART_PATH = r"/out/(\w+)\.png"', input).group(1).decode()
+            ch = hermetic[tid]["chart_hermetic"]
+            out = ("CHARTINFO %dx%d %s %s\n" % (ch["size"][0], ch["size"][1], ch["mode"], ch["pixels_sha256"])) if ch else ""
+            out += "RENDERENV " + json.dumps(self.env) + "\n"
+            return types.SimpleNamespace(returncode=0, stdout=out.encode(), stderr=b"")
+    res = rl.golden("localhost/img", facts=GOOD_FACTS, runner=RenderFake())
+    assert res["charts_and_render_env_ok"] is True and res["numerical_ok"] is False and res["ok"] is False
+    RenderFake.env = dict(MANIFEST["render_environment"], rc_env=["MATPLOTLIBRC", "MPLBACKEND", "MPLCONFIGDIR"])
+    res = rl.golden("localhost/img", facts=GOOD_FACTS, runner=RenderFake())
+    assert res["charts_and_render_env_ok"] is False
+    assert all(any("rc_env" in p for p in t["render_env_problems"]) for t in res["tasks"].values())
+
+
+def test_hermetic_reference_tool_refuses_a_non_hermetic_environment_and_never_writes_the_manifest():
+    before = os.stat(rl.FIXTURES).st_mtime_ns
+    out = subprocess.run([sys.executable, "-I", "-B", os.path.join(SCRIPTS, "hermetic_reference.py"), "--check"],
+                         capture_output=True, text=True, timeout=300)
+    live_env_is_hermetic = out.returncode == 0
+    if not live_env_is_hermetic:
+        assert out.returncode == 2 and "REFUSED" in out.stderr and "not a hermetic render environment" in out.stderr
+    assert os.stat(rl.FIXTURES).st_mtime_ns == before
+    src = open(os.path.join(SCRIPTS, "hermetic_reference.py"), encoding="utf-8").read()
+    assert 'open(rl.FIXTURES, "w"' not in src and "json.dump(" not in src      # reports only; never writes
+    assert 'env = {"PATH": "/usr/bin:/bin", "HOME": t, "LANG": "C.UTF-8", "MPLBACKEND": "Agg",' in src
 
 
 # ── CI evidence report ──────────────────────────────────────────────────────

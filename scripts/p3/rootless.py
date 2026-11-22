@@ -639,14 +639,34 @@ def os_packages(image, *, facts=None, runner=None):
 
 FIXTURES = os.path.join(HERE, "golden_fixtures.json")
 CHART_EPILOGUE = '''
-# ── trusted P3.5b epilogue: report the saved chart (not fixture code) ──
-import hashlib as _ip_h, os as _ip_o
+# ── trusted P3.5b epilogue: report the saved chart and the render environment (not fixture code) ──
+import hashlib as _ip_h, json as _ip_j, os as _ip_o
+import matplotlib as _ip_m, matplotlib.font_manager as _ip_fm, PIL as _ip_pil
+from matplotlib import ft2font as _ip_ft
 from PIL import Image as _ip_I
 if _ip_o.path.exists(CHART_PATH):
     with _ip_I.open(CHART_PATH) as _ip_im:
         _ip_im.load()
         print("CHARTINFO " + str(_ip_im.size[0]) + "x" + str(_ip_im.size[1]) + " " + _ip_im.mode + " "
               + _ip_h.sha256(_ip_im.tobytes()).hexdigest())
+def _ip_rel(_p):
+    _d = _ip_m.get_data_path()
+    return "mpl-data:" + _ip_o.path.relpath(_p, _d) if _ip_o.path.abspath(_p).startswith(_d + _ip_o.sep) else _p
+_ip_font = _ip_fm.findfont(_ip_fm.FontProperties(family=_ip_m.rcParams["font.family"]))
+with open(_ip_font, "rb") as _ip_ff:
+    _ip_fsha = _ip_h.sha256(_ip_ff.read()).hexdigest()
+_ip_rc = _ip_m.rcParams
+print("RENDERENV " + _ip_j.dumps({
+    "matplotlib": _ip_m.__version__, "pillow": _ip_pil.__version__, "freetype": _ip_ft.__freetype_version__,
+    "freetype_build": _ip_ft.__freetype_build_type__, "backend": _ip_m.get_backend(),
+    "matplotlibrc": _ip_rel(_ip_m.matplotlib_fname()),
+    "rc_env": sorted(k for k in _ip_o.environ if k.startswith(("MATPLOTLIB", "MPL"))),
+    "system_fonts": len(_ip_fm.findSystemFonts()), "font_file": _ip_rel(_ip_font), "font_sha256": _ip_fsha,
+    "font.family": list(_ip_rc["font.family"]), "font.sans-serif": list(_ip_rc["font.sans-serif"]),
+    "text.hinting": str(_ip_rc["text.hinting"]), "text.hinting_factor": _ip_rc["text.hinting_factor"],
+    "text.antialiased": bool(_ip_rc["text.antialiased"]), "figure.dpi": float(_ip_rc["figure.dpi"]),
+    "savefig.dpi": str(_ip_rc["savefig.dpi"]), "figure.figsize": [float(x) for x in _ip_rc["figure.figsize"]],
+}, sort_keys=True))
 '''
 
 
@@ -680,6 +700,38 @@ def golden_scripts():
     return out
 
 
+def parse_render_output(stdout):
+    """(chart dict or None, render environment dict or None) from a golden run's stdout."""
+    chart = re.findall(r"^CHARTINFO (\d+)x(\d+) (\w+) ([0-9a-f]{64})$", stdout, re.M)
+    renv = re.findall(r"^RENDERENV (\{.*\})$", stdout, re.M)
+    c = None
+    if chart:
+        w, h, mode, sha = chart[0]
+        c = {"size": [int(w), int(h)], "mode": mode, "pixels_sha256": sha}
+    try:
+        r = json.loads(renv[-1]) if renv else None
+    except ValueError:
+        r = None
+    return c, r
+
+
+def check_render_env(renv, expected):
+    """Exact comparison with the committed hermetic render environment; every difference is named."""
+    if not isinstance(renv, dict):
+        return ["render environment not reported"]
+    return [f"render environment {k}: {renv.get(k)!r} != {expected.get(k)!r}"
+            for k in sorted(set(expected) | set(renv)) if renv.get(k) != expected.get(k)]
+
+
+def evaluate_golden_task(fx, entry, expected_env):
+    """Acceptance for one fixture: exit 0, hermetic render environment, exact chart_hermetic match."""
+    entry["render_env_problems"] = check_render_env(entry.get("render_env"), expected_env)
+    entry["chart_matches_reference"] = entry["chart"] == fx["chart_hermetic"]
+    entry["chart_matches_p35a_host_reference"] = entry["chart"] == fx["chart"]    # informational only
+    return entry["exit"] == 0 and not entry["render_env_problems"] and entry["chart_matches_reference"] \
+        and not entry["matplotlib_cache_warning"]
+
+
 def golden(image, *, facts=None, runner=None):
     facts = facts if facts is not None else gather_facts(runner=runner)
     problems = evaluate_host(facts)
@@ -690,6 +742,7 @@ def golden(image, *, facts=None, runner=None):
     from tests.v2.golden import reference as ref
     from tests.v2.golden.compare import mismatches, parse_golden
     results, printed = {}, {}
+    expected_env = _json(FIXTURES)["render_environment"]
     with tempfile.TemporaryDirectory() as tmp:
         os.chmod(tmp, 0o755)
         for fx, data, script in golden_scripts():
@@ -702,23 +755,22 @@ def golden(image, *, facts=None, runner=None):
             r = _run(argv, env=podman_env(), stdin=script.encode(), timeout=300, runner=runner)
             stdout = r.stdout.decode("utf-8", "replace")
             stderr = r.stderr.decode("utf-8", "replace")
-            chart = re.findall(r"^CHARTINFO (\d+)x(\d+) (\w+) ([0-9a-f]{64})$", stdout, re.M)
+            chart, renv = parse_render_output(stdout)
             entry = {"exit": r.returncode, "stderr_tail": stderr[-400:],
                      "matplotlib_cache_warning": "Matplotlib created a temporary" in stderr,
-                     "chart": None}
-            if chart:
-                w, h, mode, sha = chart[0]
-                entry["chart"] = {"size": [int(w), int(h)], "mode": mode, "pixels_sha256": sha}
-            entry["chart_matches_reference"] = entry["chart"] == fx["chart"]
+                     "chart": chart, "render_env": renv}
+            entry["ok"] = evaluate_golden_task(fx, entry, expected_env)
             printed.setdefault(fx["dataset"], {}).update(parse_golden(stdout))
             results[fx["task_id"]] = entry
     answers = {}
     for ds, got in printed.items():
         exp = ref.load_expected(ds)["answers"]
         answers[ds] = {"checked": len(exp), "mismatches": mismatches(got, exp), "missing": sorted(set(exp) - set(got))}
-    ok = all(e["exit"] == 0 and e["chart_matches_reference"] and not e["matplotlib_cache_warning"]
-             for e in results.values()) and all(not a["mismatches"] and not a["missing"] for a in answers.values())
-    return {"ok": ok, "tasks": results, "answers": answers}
+    charts_ok = all(e["ok"] for e in results.values())
+    numbers_ok = all(not a["mismatches"] and not a["missing"] for a in answers.values())
+    return {"ok": charts_ok and numbers_ok and len(results) == len(_json(FIXTURES)["fixtures"]), "numerical_ok": numbers_ok,
+            "charts_and_render_env_ok": charts_ok, "tasks": results, "answers": answers,
+            "expected_render_environment": expected_env}
 
 
 # ── CLI ─────────────────────────────────────────────────────────────────────

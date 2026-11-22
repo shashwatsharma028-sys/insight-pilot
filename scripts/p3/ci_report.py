@@ -107,10 +107,16 @@ def report(d):
         wrong = sum(len(a.get("mismatches") or {}) + len(a.get("missing") or []) for a in answers.values())
         charts = [t for t in tasks.values() if t.get("chart") is not None]
         chart_ok = [t for t in tasks.values() if t.get("chart_matches_reference")]
+        env_bad = [t for t in tasks.values() if t.get("render_env_problems")]
+        p35a = [t for t in tasks.values() if t.get("chart_matches_p35a_host_reference")]
         out += ["", "### Golden fixtures inside the image", "",
                 f"- numerical: {checked - wrong}/{checked} golden answers match (mismatched or missing: {wrong})",
-                f"- charts: {len(charts)} produced; {len(chart_ok)}/{len(tasks)} tasks match the reference "
-                f"(chart present with identical decoded pixels, or correctly absent)",
+                f"- charts: {len(charts)} produced; {len(chart_ok)}/{len(tasks)} tasks match chart_hermetic exactly "
+                f"(identical decoded pixels, or correctly absent)",
+                f"- render environment: {len(tasks) - len(env_bad)}/{len(tasks)} tasks report the committed hermetic "
+                f"environment" + (f"; first difference: {env_bad[0]['render_env_problems'][:3]}" if env_bad else ""),
+                f"- informational: {len(p35a)}/{len(tasks)} match the preserved P3.5a host reference "
+                f"(rendered with the host's MATPLOTLIBRC and system fonts)",
                 f"- fixture exits: {sorted({t.get('exit') for t in tasks.values()})}",
                 f"- Matplotlib temporary-cache warnings: {sum(1 for t in tasks.values() if t.get('matplotlib_cache_warning'))}"]
         for tid, t in sorted(tasks.items()):
