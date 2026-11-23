@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           P3_OUT="$RUNNER_TEMP/p3"
-          APPROVED="APPROVED_CONTENT_SHA256"
+          APPROVED="c7895ef2679328449701db87d3b064b0ef09c547c72dfe881e4b39ae005ab43d"
           GOT="$(git ls-tree HEAD | grep -v -P '\t(\.github|docs)$' | sha256sum | cut -d' ' -f1)"
           echo "approved content digest: $APPROVED"; echo "pushed content digest:   $GOT"
           rc=0; [ "$GOT" = "$APPROVED" ] || rc=5
