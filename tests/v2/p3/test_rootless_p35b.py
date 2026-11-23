@@ -576,11 +576,47 @@ def test_cross_architecture_request_is_refused_before_any_podman_call(staged):
     assert fake.calls == []
 
 
+def good_opt_ip_entries():
+    """P3.6-4B: what the inspector reports for a correctly built /opt/ip (root-owned 0444 files, 0555 directories)."""
+    entries = {".": {"type": "dir", "mode": "0755", "uid": 0, "gid": 0}}
+    for dest, src in rl.image_layout.RUNTIME_FILES:
+        data = rl.image_layout.read_source(src)
+        parts = dest.split("/")
+        for i in range(1, len(parts)):
+            entries["/".join(parts[:i])] = {"type": "dir", "mode": "0555", "uid": 0, "gid": 0}
+        entries[dest] = {"type": "file", "mode": "0444", "uid": 0, "gid": 0, "size": len(data),
+                         "sha256": hashlib.sha256(data).hexdigest()}
+    return entries
+
+
+@pytest.mark.parametrize("defect,expected", [
+    ({"supervisor.py": {"sha256": "0" * 64}}, "differs from its trusted source"),
+    ({"runner.py": {"size": 1}}, "differs from its trusted source"),
+    ({"runner.py": {"mode": "0644"}}, "mode 0644 != 0444"),
+    ({"v2": {"mode": "0755"}}, "mode 0755 != 0555"),
+    ({"preludes.json": {"uid": 10001}}, "owner 10001:0"),
+    ({".": {"mode": "0777"}}, "forbidden bits"),
+    ({".": {"mode": "1755"}}, "forbidden bits"),
+    ({"selftest.py": {"type": "other"}}, "not a regular file"),
+])
+def test_installed_runtime_hashes_owners_and_modes_are_checked(defect, expected):
+    entries = good_opt_ip_entries()
+    assert rl.check_runtime_tree(entries) == []
+    assert rl.image_inspect.evaluate_opt_ip_permissions(entries, EXPECT["opt_ip_permissions"]) == []
+    for rel, change in defect.items():
+        entries[rel] = {**entries[rel], **change}
+    problems = rl.check_runtime_tree(entries) + \
+        rl.image_inspect.evaluate_opt_ip_permissions(entries, EXPECT["opt_ip_permissions"])
+    assert any(expected in p for p in problems), problems
+    assert rl.check_runtime_tree(None) and rl.image_inspect.evaluate_opt_ip_permissions(None, {})
+
+
 def test_verify_checks_image_runtime_mapping_and_no_argument_refusal(staged):
     rt = good_runtime(env=IMAGE_ENV)
     report = {"runtime": rt, "image": {"setid_files": [], "secret_like_files": [], "dev_dirs": [], "venvs": [],
                                        "distributions": {n: e["version"] for n, e in rl.INVENTORY["packages"].items()},
                                        "opt_ip": list(EXPECT["opt_ip_files"]), "present_forbidden": [],
+                                       "opt_ip_entries": good_opt_ip_entries(),
                                        "world_writable_files": []}}
 
     class VerifyFake(FakePodman):

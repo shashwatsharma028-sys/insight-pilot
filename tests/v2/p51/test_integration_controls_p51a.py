@@ -9,6 +9,7 @@ P5.1A: branch-integration and preservation controls.
 
 import ast
 import os
+import re
 import subprocess
 import sys
 
@@ -244,6 +245,8 @@ P36_P3_FILES = {
     # P3.6-4A (approved, offline only): image-source integration
     "v2/execution/image_layout.py", "v2/execution/image/Containerfile", "scripts/p3/image_tool.py",
     "scripts/p3/image_inspect.py",
+    # P3.6-4B (approved): CI revision and report
+    "scripts/p3/ci_report.py",
 }
 
 
@@ -255,11 +258,25 @@ def test_p3_lineage_is_fully_contained_and_only_reviewed_p3_files_changed():
     assert changed <= P51A_P3_FILES | P36_P3_FILES, sorted(changed - P51A_P3_FILES - P36_P3_FILES)
 
 
-def test_the_ci_workflow_only_gained_comment_lines():
-    """No executable CI step may change before P3.6-4 is approved."""
-    diff = _git("diff", "-U0", P3_PROBE_COMMIT, "--", ".github/workflows/p3-ubuntu-rootless-probe.yml")
-    body = [ln for ln in diff.splitlines() if ln[:1] in "+-" and not ln.startswith(("+++", "---"))]
-    assert body and all(ln.startswith("+#") for ln in body), body
+def test_the_ci_workflow_keeps_every_original_gate_and_phase_unchanged():
+    """P3.6-4B (approved) may ADD the content gate and Phase F; no original step may change or disappear."""
+    import yaml
+    path = ".github/workflows/p3-ubuntu-rootless-probe.yml"
+    old = yaml.safe_load(_git("show", f"{P3_PROBE_COMMIT}:{path}"))["jobs"]["probe"]["steps"]
+    new = yaml.safe_load(open(os.path.join(ROOT, path), encoding="utf-8"))["jobs"]["probe"]["steps"]
+    names = [s["name"] for s in new]
+    assert [n for n in names if n in {s["name"] for s in old}] == [s["name"] for s in old]   # all kept, same order
+    by_name = {s["name"]: s for s in new}
+    readiness = "Readiness tests, including the workflow-policy test (must run, never skip)"
+    for step in old:
+        if step["name"] == readiness:                     # one extra offline test file, nothing removed
+            assert re.sub(r" \\\n +tests/v2/p36/test_container_suite_static_p364b\.py", "",
+                          by_name[step["name"]]["run"]) == step["run"]
+            continue
+        assert by_name[step["name"]] == step, step["name"]
+    added = [n for n in names if n not in {s["name"] for s in old}]
+    assert added[0].startswith("Approved-content gate") and all(
+        n.startswith("Phase F - ") for n in added[1:]) and len(added) == 5, added
 
 
 def test_standard_streamlit_entry_point_imports_no_v2_code():

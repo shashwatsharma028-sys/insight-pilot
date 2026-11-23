@@ -290,6 +290,19 @@ def check_image_config(inspect_json, arch, lock_sha):
     return p
 
 
+def check_runtime_tree(entries):
+    """P3.6-4B: every installed /opt/ip file has exactly the size and SHA-256 of its trusted repository source."""
+    if not isinstance(entries, dict):
+        return ["IMAGE: /opt/ip file hashes were not reported"]
+    p = []
+    for dest, src in image_layout.RUNTIME_FILES:
+        data = image_layout.read_source(src)
+        e = entries.get(dest) or {}
+        if e.get("type") != "file" or e.get("size") != len(data) or e.get("sha256") != hashlib.sha256(data).hexdigest():
+            p.append(f"IMAGE: /opt/ip/{dest} differs from its trusted source {src}")
+    return p
+
+
 def check_id_mapping(rt, host_uid, subuid):
     """Inside the container, uid_map must place uid 10001 in a subordinate range, never at host root or this user."""
     nums = [int(x) for x in rt.get("uid_map") or [] if x.isdigit()]
@@ -405,6 +418,7 @@ def verify(image, *, facts=None, runner=None):
     report = run_inspector(image, arch, runtime_only=False, runner=runner)
     lock_versions = {n: e["version"] for n, e in INVENTORY["packages"].items()}
     problems += image_inspect.evaluate(report, EXPECT, lock_versions, env_names)
+    problems += check_runtime_tree((report.get("image") or {}).get("opt_ip_entries"))
     problems += check_id_mapping(report["runtime"], facts["uid"], facts["subuid"])
     refusal = _run(container_run_argv(image, arch), env=podman_env(), timeout=120, runner=runner)
     problems += check_no_args_refusal(refusal)

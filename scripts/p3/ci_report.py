@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-P3.5b CI evidence report (standard library only).
+P3.5b CI evidence report (standard library only); P3.6-4B adds the content gate and Phase F.
 
     python3 -I -B scripts/p3/ci_report.py EVIDENCE_DIR
 
@@ -15,6 +15,7 @@ import os
 import sys
 
 STAGES = [
+    ("content", "Approved-content gate (pushed code == reviewed P3.6-4B content)"),
     ("gate1", "Gate 1: host facts as provided (informational)"),
     ("gate2", "Gate 2: host facts with a user manager"),
     ("gate3", "Gate 3: enforcement probe (real rootless container)"),
@@ -26,6 +27,10 @@ STAGES = [
     ("startup", "Phase E: warm/cold start-up benchmark"),
     ("golden", "Phase E: hash-pinned golden fixtures in the image"),
     ("ospkgs", "Phase E: OS package inventory"),
+    ("hostenv", "Phase F: host test environment"),
+    ("runtime", "Phase F: real ContainerRuntime (preflight, isolation, fail-closed, golden numbers and charts)"),
+    ("p5_v1", "Phase F: P5 20-case suite, V1 prelude, real container port"),
+    ("p5_lazy", "Phase F: P5 20-case suite, lazy-seaborn prelude, real container port"),
     ("tests", "Readiness tests (incl. workflow-policy test)"),
 ]
 REQUIRED = [s for s, _ in STAGES if s != "gate1"]
@@ -52,7 +57,7 @@ def mib(n):
 
 
 def report(d):
-    out = ["## P3.5b CI image build and benchmark (GitHub ubuntu-24.04, rootless Podman)", ""]
+    out = ["## P3.6-4B CI image build and real-runtime validation (GitHub ubuntu-24.04, rootless Podman)", ""]
     commit = os.path.join(d, "commit.txt")
     if os.path.exists(commit):
         out += [open(commit, encoding="utf-8").read().strip(), ""]
@@ -75,7 +80,8 @@ def report(d):
     v = load(d, "verify1.json")
     if v:
         out += ["", "### Verification of build 1", "",
-                "- result: all image, runtime and inert-entrypoint checks passed (verify exits non-zero otherwise)",
+                "- result: all image (incl. /opt/ip hashes, owners, modes), runtime and no-argument-refusal checks "
+                "passed (verify exits non-zero otherwise)",
                 f"- distributions found: {len((v.get('report') or {}).get('image', {}).get('distributions', {}))}"]
     c = load(d, "compare.json")
     if c:
@@ -92,7 +98,7 @@ def report(d):
                     out.append(f"  - `{ex['name']}`: {ex['fields']}")
     s = load(d, "startup.json")
     if s:
-        out += ["", "### Start-up (inert container, wall clock from the podman client)", ""]
+        out += ["", "### Start-up (supervisor entrypoint with no arguments: imports, refuses, exits 78; podman client wall clock)", ""]
         for kind in ("warm", "cold"):
             x = s.get(kind)
             if x:
@@ -127,11 +133,45 @@ def report(d):
     if o:
         out += ["", "### OS package inventory", "", f"- {o.get('count')} dpkg packages (full list in the log)",
                 "- vulnerability scan: NOT RUN (no approved scanner and database source)"]
+    out += phase_f(d)
     out += ["", "Runner account is root-equivalent (passwordless sudo, docker group): this is not VE-2 non-root "
             "or cross-account validation."]
     ok = all(codes[s] == 0 for s in REQUIRED)
     out += ["", "VERDICT: " + ("every stage ran and passed" if ok else "NOT all stages passed - see the table")]
     return "\n".join(out) + "\n", ok
+
+
+def phase_f(d):
+    out = []
+    rt = load(d, "runtime_runtime.json")
+    if rt:
+        obs, res, tim = rt.get("observations") or {}, rt.get("results") or {}, rt.get("timings") or {}
+        out += ["", "### Phase F: real ContainerRuntime", "",
+                f"- preflight: {res.get('preflight')}", f"- preflight wall time: {tim.get('preflight_ms')} ms",
+                f"- attestation differences from the required isolation: {obs.get('attestation_differences')}",
+                f"- self-tests: oom {obs.get('selftest-oom')}, pids {obs.get('selftest-pids')}"]
+        for prelude in ("v1", "lazy_seaborn"):
+            g = res.get(f"golden_{prelude}")
+            if g:
+                out.append(f"- golden ({prelude}): numbers {g['numbers']['correct']}/{g['numbers']['checked']}, "
+                           f"hermetic charts {g['charts']['matched']}/{g['charts']['total']}")
+        if res.get("fail_closed"):
+            out.append(f"- fail-closed outcomes: " + ", ".join(f"{k}={v['outcome']}/{v['chart_rejected_reason']}"
+                                                            for k, v in sorted(res["fail_closed"].items())))
+        out.append(f"- execution latency (container, host wall): {tim.get('execution_container_ms')}, "
+                   f"{tim.get('execution_host_wall_ms')}")
+        out.append(f"- leftovers: {res.get('leftovers')}")
+    for name, label in (("p5_v1", "V1"), ("p5_lazy", "lazy-seaborn")):
+        e = load(d, f"runtime_{name}.json")
+        r = ((e or {}).get("results") or {}).get("p5_" + ("v1" if name == "p5_v1" else "lazy-seaborn"))
+        if r:
+            s = r["summary"]
+            out += ["", f"### Phase F: P5 suite through the real container port ({label})", "",
+                    f"- expectations met {s['expectations_met']}/{s['cases']}; clean-run golden answers "
+                    f"{s['clean_runs_golden_correct']}/{s['clean_runs_golden_expected']}; incorrect claims accepted "
+                    f"{s['incorrect_claims_accepted']}; provider calls {s['provider_calls']}",
+                    f"- wall time {r['wall_s']} s; preflight {((e.get('timings') or {}).get('preflight_ms'))} ms"]
+    return out
 
 
 def main(argv):

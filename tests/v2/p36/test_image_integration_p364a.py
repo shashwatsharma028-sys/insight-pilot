@@ -251,6 +251,25 @@ def test_the_inspector_accepts_the_staged_tree_against_the_live_expectations(tmp
         os.chmod(d, 0o755)
 
 
+def test_the_inspector_reports_modes_owners_and_hashes_of_the_staged_tree(tmp_path):
+    """P3.6-4B: the fields rootless.verify checks on a built image, produced by the same inspector code."""
+    root = tmp_path / "root"
+    opt = _stage_tree(tmp_path)
+    entries = inspector.inspect_image(str(root))["opt_ip_entries"]
+    assert set(entries) == {"."} | set(SOURCES) | {"config", "v2", "v2/execution"}
+    for dest, path in SOURCES.items():
+        e = entries[dest]
+        assert (e["type"], e["mode"], e["size"]) == ("file", "0444", os.path.getsize(path))
+        assert e["sha256"] == hashlib.sha256(_read(path, "rb")).hexdigest()
+    assert {entries[d]["mode"] for d in ("config", "v2", "v2/execution", ".")} == {"0555"}
+    uid = os.getuid()
+    rules = dict(EXPECT["opt_ip_permissions"])
+    rules = {k: (dict(v, uid=uid, gid=os.getgid()) if isinstance(v, dict) else v) for k, v in rules.items()}
+    assert inspector.evaluate_opt_ip_permissions(entries, rules) == []
+    for d, _, _ in os.walk(root):
+        os.chmod(d, 0o755)
+
+
 # ── 3. the build context is exactly the allowlist ───────────────────────────
 
 def _fake_repo_with_runtime(tmp_path):
@@ -519,10 +538,20 @@ APPROVED_364A = {
 }
 
 
+# P3.6-4B (approved): real-container validation suite, CI revision and stricter image verification
+APPROVED_364B = {
+    ".github/workflows/p3-ubuntu-rootless-probe.yml", "scripts/p3/ci_report.py",
+    "tests/container/__init__.py", "tests/container/p364b/__init__.py",
+    "tests/container/p364b/container_p364b.py", "tests/container/p364b/fixtures_p364b.py",
+    "tests/v2/p36/test_container_suite_static_p364b.py",
+}
+
+
 def test_only_approved_p364a_files_changed_outside_new_documentation():
     changed = set(_git("diff", "--name-only", P36_BASE).split())
     code_changes = {c for c in changed if not (c.startswith("docs/") and c.endswith(".md"))}
-    assert code_changes <= APPROVED_364A, sorted(code_changes - APPROVED_364A)
+    approved = APPROVED_364A | APPROVED_364B
+    assert code_changes <= approved, sorted(code_changes - approved)
 
 
 def test_the_installed_runtime_is_byte_identical_to_the_reviewed_p36_3_sources():

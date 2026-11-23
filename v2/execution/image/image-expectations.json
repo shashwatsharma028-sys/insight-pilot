@@ -47,6 +47,26 @@
   "v2/execution/results.py",
   "v2/execution/supervisor_helpers.py"
  ],
+ "opt_ip_permissions": {
+  "_note": "P3.6-4B. Files and subdirectories as the Containerfile sets them (0444 / 0555, root). /opt/ip itself is created by mkdir in the runtime stage; its exact mode is recorded, and only root ownership and the absence of group/other write and setid/sticky bits are required.",
+  "dir": {
+   "forbidden_bits": "7222",
+   "gid": 0,
+   "mode": "0555",
+   "uid": 0
+  },
+  "file": {
+   "forbidden_bits": "7222",
+   "gid": 0,
+   "mode": "0444",
+   "uid": 0
+  },
+  "root": {
+   "forbidden_bits": "7022",
+   "gid": 0,
+   "uid": 0
+  }
+ },
  "runtime": {
   "_note": "Runtime-enforced properties: produced by the launcher options in scripts/p3/rootless.py (container_run_argv), not by the image. Verified inside a running container by image_inspect.py.",
   "allowed_mount_prefixes": [

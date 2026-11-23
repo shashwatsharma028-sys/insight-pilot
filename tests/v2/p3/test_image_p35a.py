@@ -564,7 +564,7 @@ def test_inspector_detects_each_defect(tmp_path, defect, expected):
 def test_inspector_never_imports_or_executes_what_it_finds():
     tree = ast.parse(_read(os.path.join(SCRIPTS, "image_inspect.py")))
     imports = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
-    assert imports <= {"json", "os", "re", "stat", "sys"}
+    assert imports <= {"json", "os", "re", "stat", "sys", "hashlib"}   # hashlib: P3.6-4B /opt/ip file digests (read-only)
     calls = {n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
     assert not calls & {"exec", "eval", "compile", "__import__"}
     attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
@@ -608,7 +608,10 @@ def test_host_check_reports_this_environment_as_unsuitable_when_it_is():
         assert out.returncode != 0 and "suitable for P3.5b build and isolation tests: NO" in out.stdout
 
 
-APPROVED_WORKFLOW = "workflows/p3-ubuntu-rootless-probe.yml"     # probe branch only (reviewer approval)
+APPROVED_WORKFLOW = "workflows/p3-ubuntu-rootless-probe.yml"     # P3.6-4B branch only (reviewer approval)
+P364B_BRANCH = "feature/v2-p364b-real-container-validation"
+P364B_JOB_IF = ("github.event_name == 'push' && github.repository == 'shashwatsharma028-sys/insight-pilot' && "
+                f"github.ref == 'refs/heads/{P364B_BRANCH}'")
 
 
 def test_no_ci_workflow_except_the_approved_probe():
@@ -622,11 +625,13 @@ def test_no_ci_workflow_except_the_approved_probe():
     text = _read(os.path.join(gh, APPROVED_WORKFLOW))
     wf = yaml.safe_load(text)
     on = wf.get(True, wf.get("on"))
-    assert on == {"push": {"branches": ["feature/v2-github-ubuntu-probe"], "paths": [".github/" + APPROVED_WORKFLOW]}}
+    # P3.6-4B (approved): the dedicated validation branch only, pushes that change this file only
+    assert on == {"push": {"branches": [P364B_BRANCH], "paths": [".github/" + APPROVED_WORKFLOW]}}
     assert wf["permissions"] == {"contents": "read"}
     assert list(wf["jobs"]) == ["probe"]
     job = wf["jobs"]["probe"]
-    assert job["runs-on"] == "ubuntu-24.04" and job["timeout-minutes"] <= 60
+    assert job["runs-on"] == "ubuntu-24.04" and job["timeout-minutes"] <= 150    # P3.6-4B: Phase F added
+    assert job["if"] == P364B_JOB_IF                                  # trusted push in this repository only
     assert all("uses" not in step for step in job["steps"])            # no third-party actions
     assert all(0 < step.get("timeout-minutes", 0) <= 20 for step in job["steps"])
     assert {step.get("if") for step in job["steps"]} <= {None, "always()"}

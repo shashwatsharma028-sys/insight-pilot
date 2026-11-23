@@ -13,6 +13,11 @@
 #   mandatory render-environment check. Original references preserved.
 # - Run 4 (45033387515, 4cd107e0): every stage passed, for the inert image (functional evidence;
 #   root-equivalent runner, not VE-2). Sanitized evidence: docs/v2/p3/ci_run4/ (P3.6-0).
+# - P3.6-4B revision (approved): builds and verifies the P3.6 supervisor image, then runs the REAL
+#   ContainerRuntime (Phase F) on committed, hash-pinned fixtures only. It runs only on a push to
+#   feature/v2-p364b-real-container-validation that changes this file, only in this repository, and
+#   only when the reviewed content digest below matches the pushed commit (everything except .github/
+#   and docs/). Phase F enters hardened mode solely through bootstrap.install_for_validation().
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
@@ -34,7 +39,7 @@ name: p3-ubuntu-rootless-probe
 
 on:
   push:
-    branches: [feature/v2-github-ubuntu-probe]
+    branches: [feature/v2-p364b-real-container-validation]
     paths: [.github/workflows/p3-ubuntu-rootless-probe.yml]
 
 permissions:
@@ -46,8 +51,9 @@ concurrency:
 
 jobs:
   probe:
+    if: github.event_name == 'push' && github.repository == 'shashwatsharma028-sys/insight-pilot' && github.ref == 'refs/heads/feature/v2-p364b-real-container-validation'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - name: Fetch the exact pushed commit (read-only token, this step only, no third-party action)
         timeout-minutes: 3
@@ -66,6 +72,18 @@ jobs:
           git checkout -q --detach FETCH_HEAD
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           echo "commit: $(git rev-parse HEAD)" | tee "$P3_OUT/commit.txt"
+
+      - name: Approved-content gate - the pushed code is exactly the reviewed P3.6-4B content (stops the job on failure)
+        timeout-minutes: 2
+        working-directory: src
+        run: |
+          set -euo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          APPROVED="APPROVED_CONTENT_SHA256"
+          GOT="$(git ls-tree HEAD | grep -v -P '\t(\.github|docs)$' | sha256sum | cut -d' ' -f1)"
+          echo "approved content digest: $APPROVED"; echo "pushed content digest:   $GOT"
+          rc=0; [ "$GOT" = "$APPROVED" ] || rc=5
+          echo "$rc" > "$P3_OUT/content.rc"; exit "$rc"
 
       - name: Record runner specifications (read-only)
         timeout-minutes: 2
@@ -204,6 +222,69 @@ jobs:
           python3 -I -c 'import json,sys; [print(p["name"], p["version"], p["arch"]) for p in json.load(open(sys.argv[1]))["packages"]]' "$P3_OUT/ospkgs.json" || cat "$P3_OUT/ospkgs.txt"
           exit "$rc"
 
+      - name: Phase F - host test environment (runner Python, requirements-v2.txt; pip freeze recorded)
+        timeout-minutes: 12
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          rc=0
+          { python3 -m venv "$RUNNER_TEMP/hostenv" \
+            && "$RUNNER_TEMP/hostenv/bin/pip" install -q --disable-pip-version-check -r requirements-v2.txt pytest==9.1.1 pyyaml==6.0.3 \
+            && "$RUNNER_TEMP/hostenv/bin/pip" freeze --all > "$P3_OUT/hostenv-freeze.txt"; } > "$P3_OUT/hostenv.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/hostenv.rc"
+          "$RUNNER_TEMP/hostenv/bin/python" -VV || true
+          cat "$P3_OUT/hostenv-freeze.txt" 2>/dev/null || tail -n 40 "$P3_OUT/hostenv.txt"
+          exit "$rc"
+
+      - name: Phase F - real ContainerRuntime on verified build 1 (preflight, isolation observations, fail-closed, golden numbers and hermetic charts)
+        timeout-minutes: 20
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          IMAGE="sha256:$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["image_id"].split(":")[-1])' "$P3_OUT/build1.json")"
+          rc=0; IP_TEST_REQUIRE_CONTAINER=1 IP_TEST_CONTAINER_IMAGE="$IMAGE" IP_TEST_EVIDENCE_DIR="$P3_OUT" IP_TEST_EVIDENCE_NAME=runtime \
+            PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/hostenv/bin/python" -m pytest -q -p no:cacheprovider -rA \
+            tests/container/p364b/container_p364b.py -k "not test_11_p5_suite" > "$P3_OUT/runtime.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/runtime.rc"
+          grep -E "^(PASSED|FAILED|ERROR|SKIPPED)|passed|failed|error" "$P3_OUT/runtime.txt" | tail -n 60
+          [ "$rc" = 0 ] || tail -n 150 "$P3_OUT/runtime.txt"
+          cat "$P3_OUT/runtime_runtime.json" 2>/dev/null || echo "no runtime evidence written"
+          exit "$rc"
+
+      - name: Phase F - P5 20-case suite through the real container port (V1 prelude)
+        timeout-minutes: 20
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          IMAGE="sha256:$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["image_id"].split(":")[-1])' "$P3_OUT/build1.json")"
+          rc=0; IP_TEST_REQUIRE_CONTAINER=1 IP_TEST_CONTAINER_IMAGE="$IMAGE" IP_TEST_EVIDENCE_DIR="$P3_OUT" IP_TEST_EVIDENCE_NAME=p5_v1 \
+            PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/hostenv/bin/python" -m pytest -q -p no:cacheprovider -rA \
+            tests/container/p364b/container_p364b.py -k "test_11_p5_suite and v1 or test_99" > "$P3_OUT/p5_v1.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/p5_v1.rc"
+          grep -E "^(PASSED|FAILED|ERROR|SKIPPED)|passed|failed|error" "$P3_OUT/p5_v1.txt" | tail -n 30
+          [ "$rc" = 0 ] || tail -n 120 "$P3_OUT/p5_v1.txt"
+          cat "$P3_OUT/runtime_p5_v1.json" 2>/dev/null || echo "no p5 evidence written"
+          exit "$rc"
+
+      - name: Phase F - P5 20-case suite through the real container port (lazy-seaborn prelude)
+        timeout-minutes: 20
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          IMAGE="sha256:$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["image_id"].split(":")[-1])' "$P3_OUT/build1.json")"
+          rc=0; IP_TEST_REQUIRE_CONTAINER=1 IP_TEST_CONTAINER_IMAGE="$IMAGE" IP_TEST_EVIDENCE_DIR="$P3_OUT" IP_TEST_EVIDENCE_NAME=p5_lazy \
+            PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/hostenv/bin/python" -m pytest -q -p no:cacheprovider -rA \
+            tests/container/p364b/container_p364b.py -k "test_11_p5_suite and lazy or test_99" > "$P3_OUT/p5_lazy.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/p5_lazy.rc"
+          grep -E "^(PASSED|FAILED|ERROR|SKIPPED)|passed|failed|error" "$P3_OUT/p5_lazy.txt" | tail -n 30
+          [ "$rc" = 0 ] || tail -n 120 "$P3_OUT/p5_lazy.txt"
+          cat "$P3_OUT/runtime_p5_lazy.json" 2>/dev/null || echo "no p5 evidence written"
+          exit "$rc"
+
       - name: Readiness tests, including the workflow-policy test (must run, never skip)
         if: always()
         timeout-minutes: 8
@@ -215,7 +296,8 @@ jobs:
           { python3 -m venv "$RUNNER_TEMP/venv" \
             && "$RUNNER_TEMP/venv/bin/pip" install -q --disable-pip-version-check pytest==9.1.1 pyyaml==6.0.3 \
             && PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/venv/bin/python" -m pytest --noconftest -q -p no:cacheprovider -rsA \
-               tests/v2/p3/test_rootless_p35b.py tests/v2/p3/test_image_p35a.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
+               tests/v2/p3/test_rootless_p35b.py tests/v2/p3/test_image_p35a.py \
+               tests/v2/p36/test_container_suite_static_p364b.py; } > "$P3_OUT/tests.txt" 2>&1 || rc=$?
           grep -q "^PASSED tests/v2/p3/test_image_p35a.py::test_no_ci_workflow_except_the_approved_probe" "$P3_OUT/tests.txt" \
             || { echo "workflow-policy test did not PASS"; [ "$rc" = 0 ] && rc=4; }
           echo "$rc" > "$P3_OUT/tests.rc"

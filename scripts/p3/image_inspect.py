@@ -22,11 +22,12 @@ On the host, `evaluate` checks a report against
 v2/execution/image/image-expectations.json. Every runtime field is verified,
 not just recorded: a missing or unparsable field is a problem.
 
-It reads names, modes, /proc and /sys only. It never imports or executes
-anything it finds. The only files it creates are in the write probes: a
+It reads names, modes, /proc and /sys, and (P3.6-4B) hashes the bytes of the
+files under /opt/ip. It never imports or executes anything it finds. The only files it creates are in the write probes: a
 probe file is created exclusively and removed at once.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -117,10 +118,32 @@ def inspect_image(root="/"):
     if os.path.isdir(opt):
         rep["opt_ip"] = sorted(os.path.relpath(os.path.join(d, f), opt).replace(os.sep, "/")
                                for d, _, fs in os.walk(opt) for f in fs)
+        rep["opt_ip_entries"] = _opt_ip_entries(opt)
     for p in FORBIDDEN_PATHS:
         if os.path.lexists(os.path.join(root, p.lstrip("/"))):
             rep["present_forbidden"].append(p)
     return rep
+
+
+def _opt_ip_entries(opt):
+    """P3.6-4B: type, permission bits, owner and (for regular files) size and SHA-256 of every /opt/ip entry."""
+    out = {}
+    for d, dirs, fs in os.walk(opt, followlinks=False):
+        dirs.sort()
+        for path in [d] + [os.path.join(d, f) for f in sorted(fs)] + \
+                [os.path.join(d, x) for x in dirs if os.path.islink(os.path.join(d, x))]:
+            st = os.lstat(path)
+            rel = os.path.relpath(path, opt).replace(os.sep, "/")
+            kind = "dir" if stat.S_ISDIR(st.st_mode) else "file" if stat.S_ISREG(st.st_mode) else "other"
+            e = {"type": kind, "mode": format(stat.S_IMODE(st.st_mode), "04o"), "uid": st.st_uid, "gid": st.st_gid}
+            if kind == "file":
+                h = hashlib.sha256()
+                with open(path, "rb") as f:
+                    for block in iter(lambda: f.read(1 << 16), b""):
+                        h.update(block)
+                e.update(size=st.st_size, sha256=h.hexdigest())
+            out[rel] = e
+    return out
 
 
 # ── runtime-enforced properties ──────────────────────────────────────────────
@@ -222,7 +245,30 @@ def evaluate_image(img, expectations, lock_versions):
         problems.append(f"IMAGE: distributions differ from the lock: extra={extra} missing={missing} wrong={wrong}")
     if img["opt_ip"] != expectations["opt_ip_files"]:
         problems.append(f"IMAGE: /opt/ip files {img['opt_ip']} != {expectations['opt_ip_files']}")
+    rules = expectations.get("opt_ip_permissions")          # P3.6 image; absent from the P3.5a inert expectations
+    if rules is not None:
+        problems += evaluate_opt_ip_permissions(img.get("opt_ip_entries"), rules)
     return problems
+
+
+def evaluate_opt_ip_permissions(entries, rules):
+    """Every /opt/ip entry: an expected type, root owner, the exact mode (files, subdirectories), no group/other write."""
+    if not isinstance(entries, dict) or "." not in entries:
+        return ["IMAGE: /opt/ip permissions were not reported"]
+    p = []
+    for rel, e in sorted(entries.items()):
+        want = rules["root"] if rel == "." else rules.get(e.get("type"))
+        if want is None:
+            p.append(f"IMAGE: /opt/ip/{rel} is not a regular file or directory ({e.get('type')})")
+            continue
+        if (e.get("uid"), e.get("gid")) != (want["uid"], want["gid"]):
+            p.append(f"IMAGE: /opt/ip/{rel} owner {e.get('uid')}:{e.get('gid')} != {want['uid']}:{want['gid']}")
+        mode = int(str(e.get("mode", "7777")), 8)
+        if "mode" in want and mode != int(want["mode"], 8):
+            p.append(f"IMAGE: /opt/ip/{rel} mode {e.get('mode')} != {want['mode']}")
+        if mode & int(want["forbidden_bits"], 8):
+            p.append(f"IMAGE: /opt/ip/{rel} mode {e.get('mode')} has forbidden bits {want['forbidden_bits']}")
+    return p
 
 
 def _is_zero_hex(value):
