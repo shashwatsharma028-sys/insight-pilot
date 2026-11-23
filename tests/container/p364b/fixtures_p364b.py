@@ -33,6 +33,30 @@ def _connect(addr):
         return type(exc).__name__ + ":" + str(exc.errno)
     finally:
         s.close()
+def _text(path):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError as exc:
+        return None
+def _routes():
+    v4 = _text("/proc/net/route") or ""
+    v6 = _text("/proc/net/ipv6_route") or ""
+    return {"ipv4": [[c[0], c[1]] for c in (l.split() for l in v4.splitlines()[1:]) if c],
+            "ipv6": [[c[0], c[-1]] for c in (l.split() for l in v6.splitlines()) if c]}
+def _dns_files():
+    out = {}
+    for p in ("/etc/resolv.conf", "/etc/hosts", "/etc/hostname", "/etc/nsswitch.conf"):
+        t = _text(p)
+        out[p] = None if t is None else {"bytes": len(t.encode()), "lines": len(t.splitlines()),
+                                         "sha256": hashlib.sha256(t.encode()).hexdigest()}
+    return out
+def _lookup(name):
+    try:
+        socket.getaddrinfo(name, 80)
+        return "resolved"
+    except OSError as exc:
+        return type(exc).__name__ + ":" + str(exc.errno)
 with open("/proc/self/status") as f:
     status = {k: v.strip() for k, v in (line.split(":", 1) for line in f if ":" in line)}
 with open("/proc/self/mountinfo") as f:
@@ -46,6 +70,8 @@ print("P364B_OBSERVE " + json.dumps({
     "pid": os.getpid(), "ppid": os.getppid(), "cwd": os.getcwd(),
     "env_names": sorted(os.environ), "in_entries": sorted(os.listdir("/in")), "dataset_sha256": dataset_sha,
     "net_interfaces": sorted(os.listdir("/sys/class/net")),
+    "proc_net_dev": sorted(l.split(":")[0].strip() for l in (_text("/proc/net/dev") or "").splitlines()[2:] if ":" in l),
+    "routes": _routes(), "dns_files": _dns_files(), "getaddrinfo_example_com": _lookup("example.com"),
     "connect_tcp_192_0_2_1_80": _connect(("192.0.2.1", 80)),
     "connect_tcp_loopback_9": _connect(("127.0.0.1", 9)),
     "writes": {p: _try_write(p) for p in ("/p364b", "/opt/ip/p364b", "/in/p364b", "/etc/p364b", "/usr/p364b",
@@ -63,7 +89,7 @@ CHART_NOT_PNG = 'with open("/out/chart.png", "wb") as f:\n    f.write(b"not a pn
 FIXTURES = {"observe": OBSERVE, "code_error": CODE_ERROR, "sleep_past_wall": SLEEP_PAST_WALL,
             "allocate_2_gib": ALLOCATE_2_GIB, "chart_symlink": CHART_SYMLINK, "chart_not_png": CHART_NOT_PNG}
 SHA256 = {
-    "observe": "d6fea82cb9894c31617bfbe569d165cc836e6d6daf4b8be7c3e4ab9465017688",
+    "observe": "bc3bca7cf2091d1f69ddc9eb9a4045cacdfd52560af8488f9f3770a6d24db647",
     "code_error": "04f316a138368ea0380e0750443b8950a1a152a8db6ab453b8ca9aa028970569",
     "sleep_past_wall": "7eaecb82187b5f0c525f8175cdc2484728c0d096371bd69fe329bfe905c1725a",
     "allocate_2_gib": "a705e22cdd85d9e89bbc961aa5e513b7b2ebcd0606a2714acee713c60a7ad24f",

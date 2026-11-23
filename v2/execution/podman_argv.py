@@ -96,8 +96,10 @@ def run_argv(podman, image_id, *, instance_id, run_id, inputs_dir, prelude=Prelu
         "--tmpfs", f"/tmp:rw,size={lim.tmp_bytes},nr_inodes={lim.tmp_inodes},mode=1777,noexec,nosuid,nodev",
         "--tmpfs", f"/out:rw,size={lim.out_bytes},nr_inodes={lim.out_inodes},mode=1777,noexec,nosuid,nodev",
         "--mount", f"type=bind,source={inputs_dir},destination=/in,readonly=true",
-        # network and name services: none
-        "--network=none", "--dns=none", "--no-hosts", "--http-proxy=false",
+        # network and name services: none. P3.6-4B D1 (approved): no --dns=none; Podman 4.9.3 refuses it
+        # with --network=none ("conflicting options: dns and the network mode: none", CI run 45122041350),
+        # and without a network interface DNS configuration has nothing to act on.
+        "--network=none", "--no-hosts", "--http-proxy=false",
         # identity and privileges
         "--user", CONTAINER_USER, "--passwd=false", "--cap-drop=ALL", "--security-opt=no-new-privileges",
         # namespaces and logging
@@ -163,10 +165,17 @@ def _check_name(name):
     _require(isinstance(name, str) and _NAME.fullmatch(name) is not None, "container name has the wrong form")
 
 
+# Podman 4.9.3 rejects these with --network=none before any container starts (P3.6-4B D1).
+DNS_FLAGS_INCOMPATIBLE_WITH_NETWORK_NONE = ("--dns", "--dns-option", "--dns-search")
+
+
 def validate_argv(argv):
     """Every element is a str of the allowlisted alphabet; no shell metacharacters, spaces or NUL."""
     _require(isinstance(argv, list) and argv, "argv must be a non-empty list")
     for element in argv:
         _require(isinstance(element, str) and _ELEMENT.fullmatch(element) is not None,
                  f"argv element not allowed: {element!r}")
+    if "--network=none" in argv:
+        _require(not any(e.split("=", 1)[0] in DNS_FLAGS_INCOMPATIBLE_WITH_NETWORK_NONE for e in argv),
+                 "a --dns flag cannot be combined with --network=none (Podman 4.9.3 refuses the run)")
     return argv

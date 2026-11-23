@@ -51,6 +51,7 @@ def test_every_functional_fixture_is_pinned_small_and_benign():
     observe = mod.FIXTURES["observe"]
     hosts = set(re.findall(r'_connect\(\("([0-9.]+)"', observe))
     assert hosts == {"192.0.2.1", "127.0.0.1"}            # one RFC 5737 documentation address, one loopback
+    assert set(re.findall(r'_lookup\("([^"]+)"\)', observe)) == {"example.com"}   # RFC 2606 reserved name
     for name in ("code_error", "sleep_past_wall", "allocate_2_gib", "chart_symlink", "chart_not_png"):
         assert len(mod.FIXTURES[name]) < 200, name
 

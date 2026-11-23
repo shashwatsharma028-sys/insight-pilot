@@ -37,7 +37,7 @@ EXPECTED_RUN_ARGV = [
     "--tmpfs", "/tmp:rw,size=67108864,nr_inodes=4096,mode=1777,noexec,nosuid,nodev",
     "--tmpfs", "/out:rw,size=33554432,nr_inodes=64,mode=1777,noexec,nosuid,nodev",
     "--mount", f"type=bind,source={INPUTS},destination=/in,readonly=true",
-    "--network=none", "--dns=none", "--no-hosts", "--http-proxy=false",
+    "--network=none", "--no-hosts", "--http-proxy=false",         # P3.6-4B D1: --dns=none removed
     "--user", "10001:10001", "--passwd=false", "--cap-drop=ALL", "--security-opt=no-new-privileges",
     "--ipc=none", "--cgroupns=private", "--log-driver=passthrough", "--env-host=false",
     "--memory=1073741824", "--memory-swap=1073741824", "--cpus=1", "--pids-limit=64",

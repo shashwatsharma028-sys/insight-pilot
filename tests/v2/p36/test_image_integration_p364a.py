@@ -547,6 +547,9 @@ APPROVED_364B = {
     # sanitized CI evidence of runs #5/#6 and the wrapper that applies the reviewed P3.6-0 rules
     "docs/v2/p3/ci_p364b/sanitize_p364b.py", "docs/v2/p3/ci_p364b/run5_job_137515602649.sanitized.log",
     "docs/v2/p3/ci_p364b/run6_job_137517791540.sanitized.log",
+    # D1 (approved): --dns=none removed from the run argv; regression test; fake podman models Podman 4.9.3
+    "v2/execution/podman_argv.py", "tests/v2/p36/test_host_components_p36.py", "tests/v2/p36/fake_podman_main.py",
+    "tests/v2/p36/test_podman_dns_d1_p364b.py",
 }
 
 

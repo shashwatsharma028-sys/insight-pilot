@@ -251,8 +251,17 @@ def test_05_isolation_observed_from_inside_the_container(hardened, rt, parts):
     assert st["NoNewPrivs"] == "1" and st["Seccomp"] == "2"
     assert obs["env_names"] == sorted(supervisor.CHILD_ENV)
     assert obs["in_entries"] == ["code.py", "dataset.csv"] and obs["dataset_sha256"] == DEMO_DATASETS["sales_data.csv"]
-    assert obs["net_interfaces"] == ["lo"]
+    assert obs["net_interfaces"] == ["lo"] and obs["proc_net_dev"] == ["lo"]
+    # D1: network, routes and name services with --network=none --no-hosts (and no --dns flag)
+    assert all(iface == "lo" for iface, _ in obs["routes"]["ipv4"]), obs["routes"]
+    assert all(row[-1] == "lo" for row in obs["routes"]["ipv6"]), obs["routes"]
+    assert obs["getaddrinfo_example_com"] != "resolved"
     assert obs["connect_tcp_192_0_2_1_80"] != "connected"
+    dns_mounts = {m[0]: {"options": m[1], "fstype": m[2]} for m in obs["mounts"]
+                  if m[0] in ("/etc/resolv.conf", "/etc/hosts", "/etc/hostname", "/etc/nsswitch.conf")}
+    EVIDENCE["observations"]["dns_related_mounts"] = dns_mounts
+    _save()
+    assert all("ro" in v["options"].split(",") for v in dns_mounts.values()), dns_mounts
     w = obs["writes"]
     assert w["/tmp/p364b"] == "writable" and w["/out/p364b"] == "writable"
     assert all(w[p] != "writable" for p in w if p not in ("/tmp/p364b", "/out/p364b")), w

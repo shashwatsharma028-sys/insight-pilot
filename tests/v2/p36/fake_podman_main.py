@@ -20,7 +20,7 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-REQUIRED_FLAGS = ("--rm", "--read-only", "--read-only-tmpfs=false", "--network=none", "--dns=none", "--no-hosts",
+REQUIRED_FLAGS = ("--rm", "--read-only", "--read-only-tmpfs=false", "--network=none", "--no-hosts",
                   "--cap-drop=ALL", "--security-opt=no-new-privileges", "--ipc=none", "--cgroupns=private",
                   "--pull=never", "--passwd=false", "--env-host=false", "--http-proxy=false")
 
@@ -77,6 +77,11 @@ def main(argv, state):
 
 
 def _run(argv, state, sc):
+    # Podman 4.9.3 behaviour observed in CI run 45122041350: refused before any container starts.
+    if "--network=none" in argv and any(a.split("=", 1)[0] in ("--dns", "--dns-option", "--dns-search") for a in argv):
+        _record(state, ["run"] + argv[1:], refused="dns_with_network_none")
+        sys.stderr.write("Error: conflicting options: dns and the network mode: none\n")
+        return 125
     missing = [f for f in REQUIRED_FLAGS if f not in argv]
     name = argv[argv.index("--name") + 1]
     mount = next(a for a in argv if a.startswith("type=bind,source="))
