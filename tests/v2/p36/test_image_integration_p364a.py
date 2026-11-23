@@ -288,6 +288,20 @@ def test_staged_context_holds_exactly_the_allowlist_and_no_decoy(tmp_path):
         == layout.runtime_tree_sha256(repo) == _labels()[layout.RUNTIME_LABEL]
 
 
+def test_the_staged_digest_is_computed_from_the_context_not_the_repository(tmp_path):
+    """build() compares the label with what will actually be copied: a context altered after staging must differ."""
+    img, cache, inv, repo, _ = _fake_repo_with_runtime(tmp_path)
+    ctx = tmp_path / "ctx"
+    tool.stage("x86_64", cache, str(ctx), inv=inv, image_dir=img, source_root=repo)
+    assert tool.staged_runtime_digest(str(ctx)) == layout.runtime_tree_sha256(repo)
+    staged = ctx / "opt-ip" / "runner.py"
+    staged.write_bytes(staged.read_bytes() + b"\n")
+    assert tool.staged_runtime_digest(str(ctx)) != layout.runtime_tree_sha256(repo)
+    os.unlink(ctx / "opt-ip" / "v2" / "execution" / "frame.py")
+    with pytest.raises(OSError):
+        tool.staged_runtime_digest(str(ctx))
+
+
 def test_every_containerfile_copy_source_is_a_staged_entry():
     copies = [arg.split() for s in _stages() for kw, arg in s["instr"] if kw == "COPY"]
     sources = {c[0] for c in copies if not c[0].startswith("--from=")}
