@@ -1,12 +1,14 @@
 # InsightPilot V2 P3.6-4B: real container build and functional validation
 
-**Status: STOPPED at a mandatory gate. The real-runtime preflight refused, and fixing it requires
-changing the reviewed isolation flags, which needs your approval.**
+**Status (after the D1 attempt, run #7): STOPPED again at a mandatory gate, on decision D3.**
+D1 was approved and implemented (`d7a5dea2`) and is confirmed on the real runtime: the DNS conflict is gone.
+Podman 4.9.3 now refuses the reviewed tmpfs inode bound (`nr_inodes`) before any container starts. Fixing that
+changes a resource-limit setting, which is explicitly not approved. See §8.
 
 | | |
 |---|---|
 | Branch | `feature/v2-p364b-real-container-validation`, from `5452497fa9a58f45752ec8a79eeda4580c364db6` |
-| CI runs | #5 `45121353914` on `7d63b0f7`; #6 `45122041350` on `15a2a5b6`. Sanitised evidence and checksums: `docs/v2/p3/ci_p364b/` |
+| CI runs | #5 `45121353914` on `7d63b0f7`; #6 `45122041350` on `15a2a5b6`; #7 `45125846903` on `d1e208cb` (the single D1 attempt). Sanitised evidence and checksums: `docs/v2/p3/ci_p364b/` |
 | Runner | GitHub-hosted ubuntu-24.04, kernel `7.0.0-1017-azure`, Podman 4.9.3, crun 1.14.1, cgroup v2 (systemd), rootless, seccomp enabled, AppArmor and SELinux off |
 | Production | unchanged: `ensure_ready` still refuses hardened mode, and no deployment change |
 
@@ -92,3 +94,54 @@ runs only on this branch and only when its pinned content digest matches.
 
 - **P3.7:** a custom seccomp profile; independent validation of the memory, pids and CPU limits; an explicit policy for the `/dev` pseudo-filesystems.
 - **VE-2:** a non-root, non-sudo account on a VM you control; the hostile-code and cross-account probes; 0 skips. That is the only basis for any security claim.
+
+## 8. D1 attempt: run #7 (`45125846903`, commit `d1e208cb`, code digest of `d7a5dea2`)
+
+**D1, as implemented:**
+- **Argv:** `--dns=none` is removed. `--network=none`, `--no-hosts`, `--http-proxy=false` and every other flag are unchanged.
+- **Guard:** `validate_argv` now refuses any `--dns*` flag combined with `--network=none`.
+- **Fake Podman:** it reproduces the 4.9.3 refusal.
+- **Regression tests:** 10 new tests.
+- **Mutation:** 7/7 D1 mutants detected at the pinned commit `a5db2815`. Those that dropped `--network=none`, `--no-hosts` or `--http-proxy=false`, or used `--network=host`, were caught by the exact-argv and fake-runtime preflight checks. A re-added `--dns=none`, a removed guard, and a guard missing `--dns-option` were caught by the 4.9.3 regression and grammar tests.
+- **Offline regression at `a5db2815`:** 1861 passed, 13 xfailed, 0 failed, 0 skipped; clean tree.
+
+**Run #7, Stage 1: PASSED again**, on a different cloud: kernel `7.0.0-1014-aws`, where runs #5 and #6 used `7.0.0-1017-azure`.
+- **Image:** ID `cf547ba22cac3ab4871dd5344691c6c6dcdb3f58e8f23a784a5185722c4f1d11` and digest
+  `sha256:82d2f0f12f5c20b7fdf814c57c94374b56f536a779a347b55c0ddfc91298229f`, identical in all three runs and both builds of each.
+  So the build is reproducible across runners and clouds.
+- **Builds:** 25.0 s and 20.7 s.
+- **Start-up:** warm median 122.2 ms (p95 135.5 ms); cold median 126.8 ms (p95 130.3 ms). This runner was faster than #6
+  (187.1 / 189.0 ms). The difference is runner hardware, not a code change, so it is not a performance claim.
+- **Golden fixtures in the image:** 28/28 numbers, 12/12 hermetic charts.
+
+**Run #7, Stage 2: FAILED CLOSED at preflight.** The suite reported 2 passed (host and image preconditions; no leftovers), 3 failed
+(attest-only and both self-tests: the frame was truncated at 0 of 4 bytes), 12 errors (preflight refused, so hardened mode was
+never entered) and 2 deselected (P5, NOT RUN). Diagnostics, identical for all four container starts:
+
+```
+Error: unknown mount option "nr_inodes=4096": invalid mount option
+```
+
+`run_argv` passes `--tmpfs /tmp:rw,size=67108864,nr_inodes=4096,...` and `--tmpfs /out:rw,size=33554432,nr_inodes=64,...`
+(`Limits.tmp_inodes` and `Limits.out_inodes`), and Podman 4.9.3's tmpfs option parser rejects `nr_inodes`.
+No container started.
+
+**Not obtained, because preflight never ran a container:** the attestation, the inside network/route/DNS observations,
+the D2 writable-mount facts, Stages 3 and 4. Each Podman option error appears only after the previous one is fixed,
+so further incompatibilities may follow.
+
+### D3 (decision needed): the tmpfs inode bound
+
+- **Option A:** drop `nr_inodes` from both `--tmpfs` specifications and keep `size`, `mode=1777`, `noexec`, `nosuid` and `nodev`.
+  - The kernel default inode count then applies. Inode memory is kernel memory charged to the container's cgroup v2 memory limit,
+    which preflight requires to be 1 GiB.
+  - `/out` keeps its byte size bound, and the supervisor already counts and ignores every `/out` entry except `chart.png`.
+  - `Limits.tmp_inodes` and `out_inodes` would no longer be enforced by Podman. They are a resource limit, so this needs your approval.
+  - I would also add an observation of the actual inode counts (statvfs on `/tmp` and `/out`) to the real-container suite.
+- **Option B:** keep the inode bound with another mechanism, for example a host-prepared, size- and inode-limited filesystem
+  bind-mounted for `/tmp` and `/out`. That changes the mount design and the persistent-storage/sandbox surface, so it is a
+  larger change needing review.
+- **Option C:** keep refusing. P3.6-4B then cannot proceed on Podman 4.9.3.
+
+**D2** (`/dev/pts`, `/dev/mqueue` mounted read-write, against the attestation that allows only `/out` and `/tmp`) is still
+anticipated and still not approved. It can only be observed once a container starts.
