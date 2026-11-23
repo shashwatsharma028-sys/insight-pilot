@@ -300,7 +300,7 @@ def test_every_containerfile_copy_source_is_a_staged_entry():
                       ["--from=build", "/stage/opt-ip/", "/opt/ip/"]]
 
 
-@pytest.mark.parametrize("problem", ["missing", "symlink", "escaping_dir", "fifo"])
+@pytest.mark.parametrize("problem", ["missing", "symlink", "symlink_inside_repo", "escaping_dir", "fifo"])
 def test_staging_refuses_a_missing_or_unsafe_runtime_source(tmp_path, problem):
     img, cache, inv, repo, _ = _fake_repo_with_runtime(tmp_path)
     target = os.path.join(repo, "v2", "execution", "frame.py")
@@ -310,6 +310,9 @@ def test_staging_refuses_a_missing_or_unsafe_runtime_source(tmp_path, problem):
         real = tmp_path / "elsewhere.py"
         os.replace(target, real)
         os.symlink(real, target)
+    elif problem == "symlink_inside_repo":            # another repository file under a reviewed name
+        os.unlink(target)
+        os.symlink(os.path.join(repo, "v2", "execution", "bootstrap.py"), target)
     elif problem == "escaping_dir":
         outside = tmp_path / "outside"
         shutil.move(os.path.join(repo, "config"), outside)
