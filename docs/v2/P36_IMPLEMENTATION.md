@@ -4,6 +4,10 @@
 
 **Approval:** R1–R6 of `docs/v2/P36_IMPLEMENTATION_PROPOSAL.md`, covering stages 0–3 only.
 
+> **Update (P3.6-4A, `feature/v2-p364a-image-integration`):** the image *definition* now installs this
+> runtime and uses the supervisor as its entrypoint. Still no image has been built or run. The statements below
+> describe the state at `41536829` and are kept unchanged; see `docs/v2/P364A_IMPLEMENTATION.md`.
+
 **What has not been done:**
 - **No container image was built.** The image definition is still the inert P3.5a image.
 - **No real Podman or Docker container was started.** Every runtime test uses a fake `podman` executable.

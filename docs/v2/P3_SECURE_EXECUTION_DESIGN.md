@@ -11,6 +11,7 @@
 > - **Still not done:** VE-2 has not been executed, there has been no vulnerability scan, and no isolation property has been validated for untrusted code.
 > - **P5.1A** wired the dataset identity check, the trusted-prelude selector and the extended tripwire (`docs/v2/P51A_INTEGRATION.md`).
 > - **P3.6 stages 0–3** are being implemented on `feature/v2-p36-container-runtime` with fakes only, under `docs/v2/P36_IMPLEMENTATION_PROPOSAL.md` / `docs/v2/P36_IMPLEMENTATION.md`. Production hardened execution remains refused.
+> - **P3.6-4A (offline only)** on `feature/v2-p364a-image-integration`: the image *definition* now installs the trusted runtime under `/opt/ip` (`v2/execution/image_layout.py`), uses the supervisor as its entrypoint and pins a runtime-tree digest label. §8.7a below describes the superseded inert P3.5a definition, which is frozen in `docs/v2/p3/p35a_inert_reference/`. No P3.6 image has been built or run, and nothing about isolation is verified. See `docs/v2/P364A_IMPLEMENTATION.md`.
 > - **R2 (approved):** the provisional memory limit is **1 GiB** (`Limits.memory_bytes`) everywhere. The 256 MiB in the P3.5b probe and image expectations was a probe-only value; it is reconciled to 1 GiB in the tooling. Enforcement is not claimed until a real container is tested.
 
 **Status labels used throughout:**
