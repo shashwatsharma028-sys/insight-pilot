@@ -70,6 +70,12 @@ def _stats(ms):
             "min_ms": ms[0], "max_ms": ms[-1]}
 
 
+def _diagnostics(rt, key):
+    """Record the runtime's podman/supervisor stderr (never shown to users) for a failed container step."""
+    EVIDENCE["observations"].setdefault("diagnostics", {})[key] = [d[-3000:] for d in rt.diagnostics[-4:]]
+    _save()
+
+
 def _rusage():
     r = resource.getrusage(resource.RUSAGE_CHILDREN)
     return {"utime_s": round(r.ru_utime, 3), "stime_s": round(r.ru_stime, 3), "maxrss_kib": r.ru_maxrss}
@@ -117,7 +123,7 @@ def hardened(rt):
         bootstrap.install_for_validation(rt, env=env, options=OPTIONS)
     except Exception as exc:                                     # recorded, then the dependent tests fail
         EVIDENCE["results"]["preflight"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:2000]}
-        _save()
+        _diagnostics(rt, "preflight")
         raise
     EVIDENCE["timings"]["preflight_ms"] = round((time.perf_counter() - t0) * 1000, 1)
     EVIDENCE["results"]["preflight"] = {"ok": True}
@@ -181,7 +187,11 @@ def test_01_host_and_image_preconditions(rt, parts):
 def test_02_attestation_under_the_reviewed_run_flags(rt):
     from v2.execution.frame import expected_attestation
     t0 = time.perf_counter()
-    decoded = rt._self_test("attest-only")
+    try:
+        decoded = rt._self_test("attest-only")
+    except Exception:
+        _diagnostics(rt, "attest-only")
+        raise
     EVIDENCE["timings"]["attest_only_ms"] = round((time.perf_counter() - t0) * 1000, 1)
     expected = expected_attestation(rt.limits)
     EVIDENCE["observations"]["attestation"] = decoded.attestation
@@ -196,7 +206,11 @@ def test_02_attestation_under_the_reviewed_run_flags(rt):
 @pytest.mark.parametrize("mode", ["selftest-oom", "selftest-pids"])
 def test_03_resource_limit_self_tests(rt, mode):
     t0 = time.perf_counter()
-    d = rt._self_test(mode)
+    try:
+        d = rt._self_test(mode)
+    except Exception:
+        _diagnostics(rt, mode)
+        raise
     EVIDENCE["timings"][f"{mode}_ms"] = round((time.perf_counter() - t0) * 1000, 1)
     EVIDENCE["observations"][mode] = {"child_exit": d.child_exit, "child_signal": d.child_signal,
                                       "oom_killed": d.oom_killed, "timed_out": d.timed_out}
