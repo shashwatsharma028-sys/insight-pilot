@@ -20,7 +20,7 @@ that any isolation property is enforced. Those questions belong to P3.6-4B and V
 | `scripts/p3/image_inspect.py` | The P3.6 runtime files are added to the file write probes; the P3.5a probe is kept |
 | `v2/execution/container_runtime.py` | `preflight()` also refuses an image whose runtime label differs from the host's own trusted sources |
 | `docs/v2/p3/p35a_inert_reference/` (new) | Byte copies of the last inert `Containerfile`, `image-expectations.json` and `inert_entrypoint.py` from `41536829`, with SHA-256 provenance |
-| Tests | New `tests/v2/p36/test_image_integration_p364a.py`. Narrow updates to `test_image_p35a.py` (now tests the frozen reference), `test_rootless_p35b.py`, `conftest.py`, `test_container_runtime_p36.py`, `test_contract_purity.py` and `test_integration_controls_p51a.py` |
+| Tests | New `tests/v2/p36/test_image_integration_p364a.py` (64 tests). Narrow updates to `test_image_p35a.py` (now tests the frozen reference), `test_rootless_p35b.py`, `conftest.py`, `test_container_runtime_p36.py`, `test_contract_purity.py` and `test_integration_controls_p51a.py` |
 
 The 14 runtime source files are **byte-identical** to the reviewed P3.6-3 sources, and a test enforces
 this. Unchanged: V1, `sandbox_v2/`, the P4/P5 evidence, the CI run #4 evidence, both requirements
@@ -80,13 +80,33 @@ io.insightpilot.runtime.sha256 = 4132ff83f369ac398e78c2f5281ec5e5622b32e6d492415
 
 | Run | Result |
 |---|---|
-| New `test_image_integration_p364a.py` | 62 passed |
-| P3 + P3.6 + P5.1 suites | see the final full-suite line below |
-| Full offline suite (`tests/`, environment B, real Git checkout) | pending (run in progress; recorded in a follow-up commit) |
-| Mutation checks (`docs/v2/p3/p364a_mutation_checks.md`) | pending (run in progress; recorded in a follow-up commit) |
+| New `test_image_integration_p364a.py` | 64 passed |
+| **Full offline suite** at `deabb605757083c992c5afd85d39791352adbe0f` (clean committed checkout; 2026-11-23 05:18:58–05:25:51 UTC) | **1836 passed, 13 xfailed, 0 failed, 0 skipped, 0 errors**. Exit 0. `git status --porcelain` was empty afterwards |
+| Mutation checks (`docs/v2/p3/p364a_mutation_checks.md`) | **31/31 detected at the final commit.** The first batch at `03501e00` detected 29; the 2 survivors (L5, T3) were closed by new tests and re-run at `deabb605`. A secondary check also caught S1–S3 with their dedicated security tests alone |
 
-Command: `env -u GOOGLE_API_KEY PYTHONDONTWRITEBYTECODE=1 <venvB>/bin/python -m pytest tests/ -q -p no:cacheprovider -rxfEs`
-(CPython 3.11.18). Baseline before P3.6-4A: 1769 passed, 13 xfailed.
+The command:
+
+```bash
+env -u GOOGLE_API_KEY PYTHONDONTWRITEBYTECODE=1 <venvB>/bin/python -m pytest tests/ -q -p no:cacheprovider -rxfEs
+```
+
+It ran on CPython 3.11.18 (environment B), with no network, API or container use.
+
+- **Count:** the baseline before P3.6-4A was 1769 passed and 13 xfailed. The difference, +67, is 64 new tests plus 2 P3.5b label cases plus 2 runtime-label refusal cases, minus 1 parametrisation (`inert_entrypoint.py` left `CONTEXT_FILES`).
+- **xfails:** the 13 strict xfails are the documented V1 baseline gaps, unchanged.
+- **Warnings:** the 3 warnings are the documented Streamlit AppTest stale-widget retry (`docs/v2/BASELINE.md`); how many appear varies between runs.
+- **Discarded runs:** two earlier full-suite runs were stopped on purpose and are not used as evidence. The first started from a working tree with uncommitted docs, and the second had a test edited in the checkout while it ran.
+
+**Preservation and fail-closed checks**, all passing in that run:
+- **V1:** `ui`, `agent`, `sandbox`, `utils`, `rules`, `skills`, `data`, `lessons` and `requirements.txt` are byte-identical to `fd5783c6` (`test_v1_application_paths_are_byte_identical_to_the_examination_commit`, `test_v1_application_and_p4_evidence_are_unchanged`).
+- **P4.1 and P5 evidence:** `sandbox_v2/`, `docs/v2/p4`, `docs/v2/p5`, `evaluation/`, `requirements-v2.txt` and `docs/v2/p3/ci_run4` are unchanged (`test_p41_optimisation_and_all_benchmark_evidence_are_unchanged`, which also checks `HARNESS_VERSION == "p4.1"`).
+- **Runtime sources:** the 14 runtime sources are byte-identical to the reviewed P3.6-3 sources (`test_the_installed_runtime_is_byte_identical_to_the_reviewed_p36_3_sources`).
+- **Production fail-closed:** `ensure_ready` refuses under every hardened, validation-variable and orchestrator combination tested, and nothing outside `tests/` references `install_for_validation` (`test_production_still_refuses_…`, `test_production_cannot_reach_hardened_mode_…`).
+- **Protected refs (`git ls-remote`, 2026-11-23):**
+  - `main` and `exam-backup-2026-11-17` are at `fd5783c6`; `feature/insightpilot-v2` is at `1fd3af3c`.
+  - P3 is at `2d0a5a73`, the probe branch at `4cd107e0` and P4 at `d321785c`.
+  - P5 is at `1444491e`, P5.1A at `05d1588d` and P3.6 at `41536829`.
+  - The default branch is still `main`. None of these refs changed.
 
 ## 6. Outstanding real-runtime uncertainties (P3.6-4B)
 
@@ -105,8 +125,9 @@ Command: `env -u GOOGLE_API_KEY PYTHONDONTWRITEBYTECODE=1 <venvB>/bin/python -m 
 
 ## 7. Rollback
 
-Delete `feature/v2-p364a-image-integration`, or revert its commits newest first. No other branch
-changed. The P3.6-3 head `41536829` still holds the inert image definition, and production behaviour
+Delete `feature/v2-p364a-image-integration`, or revert its commits newest first: the final docs
+commit, then `deabb605`, `24578d70`, `5f8e1370`, `03501e00`. Reverting only `03501e00` and the three
+commits after it restores the P3.6-3 state exactly. No other branch changed. The P3.6-3 head `41536829` still holds the inert image definition, and production behaviour
 is identical either way.
 
 ## 8. Exact requirements for P3.6-4B (NOT approved; not started)
