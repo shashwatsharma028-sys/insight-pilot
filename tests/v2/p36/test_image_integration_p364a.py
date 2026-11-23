@@ -544,6 +544,9 @@ APPROVED_364B = {
     "tests/container/__init__.py", "tests/container/p364b/__init__.py",
     "tests/container/p364b/container_p364b.py", "tests/container/p364b/fixtures_p364b.py",
     "tests/v2/p36/test_container_suite_static_p364b.py",
+    # sanitized CI evidence of runs #5/#6 and the wrapper that applies the reviewed P3.6-0 rules
+    "docs/v2/p3/ci_p364b/sanitize_p364b.py", "docs/v2/p3/ci_p364b/run5_job_137515602649.sanitized.log",
+    "docs/v2/p3/ci_p364b/run6_job_137517791540.sanitized.log",
 }
 
 
