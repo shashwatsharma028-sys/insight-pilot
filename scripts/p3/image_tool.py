@@ -12,9 +12,12 @@ Subcommands
                 verify every SHA-256 and size against the committed inventory
                 (network: files.pythonhosted.org).
   stage         Build the image build context from the EXACT allowlist only:
-                the image files plus the verified wheels for one architecture.
-                Never reads the repository root, .env, .git or venv/.
-                Writes a deterministic context tarball and prints its SHA-256.
+                CONTEXT_FILES, the trusted runtime files listed one by one in
+                v2/execution/image_layout.RUNTIME_FILES (staged under opt-ip/;
+                P3.6-4A) and the verified wheels for one architecture.
+                Never walks or copies a directory, so .env, .git, venv/,
+                datasets and caches cannot enter. Prints the deterministic
+                context digest and the runtime-tree digest.
 
 Nothing here builds or runs a container. See build_image.sh.
 Requires Python 3.11 and `packaging` (development dependency) for `lock`.
@@ -32,6 +35,10 @@ import tarfile
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from v2.execution import image_layout  # noqa: E402  (pure layout data and digest; no process, no network)
+
 IMAGE_DIR = os.path.join(ROOT, "v2", "execution", "image")
 LOCK = os.path.join(IMAGE_DIR, "requirements.lock")
 INVENTORY = os.path.join(IMAGE_DIR, "dependency-inventory.json")
@@ -56,7 +63,8 @@ GLIBC_MINOR = 36                      # Debian bookworm (glibc 2.36)
 ARCHES = ("x86_64", "aarch64")
 OCI_ARCH = {"x86_64": "amd64", "aarch64": "arm64"}
 
-CONTEXT_FILES = ("Containerfile", "requirements.lock", "inert_entrypoint.py")
+# P3.6-4A: the inert entrypoint left the context; the trusted runtime is staged from image_layout.
+CONTEXT_FILES = ("Containerfile", "requirements.lock")
 _NAME = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -197,10 +205,11 @@ def fetch_wheels(arch, cache, inv=None):
     return results
 
 
-def stage(arch, cache, out_dir, inv=None, image_dir=IMAGE_DIR):
+def stage(arch, cache, out_dir, inv=None, image_dir=IMAGE_DIR, source_root=ROOT):
     """
     Stage the build context from the allowlist only. Every wheel is re-hashed
-    here. Returns (file list, context tarball SHA-256).
+    here; every runtime file is read from source_root by its exact path.
+    Returns (file list, context tarball SHA-256).
     """
     inv = inv or load_inventory(os.path.join(image_dir, "dependency-inventory.json"))
     if arch not in ARCHES:
@@ -213,6 +222,16 @@ def stage(arch, cache, out_dir, inv=None, image_dir=IMAGE_DIR):
         if os.path.islink(src) or not os.path.isfile(src):
             raise SystemExit(f"context file missing or not a regular file: {name}")
         shutil.copyfile(src, os.path.join(out_dir, name))
+    try:
+        image_layout.check_layout()
+        for dest, src in image_layout.RUNTIME_FILES:
+            data = image_layout.read_source(src, source_root)
+            target = os.path.join(out_dir, image_layout.CONTEXT_DIR, dest)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "xb") as fh:
+                fh.write(data)
+    except (OSError, image_layout.LayoutError) as exc:
+        raise SystemExit(f"runtime file missing or unsafe: {exc}") from None
     for name, e in sorted(inv["packages"].items()):
         w = e["wheels"][arch]
         if "/" in w["filename"] or not w["filename"].endswith(".whl"):
@@ -225,6 +244,15 @@ def stage(arch, cache, out_dir, inv=None, image_dir=IMAGE_DIR):
     files = sorted(os.path.relpath(os.path.join(d, f), out_dir).replace(os.sep, "/")
                    for d, _, fs in os.walk(out_dir) for f in fs)
     return files, context_digest(out_dir, files)
+
+
+def staged_runtime_digest(out_dir):
+    """Runtime-tree digest of a STAGED context (what the build will copy), not of the repository."""
+    entries = []
+    for dest, _ in image_layout.RUNTIME_FILES:
+        with open(os.path.join(out_dir, image_layout.CONTEXT_DIR, dest), "rb") as fh:
+            entries.append((dest, fh.read()))
+    return image_layout.tree_digest(entries)
 
 
 def context_digest(out_dir, files):
@@ -272,6 +300,7 @@ def main(argv=None):
     files, digest = stage(a.arch, a.cache, a.out)
     print("\n".join(files))
     print("context-sha256", digest)
+    print("runtime-sha256", staged_runtime_digest(a.out))
     return 0
 
 

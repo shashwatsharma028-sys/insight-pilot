@@ -62,6 +62,10 @@ def test_preflight_checks_host_image_and_three_trusted_self_tests(runtime_parts)
                                                         "/opt/ip/inert_entrypoint.py"]}}}, "trusted supervisor"),
     ({"image": {**GOOD_IMAGE, "Config": {**GOOD_IMAGE["Config"], "Labels": {"io.insightpilot.stage": "P3.5a-inert"}}}},
      "not a P3.6 sandbox image"),
+    ({"image": {**GOOD_IMAGE, "Config": {**GOOD_IMAGE["Config"], "Labels": {
+        **GOOD_IMAGE["Config"]["Labels"], "io.insightpilot.runtime.sha256": "0" * 64}}}}, "runtime label"),
+    ({"image": {**GOOD_IMAGE, "Config": {**GOOD_IMAGE["Config"], "Labels": {"io.insightpilot.stage": "P3.6"}}}},
+     "runtime label"),
     ({"image": {**GOOD_IMAGE, "Config": {**GOOD_IMAGE["Config"], "User": "0:0"}}}, "image user"),
     ({"image": {**GOOD_IMAGE, "Config": {**GOOD_IMAGE["Config"], "Volumes": {"/data": {}}}}}, "volumes"),
     ({"image": {**GOOD_IMAGE, "Id": "e" * 64}}, "pinned id"),

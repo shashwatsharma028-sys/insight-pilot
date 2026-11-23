@@ -23,6 +23,7 @@ import pytest
 
 from tests.v2.golden.reference import ROOT
 from tests.v2.p3.leak_guard import v2_global_state_guard  # noqa: F401  (autouse fixture)
+from v2.execution import image_layout
 from v2.execution.container_runtime import EXPECTED_ENTRYPOINT, ContainerRuntime
 
 IMAGE_ID = "sha256:" + "d" * 64
@@ -32,7 +33,9 @@ GOOD_INFO = {"host": {"arch": "amd64", "os": "linux", "cgroupVersion": "v2", "cg
                       "security": {"rootless": True, "seccompEnabled": True},
                       "idMappings": {"uidmap": MAP, "gidmap": MAP}}}
 GOOD_IMAGE = {"Id": "d" * 64, "Config": {"User": "10001:10001", "Entrypoint": EXPECTED_ENTRYPOINT,
-                                         "Labels": {"io.insightpilot.stage": "P3.6"}, "Volumes": None,
+                                         "Labels": {"io.insightpilot.stage": "P3.6",
+                                                    image_layout.RUNTIME_LABEL: image_layout.runtime_tree_sha256()},
+                                         "Volumes": None,
                                          "ExposedPorts": None}}
 GOOD_MODES = {"selftest-oom": {"oom": True, "stdout": ""}, "selftest-pids": {"exit_code": 4, "stdout": ""}}
 

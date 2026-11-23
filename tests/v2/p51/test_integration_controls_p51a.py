@@ -241,6 +241,9 @@ P36_P3_FILES = {
     "scripts/p3/gen_preludes.py", "tests/v2/p3/test_image_p35a.py",
     # P3.6-3: the runtime and its validation-only bootstrap entry point
     "v2/execution/container_runtime.py", "tests/v2/p3/test_bootstrap_p3.py",
+    # P3.6-4A (approved, offline only): image-source integration
+    "v2/execution/image_layout.py", "v2/execution/image/Containerfile", "scripts/p3/image_tool.py",
+    "scripts/p3/image_inspect.py",
 }
 
 

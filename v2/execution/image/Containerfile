@@ -1,19 +1,29 @@
-# InsightPilot V2 sandbox runtime image: P3.5a FOUNDATION ONLY.
+# InsightPilot V2 sandbox runtime image: P3.6 (P3.6-4A image-source integration).
 #
-# The entrypoint is INERT. It never executes generated code, and no
-# supervisor or runner is installed in this stage.
+# The entrypoint is the trusted PID-1 supervisor (/opt/ip/supervisor.py). It
+# runs generated code ONLY when ContainerRuntime starts it with the reviewed
+# argv (v2/execution/podman_argv.run_argv) and a read-only /in/code.py. Started
+# with no arguments, or with any argument outside that grammar, it writes one
+# usage line to stderr and exits 78 without starting a child.
+#
+# /opt/ip holds exactly v2/execution/image_layout.RUNTIME_FILES: the supervisor,
+# runner, self-tests, pinned preludes and their import closure. They are
+# root-owned and read-only (files 0444, directories 0555). The
+# io.insightpilot.runtime.sha256 label pins their digest.
 #
 # Build ONLY with scripts/p3/build_image.sh: rootless Podman or Buildah,
 # --network=none, from a context staged by scripts/p3/image_tool.py stage.
-# That context holds exactly this file, requirements.lock,
-# inert_entrypoint.py and the hash-verified wheels for one architecture.
-# It is never the repository root, so .env, .git and venv/ cannot reach the
-# image.
+# That context holds exactly this file, requirements.lock, opt-ip/ (the
+# runtime files, copied one by one) and the hash-verified wheels for one
+# architecture. It is never the repository root, so .env, .git, venv/ and
+# datasets cannot reach the image.
 #
 # This file does NOT implement network isolation, seccomp, cgroup limits,
 # capability dropping, a read-only root filesystem or mount restrictions.
-# The future container launcher (P3.6/P3.7) must enforce all of them at run
-# time (design §8.1, §8.7a).
+# The container launcher (v2/execution/podman_argv.py) requests them at run
+# time; none of them is verified until real-runtime validation (P3.6-4B, VE-2).
+# The superseded inert P3.5a definition is kept in
+# docs/v2/p3/p35a_inert_reference/ for comparison.
 #
 # Base: python:3.11.18-slim-bookworm. The multi-arch index digest was
 # verified against the registry, and the evidence is in base/
@@ -29,6 +39,10 @@ RUN set -eu; \
     rm -rf /stage/site-packages/bin /stage/site-packages/share; \
     python -I -m compileall -q -j 0 --invalidation-mode checked-hash \
         -s /stage/site-packages -p /usr/local/lib/python3.11/site-packages /stage/site-packages
+COPY opt-ip/ /stage/opt-ip/
+RUN set -eu; \
+    find /stage/opt-ip -type d -exec chmod 0555 {} +; \
+    find /stage/opt-ip -type f -exec chmod 0444 {} +
 
 FROM docker.io/library/python:3.11.18-slim-bookworm@sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39 AS runtime
 RUN set -eu; \
@@ -47,17 +61,18 @@ RUN set -eu; \
     mkdir -p /opt/ip; \
     rm -rf /root/.cache /tmp/* /var/tmp/*
 COPY --from=build /stage/site-packages/ /usr/local/lib/python3.11/site-packages/
-COPY --chmod=0444 inert_entrypoint.py /opt/ip/inert_entrypoint.py
+COPY --from=build /stage/opt-ip/ /opt/ip/
 
 LABEL org.opencontainers.image.title="insightpilot-sandbox" \
       org.opencontainers.image.base.name="docker.io/library/python:3.11.18-slim-bookworm" \
       org.opencontainers.image.base.digest="sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39" \
-      io.insightpilot.stage="P3.5a-inert" \
-      io.insightpilot.lock.sha256="9a355dd6e120ba38d9d91e41bcd52921f3070b5749954cc08635e496aa45e053"
+      io.insightpilot.stage="P3.6" \
+      io.insightpilot.lock.sha256="9a355dd6e120ba38d9d91e41bcd52921f3070b5749954cc08635e496aa45e053" \
+      io.insightpilot.runtime.sha256="4132ff83f369ac398e78c2f5281ec5e5622b32e6d492415e011cb3dd39969eb8"
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONNOUSERSITE=1 \
     MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib HOME=/nonexistent
 WORKDIR /
 USER 10001:10001
-ENTRYPOINT ["/usr/local/bin/python3", "-I", "-B", "/opt/ip/inert_entrypoint.py"]
+ENTRYPOINT ["/usr/local/bin/python3", "-I", "-B", "/opt/ip/supervisor.py"]
 CMD []

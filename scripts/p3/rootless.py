@@ -14,7 +14,9 @@ InsightPilot P3.5b: rootless build and validation driver (development only).
                                 any container work unless every host check
                                 and the enforcement probe pass.
   verify IMAGE [--evidence F]   Image config, image contents, runtime-enforced
-                                properties and the inert entrypoint.
+                                properties and the no-argument refusal of the
+                                P3.6 supervisor entrypoint (P3.6-4A; it was the
+                                inert entrypoint until then).
   compare IMAGE_A IMAGE_B [--evidence F]
                                 Reproducibility: image IDs, digests, RootFS layers; if layers
                                 differ, a member-level diff of each differing layer pair.
@@ -31,8 +33,9 @@ It never runs as root and never uses a rootful, remote or Docker runtime.
 Every podman process gets a minimal environment, with no proxy variables
 and no credentials. Every container gets --http-proxy=false and
 --env-host=false. No generated or user-supplied code is executed: the only
-programs run in containers are the inspector, the inert entrypoint and the
-hash-pinned golden fixtures.
+programs run in containers are the inspector, the supervisor entrypoint
+started with NO arguments (it refuses with exit 78 before starting any child)
+and the hash-pinned golden fixtures.
 """
 
 import argparse
@@ -59,6 +62,7 @@ import image_tool     # noqa: E402
 
 # Host rules live in v2/execution/host_checks.py (P3.6-1), shared with the production runtime preflight.
 sys.path.insert(0, ROOT)
+from v2.execution import image_layout  # noqa: E402
 from v2.execution.host_checks import (MIN_PODMAN, OCI_ARCH, SUBID_MIN, _maps_to, _version,  # noqa: E402,F401
                                       evaluate_host)
 REMOTE_ENV = ("CONTAINER_HOST", "CONTAINER_CONNECTION", "DOCKER_HOST", "CONTAINER_SSHKEY", "DOCKER_CONTEXT")
@@ -237,7 +241,7 @@ def pull_argv(arch):
 
 
 def image_tag(arch, lock_sha):
-    return f"localhost/insightpilot-sandbox:p3.5a-{lock_sha[:12]}-{arch}"
+    return f"localhost/insightpilot-sandbox:p3.6-{lock_sha[:12]}-{arch}"
 
 
 # ── checks of podman output ─────────────────────────────────────────────────
@@ -277,6 +281,10 @@ def check_image_config(inspect_json, arch, lock_sha):
         p.append(f"IMAGE: labels {sorted(labels)} != {EXPECT['labels']}")
     if labels.get("io.insightpilot.lock.sha256") != lock_sha:
         p.append("IMAGE: lock label does not match requirements.lock")
+    if labels.get("io.insightpilot.stage") != EXPECT["stage_label"]:
+        p.append(f"IMAGE: stage label {labels.get('io.insightpilot.stage')!r} != {EXPECT['stage_label']!r}")
+    if labels.get(image_layout.RUNTIME_LABEL) != image_layout.runtime_tree_sha256():
+        p.append("IMAGE: runtime label does not match the repository's trusted runtime files")
     if labels.get("org.opencontainers.image.base.digest") != BASE["index_digest"]:
         p.append("IMAGE: base digest label does not match the verified base")
     return p
@@ -295,14 +303,15 @@ def check_id_mapping(rt, host_uid, subuid):
     return []
 
 
-def check_inert(result):
+def check_no_args_refusal(result):
+    """The P3.6 entrypoint started with no arguments: exit 78, nothing on stdout (no frame), one usage line."""
     p = []
-    if result.returncode != EXPECT["inert_exit_status"]:
-        p.append(f"INERT: exit status {result.returncode}, expected {EXPECT['inert_exit_status']}")
+    if result.returncode != EXPECT["no_args_exit_status"]:
+        p.append(f"NOARGS: exit status {result.returncode}, expected {EXPECT['no_args_exit_status']}")
     if result.stdout:
-        p.append(f"INERT: wrote to stdout: {result.stdout[:200]!r}")
-    if result.stderr != (EXPECT["inert_message"] + "\n").encode():
-        p.append(f"INERT: stderr {result.stderr[:300]!r}")
+        p.append(f"NOARGS: wrote to stdout: {result.stdout[:200]!r}")
+    if result.stderr != (EXPECT["no_args_message"] + "\n").encode():
+        p.append(f"NOARGS: stderr {result.stderr[:300]!r}")
     return p
 
 
@@ -357,11 +366,15 @@ def build(wheel_cache, arch=None, *, facts=None, runner=None):
     arch = require_native(arch, facts["machine"])
     evidence = ready(facts, probe=True, runner=runner)
     lock_sha = hashlib.sha256(open(os.path.join(IMAGE_DIR, "requirements.lock"), "rb").read()).hexdigest()
-    if f'io.insightpilot.lock.sha256="{lock_sha}"' not in open(os.path.join(IMAGE_DIR, "Containerfile")).read():
+    containerfile = open(os.path.join(IMAGE_DIR, "Containerfile")).read()
+    if f'io.insightpilot.lock.sha256="{lock_sha}"' not in containerfile:
         raise Refused(["Containerfile lock label does not match requirements.lock"])
     with tempfile.TemporaryDirectory() as tmp:
         ctx = os.path.join(tmp, "context")
         files, ctx_digest = image_tool.stage(arch, wheel_cache, ctx)
+        runtime_sha = image_tool.staged_runtime_digest(ctx)
+        if f'{image_layout.RUNTIME_LABEL}="{runtime_sha}"' not in containerfile:
+            raise Refused(["Containerfile runtime label does not match the staged trusted runtime files"])
         tag = image_tag(arch, lock_sha)
         started = time.monotonic()
         r = _run(build_argv(arch, ctx, tag), env=podman_env(), timeout=3600, runner=runner)
@@ -375,7 +388,7 @@ def build(wheel_cache, arch=None, *, facts=None, runner=None):
     img = data[0]
     evidence.update(tag=tag, image_id=img.get("Id"), digest=img.get("Digest"), size=img.get("Size"),
                     created=img.get("Created"), rootfs_layers=(img.get("RootFS") or {}).get("Layers"),
-                    lock_sha256=lock_sha, context_sha256=ctx_digest, context_files=len(files),
+                    lock_sha256=lock_sha, runtime_sha256=runtime_sha, context_sha256=ctx_digest, context_files=len(files),
                     build_seconds=round(seconds, 1))
     return evidence
 
@@ -393,8 +406,8 @@ def verify(image, *, facts=None, runner=None):
     lock_versions = {n: e["version"] for n, e in INVENTORY["packages"].items()}
     problems += image_inspect.evaluate(report, EXPECT, lock_versions, env_names)
     problems += check_id_mapping(report["runtime"], facts["uid"], facts["subuid"])
-    inert = _run(container_run_argv(image, arch), env=podman_env(), timeout=120, runner=runner)
-    problems += check_inert(inert)
+    refusal = _run(container_run_argv(image, arch), env=podman_env(), timeout=120, runner=runner)
+    problems += check_no_args_refusal(refusal)
     if problems:
         raise Refused(problems)
     return {"image": image, "image_id": data[0].get("Id"), "size": data[0].get("Size"), "report": report}
@@ -496,7 +509,7 @@ def summarize(samples):
 
 def measure_startup(image, warm=30, cold=10, *, facts=None, runner=None, clock=time.perf_counter):
     """
-    warm: consecutive runs of the inert container.
+    warm: consecutive runs of the entrypoint with no arguments (it refuses before starting a child).
     cold: each sample follows `podman rmi` + `podman load` of the same image archive, so container
           storage and layers are freshly set up. The kernel page cache is NOT dropped (impossible
           rootless); that is stated with the result.
@@ -512,7 +525,7 @@ def measure_startup(image, warm=30, cold=10, *, facts=None, runner=None, clock=t
         t0 = clock()
         r = _run(argv, env=podman_env(), timeout=120, runner=runner)
         dt = clock() - t0
-        problems = check_inert(r)
+        problems = check_no_args_refusal(r)
         if problems:
             raise Refused(problems)
         return dt

@@ -189,7 +189,8 @@ def test_pulled_base_must_be_the_verified_platform_config():
 def _good_image_inspect(**over):
     cfg = {"User": "10001:10001", "Entrypoint": EXPECT["entrypoint"], "Cmd": None,
            "Env": [f"{n}=x" for n in IMAGE_ENV],
-           "Labels": {"io.insightpilot.lock.sha256": LOCK_SHA, "io.insightpilot.stage": "P3.5a-inert",
+           "Labels": {"io.insightpilot.lock.sha256": LOCK_SHA, "io.insightpilot.stage": "P3.6",   # P3.6-4A
+                      "io.insightpilot.runtime.sha256": rl.image_layout.runtime_tree_sha256(),
                       "org.opencontainers.image.base.digest": BASE["index_digest"],
                       "org.opencontainers.image.base.name": BASE["reference"],
                       "org.opencontainers.image.title": "insightpilot-sandbox"}}
@@ -208,6 +209,11 @@ def _good_image_inspect(**over):
     (dict(cfg={"ExposedPorts": {"8501/tcp": {}}}), "ExposedPorts"),
     (dict(cfg={"Volumes": {"/data": {}}}), "Volumes"),
     (dict(cfg={"Env": [f"{n}=x" for n in IMAGE_ENV] + ["HTTPS_PROXY=x"]}), "Env names"),
+    # P3.6-4A: the stage and trusted-runtime labels are checked by value
+    (dict(cfg={"Labels": {**_good_image_inspect()[0]["Config"]["Labels"], "io.insightpilot.stage": "P3.5a-inert"}}),
+     "stage label"),
+    (dict(cfg={"Labels": {**_good_image_inspect()[0]["Config"]["Labels"],
+                          "io.insightpilot.runtime.sha256": "0" * 64}}), "runtime label"),
 ])
 def test_built_image_config_is_checked(mutate, expected):
     assert rl.check_image_config(_good_image_inspect(), "x86_64", LOCK_SHA) == []
@@ -467,11 +473,11 @@ def test_container_id_mapping_must_land_in_a_subordinate_range():
     assert rl.check_id_mapping(rt, 1001, [(100000, 65536)])
 
 
-def test_inert_output_must_be_exact():
-    ok = types.SimpleNamespace(returncode=78, stdout=b"", stderr=(EXPECT["inert_message"] + "\n").encode())
-    assert rl.check_inert(ok) == []
+def test_no_argument_refusal_output_must_be_exact():
+    ok = types.SimpleNamespace(returncode=78, stdout=b"", stderr=(EXPECT["no_args_message"] + "\n").encode())
+    assert rl.check_no_args_refusal(ok) == []
     for bad in (dict(returncode=0), dict(stdout=b"x"), dict(stderr=b"other\n"), dict(returncode=78, stderr=b"")):
-        assert rl.check_inert(types.SimpleNamespace(**{**vars(ok), **bad}))
+        assert rl.check_no_args_refusal(types.SimpleNamespace(**{**vars(ok), **bad}))
 
 
 # ── orchestration with a fake podman: order, environment, refusal paths ─────
@@ -502,6 +508,8 @@ class FakePodman:
 @pytest.fixture
 def staged(monkeypatch):
     monkeypatch.setattr(rl.image_tool, "stage", lambda arch, cache, out: (["Containerfile"], "c" * 64))
+    # P3.6-4A: what a real stage of the repository's runtime files yields (the fake stage writes no files)
+    monkeypatch.setattr(rl.image_tool, "staged_runtime_digest", lambda out: rl.image_layout.runtime_tree_sha256())
     for k, v in {"HTTPS_PROXY": "http://proxy:3128", "http_proxy": "http://proxy:3128",
                  "GOOGLE_API_KEY": "not-a-real-key", "CONTAINER_HOST": ""}.items():
         monkeypatch.setenv(k, v)
@@ -568,15 +576,15 @@ def test_cross_architecture_request_is_refused_before_any_podman_call(staged):
     assert fake.calls == []
 
 
-def test_verify_checks_image_runtime_mapping_and_inert_output(staged):
+def test_verify_checks_image_runtime_mapping_and_no_argument_refusal(staged):
     rt = good_runtime(env=IMAGE_ENV)
     report = {"runtime": rt, "image": {"setid_files": [], "secret_like_files": [], "dev_dirs": [], "venvs": [],
                                        "distributions": {n: e["version"] for n, e in rl.INVENTORY["packages"].items()},
-                                       "opt_ip": ["inert_entrypoint.py"], "present_forbidden": [],
+                                       "opt_ip": list(EXPECT["opt_ip_files"]), "present_forbidden": [],
                                        "world_writable_files": []}}
 
     class VerifyFake(FakePodman):
-        inert = types.SimpleNamespace(returncode=78, stdout=b"", stderr=(EXPECT["inert_message"] + "\n").encode())
+        inert = types.SimpleNamespace(returncode=78, stdout=b"", stderr=(EXPECT["no_args_message"] + "\n").encode())
 
         def __call__(self, argv, **kw):
             r = super().__call__(argv, **kw)
@@ -591,7 +599,7 @@ def test_verify_checks_image_runtime_mapping_and_inert_output(staged):
     fake.inert = types.SimpleNamespace(returncode=0, stdout=b"executed!", stderr=b"")
     with pytest.raises(rl.Refused) as info:
         rl.verify("localhost/img", facts=GOOD_FACTS, runner=fake)
-    assert any(p.startswith("INERT") for p in info.value.problems)
+    assert any(p.startswith("NOARGS") for p in info.value.problems)
 
 
 def test_os_package_inventory_runs_with_the_same_isolation_options(staged):
@@ -902,7 +910,7 @@ def test_startup_measurement_separates_cold_and_warm_runs(staged):
         def __call__(self, argv, **kw):
             super().__call__(argv, **kw)
             return types.SimpleNamespace(returncode=78 if argv[1] == "run" else 0, stdout=b"",
-                                         stderr=(EXPECT["inert_message"] + "\n").encode() if argv[1] == "run" else b"")
+                                         stderr=(EXPECT["no_args_message"] + "\n").encode() if argv[1] == "run" else b"")
     fake = InertFake()
     res = rl.measure_startup("localhost/img", warm=5, cold=3, facts=GOOD_FACTS, runner=fake,
                              clock=lambda: next(ticks) * 0.01)

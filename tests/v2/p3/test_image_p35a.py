@@ -10,6 +10,13 @@ properties of the committed INPUTS:
 - the inert entrypoint;
 - the inspector logic.
 
+P3.6-4A: the live image definition became the P3.6 supervisor image. The
+Containerfile and expectations checked here are the FROZEN P3.5a inert
+reference (docs/v2/p3/p35a_inert_reference/, byte copies from commit
+41536829), so every inert-image property stays tested for comparison. The
+staging-tool tests use the live allowlist. The live P3.6 definition is tested
+by tests/v2/p36/test_image_integration_p364a.py.
+
 Properties of a BUILT image (real size, setuid scan inside the image,
 non-root at runtime, isolation) are PENDING. They need rootless Podman with
 cgroup v2 (scripts/p3/verify_image.sh, P3.5b); this environment has neither.
@@ -32,6 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 IMAGE = os.path.join(ROOT, "v2", "execution", "image")
 BASE = os.path.join(IMAGE, "base")
 SCRIPTS = os.path.join(ROOT, "scripts", "p3")
+P35A_REFERENCE = os.path.join(ROOT, "docs", "v2", "p3", "p35a_inert_reference")
 
 
 def _load(name):
@@ -60,10 +68,10 @@ def _sha(path):
 
 RECORD = _json(os.path.join(BASE, "base-image.json"))
 INVENTORY = _json(os.path.join(IMAGE, "dependency-inventory.json"))
-EXPECT = _json(os.path.join(IMAGE, "image-expectations.json"))
+EXPECT = _json(os.path.join(P35A_REFERENCE, "image-expectations.json"))
 LOCK_TEXT = _read(os.path.join(IMAGE, "requirements.lock"))
 LOCK = tool.parse_lock(LOCK_TEXT)
-CONTAINERFILE = _read(os.path.join(IMAGE, "Containerfile"))
+CONTAINERFILE = _read(os.path.join(P35A_REFERENCE, "Containerfile"))
 
 
 def _instructions(text):
@@ -382,8 +390,10 @@ def _fake_image_dir(tmp_path, wheels):
 def test_staged_context_contains_exactly_the_allowlist(tmp_path):
     img, cache, inv = _fake_image_dir(tmp_path, {"alpha": b"A" * 100, "beta": b"B" * 50})
     files, digest = tool.stage("x86_64", cache, str(tmp_path / "ctx"), image_dir=img)
-    assert files == sorted(["Containerfile", "inert_entrypoint.py", "requirements.lock",
-                            "wheels/alpha-1.0-py3-none-any.whl", "wheels/beta-1.0-py3-none-any.whl"])
+    # P3.6-4A: the inert entrypoint left the context; the trusted runtime is staged under opt-ip/
+    assert files == sorted(["Containerfile", "requirements.lock",
+                            "wheels/alpha-1.0-py3-none-any.whl", "wheels/beta-1.0-py3-none-any.whl"]
+                           + [f"opt-ip/{d}" for d, _ in tool.image_layout.RUNTIME_FILES])
     for d, dirs, fs in os.walk(tmp_path / "ctx"):
         assert not {".git", "venv", "__pycache__"} & set(dirs)
         assert not {".env", "secrets.txt", "dependency-inventory.json"} & set(fs)
@@ -451,6 +461,9 @@ def test_image_directory_holds_only_reviewed_files():
                             # image built from this directory is unchanged and still inert until P3.6-4.
                             "runtime/supervisor.py", "runtime/runner.py", "runtime/selftest.py",
                             "runtime/preludes.json"])
+    # P3.6-4A: the runtime files now enter the context through image_layout.RUNTIME_FILES (exact list);
+    # inert_entrypoint.py stays as source of the frozen P3.5a reference but is no longer staged.
+    assert "inert_entrypoint.py" not in tool.CONTEXT_FILES
 
 
 # ── 7. no unexpected executable entrypoints ─────────────────────────────────

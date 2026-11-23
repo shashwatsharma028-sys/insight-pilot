@@ -34,6 +34,7 @@ import subprocess
 import threading
 import time
 
+from v2.execution import image_layout
 from v2.execution import podman_argv as pa
 from v2.execution.errors import DatasetNotAuthorizedError, SandboxProtocolError, SandboxUnavailableError
 from v2.execution.frame import decode_frame, expected_attestation, verify_attestation
@@ -46,6 +47,8 @@ from v2.execution.runtime import ExecutionRequest, PreludeId
 
 EXPECTED_ENTRYPOINT = ["/usr/local/bin/python3", "-I", "-B", "/opt/ip/supervisor.py"]
 EXPECTED_STAGE_LABEL = "P3.6"
+# P3.6-4A: the image must carry the digest of exactly the host's trusted runtime files.
+EXPECTED_RUNTIME_LABEL = image_layout.RUNTIME_LABEL
 CLI_STDOUT_CAP = 4 * 1024 * 1024          # podman version/info/inspect JSON
 CLI_STDERR_CAP = 64 * 1024                # diagnostics only, never shown to users
 CLI_TIMEOUT = 60
@@ -155,8 +158,11 @@ class ContainerRuntime:
             problems.append(f"image user is {cfg.get('User')!r}")
         if cfg.get("Entrypoint") != EXPECTED_ENTRYPOINT:
             problems.append("image entrypoint is not the trusted supervisor")
-        if (cfg.get("Labels") or {}).get("io.insightpilot.stage") != EXPECTED_STAGE_LABEL:
+        labels = cfg.get("Labels") or {}
+        if labels.get("io.insightpilot.stage") != EXPECTED_STAGE_LABEL:
             problems.append("image is not a P3.6 sandbox image")
+        if labels.get(EXPECTED_RUNTIME_LABEL) != image_layout.runtime_tree_sha256():
+            problems.append("image runtime label does not match the host's trusted runtime files")
         if cfg.get("Volumes") or cfg.get("ExposedPorts"):
             problems.append("image declares volumes or ports")
         if problems:

@@ -4,7 +4,7 @@
   "/usr/local/bin/python3",
   "-I",
   "-B",
-  "/opt/ip/inert_entrypoint.py"
+  "/opt/ip/supervisor.py"
  ],
  "env_names_allowed": [
   "GPG_KEY",
@@ -21,17 +21,31 @@
  ],
  "exposed_ports": [],
  "gid": 10001,
- "inert_exit_status": 78,
- "inert_message": "insightpilot-sandbox: P3.5a image foundation; no runner is installed; nothing was executed",
  "labels": [
   "io.insightpilot.lock.sha256",
+  "io.insightpilot.runtime.sha256",
   "io.insightpilot.stage",
   "org.opencontainers.image.base.digest",
   "org.opencontainers.image.base.name",
   "org.opencontainers.image.title"
  ],
+ "no_args_exit_status": 78,
+ "no_args_message": "insightpilot-supervisor: usage: expected exactly ['--chart-cap', '--max-pixels', '--max-side', '--memory-max', '--mode', '--pids-max', '--prelude', '--run-id', '--stderr-head', '--stderr-tail', '--stdout-cap', '--wall']",
  "opt_ip_files": [
-  "inert_entrypoint.py"
+  "config/__init__.py",
+  "config/feature_flags.py",
+  "preludes.json",
+  "runner.py",
+  "selftest.py",
+  "supervisor.py",
+  "v2/__init__.py",
+  "v2/execution/__init__.py",
+  "v2/execution/errors.py",
+  "v2/execution/frame.py",
+  "v2/execution/isolation.py",
+  "v2/execution/limits.py",
+  "v2/execution/results.py",
+  "v2/execution/supervisor_helpers.py"
  ],
  "runtime": {
   "_note": "Runtime-enforced properties: produced by the launcher options in scripts/p3/rootless.py (container_run_argv), not by the image. Verified inside a running container by image_inspect.py.",
@@ -72,7 +86,11 @@
    "/etc/resolv.conf",
    "/etc/passwd",
    "/usr/local/bin/python3.11",
-   "/opt/ip/inert_entrypoint.py"
+   "/opt/ip/supervisor.py",
+   "/opt/ip/runner.py",
+   "/opt/ip/selftest.py",
+   "/opt/ip/preludes.json",
+   "/opt/ip/v2/execution/frame.py"
   ],
   "gid": 10001,
   "must_be_writable": [
@@ -129,6 +147,7 @@
   "no host-writable bind mounts; inputs read-only"
  ],
  "schema": "insightpilot.image-expectations/1",
+ "stage_label": "P3.6",
  "uid": 10001,
  "user": "10001:10001",
  "volumes": []

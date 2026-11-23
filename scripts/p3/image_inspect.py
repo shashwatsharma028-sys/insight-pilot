@@ -46,7 +46,9 @@ CGROUP_FILES = ("memory.max", "memory.swap.max", "pids.max", "cpu.max")
 WRITE_PROBES = ("/", "/etc", "/usr", "/usr/local/lib/python3.11/site-packages", "/opt/ip", "/var/tmp", "/run",
                 "/dev", "/dev/shm", "/home", "/root", "/tmp")
 FILE_WRITE_PROBES = ("/etc/hosts", "/etc/hostname", "/etc/resolv.conf", "/etc/passwd", "/usr/local/bin/python3.11",
-                     "/opt/ip/inert_entrypoint.py")
+                     "/opt/ip/inert_entrypoint.py",                      # P3.5a reference image
+                     "/opt/ip/supervisor.py", "/opt/ip/runner.py", "/opt/ip/selftest.py",  # P3.6-4A image
+                     "/opt/ip/preludes.json", "/opt/ip/v2/execution/frame.py")
 
 FORBIDDEN_PATHS = [
     "/usr/local/lib/python3.11/site-packages/pip", "/usr/local/lib/python3.11/site-packages/setuptools",

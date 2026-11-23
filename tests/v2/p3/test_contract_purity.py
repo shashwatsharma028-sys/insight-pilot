@@ -82,6 +82,7 @@ REVIEWED_NON_CONTRACT_MODULES = [
     "v2/execution/image/runtime/runner.py",
     "v2/execution/image/runtime/selftest.py",
     "v2/execution/container_runtime.py",  # P3.6-3: rootless Podman runtime (fake podman tests only)
+    "v2/execution/image_layout.py",  # P3.6-4A: exact /opt/ip file list and runtime digest (reads files only)
 ]
 
 
