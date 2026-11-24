@@ -116,6 +116,25 @@ def test_provider_usage_is_recorded_and_reasoning_tokens_are_billed(tmp_path):
     assert r["cost_usd"] == pytest.approx(1000 / 1e6 * 0.10 + 300 / 1e6 * 0.40)
 
 
+def test_a_failed_provider_attempt_is_charged_the_worst_case_and_counted(tmp_path):
+    class Failing(_Inner):
+        def complete(self, *a):
+            self.n += 1
+            raise live_llm.ProviderError("ReadTimeout: timed out")
+    p = _port(tmp_path, Failing())
+    with pytest.raises(live_llm.ProviderError):
+        p.complete("s", "x" * 300, "y")
+    r = p.records[0]
+    assert r["failed"] == "ProviderError" and r["charged_worst_case"] and r["input_tokens"] == 301
+    assert p.spent_usd == pytest.approx(301 / 1e6 * 0.10 + 1000 / 1e6 * 0.40) and p.calls == 1
+    assert live_llm.Ledger(str(tmp_path / "l.jsonl")).spent_usd() == pytest.approx(p.spent_usd)
+
+
+def test_the_gemini_client_makes_exactly_one_http_attempt_per_call():
+    port = live_llm.GeminiPort(env={"GOOGLE_API_KEY": KEY})
+    assert port._chat.max_retries == 1                       # -> HttpRetryOptions(attempts=1): no hidden retries
+
+
 def test_missing_usage_is_charged_the_worst_case(tmp_path):
     p = _port(tmp_path, _Inner(None))
     p.complete("s", "x" * 400, "y" * 100)
@@ -172,7 +191,7 @@ def test_the_key_never_reaches_a_container(monkeypatch):
 def _hidden_needles(ds):
     out = set()
     for k, v in scripted.golden_answers(ds).items():
-        if k in live.VISIBLE_IN_PROFILE:
+        if k in live.leaked_keys(ds):
             continue
         vals = list(v.values()) if isinstance(v, dict) else [v]
         for x in vals:
@@ -217,8 +236,16 @@ def test_no_pre_computation_prompt_contains_a_hidden_golden_answer(tmp_path):
     assert bench["v1_executor_tripwire_hits"] == 0 and len(bench["results"]) == 8
     assert {ds for ds, _ in prompts_seen} == set(live.DATASETS)
     for ds, text in prompts_seen:
-        leaked = [n for n in _hidden_needles(ds) - _profile_numbers(ds) if n in text]
+        leaked = [n for n in _hidden_needles(ds) if n in text]                 # strict: no exclusions
         assert leaked == [], (ds, leaked)
+
+
+def test_leaked_questions_are_exactly_the_profile_metadata_coincidences():
+    assert {d: live.leaked_keys(d) for d in live.DATASETS} == {
+        "sales": {"row_count"}, "attendance": {"row_count", "status_counts"},
+        "student": {"row_count"}, "ecommerce": {"row_count"}}
+    g = live.grade("attendance", {})
+    assert g["total_hidden"] == 5 and "status_counts" not in g["primary_keys"]
 
 
 def test_a_model_cannot_state_a_value_only_choose_an_op():
@@ -282,6 +309,7 @@ def test_an_offline_run_is_labelled_as_not_live(tmp_path):
     assert live.main(["--provider", "fake", "--mode", "pilot", "--out", str(tmp_path)]) == 0
     md = open(tmp_path / "live_benchmark.md", encoding="utf-8").read()
     assert "OFFLINE / MOCK provider: not live results" in md
+    assert "not the original unrestricted V1 code-generation pipeline" in md and "ESTIMATE, not billing" in md
     bench = json.load(open(tmp_path / "live_benchmark.json"))
     assert bench["summary"]["multi_agent"]["call_source"] == ["mock_scripted"]
     assert not os.path.exists(live_llm.DEFAULT_LEDGER) or "dry_run" not in live_llm.DEFAULT_LEDGER

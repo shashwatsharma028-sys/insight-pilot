@@ -110,8 +110,10 @@ class GeminiPort:
         from langchain_google_genai import ChatGoogleGenerativeAI
         self.model, self.max_output_tokens = model, max_output_tokens
         self._secret = key
+        # max_retries=1 maps to the SDK's HttpRetryOptions(attempts=1): exactly ONE HTTP attempt per call, no
+        # hidden retries (google-genai: attempts counts the initial call; LangChain passes max_retries through).
         self._chat = ChatGoogleGenerativeAI(model=model, google_api_key=key, temperature=0.0,
-                                            max_output_tokens=max_output_tokens, timeout=timeout_s, max_retries=2)
+                                            max_output_tokens=max_output_tokens, timeout=timeout_s, max_retries=1)
 
     def complete(self, skill, system, user):
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -133,7 +135,7 @@ class BudgetedPort:
         self.budget_usd, self.ledger = float(budget_usd), ledger
         self.max_calls, self.max_total_tokens, self.max_output_tokens = max_calls, max_total_tokens, max_output_tokens
         self.run_label, self.clock = run_label, clock
-        self.calls = self.tokens = 0
+        self.calls = self.tokens = self.failed_attempts = 0
         self.spent_usd = 0.0
         self.exhausted = False
         self.records = []
@@ -161,7 +163,20 @@ class BudgetedPort:
                          f"worst case of this call ${worst:.6f})")
         self.calls += 1
         t0 = self.clock()
-        response = self.inner.complete(skill, system, user)
+        try:
+            response = self.inner.complete(skill, system, user)
+        except Exception as e:
+            # A failed attempt may still be billed (e.g. a timeout after generation): charge the worst case.
+            self.tokens += tin + tout
+            self.spent_usd += worst
+            self.failed_attempts += 1
+            record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
+                      "call_source": self.call_source, "input_tokens": tin, "output_tokens": tout,
+                      "cost_usd": round(worst, 8), "charged_worst_case": True, "failed": type(e).__name__,
+                      "seconds": round(self.clock() - t0, 3)}
+            self.records.append(record)
+            self.ledger.append(record)
+            raise
         usage = billed_usage(getattr(response, "usage_metadata", None))
         charged_worst = usage is None
         i, o = (tin, tout) if charged_worst else usage
@@ -170,7 +185,7 @@ class BudgetedPort:
         self.spent_usd += cost
         record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                   "call_source": self.call_source, "input_tokens": i, "output_tokens": o, "cost_usd": round(cost, 8),
-                  "charged_worst_case": charged_worst, "seconds": round(self.clock() - t0, 3)}
+                  "charged_worst_case": charged_worst, "failed": None, "seconds": round(self.clock() - t0, 3)}
         self.records.append(record)
         self.ledger.append(record)
         return response

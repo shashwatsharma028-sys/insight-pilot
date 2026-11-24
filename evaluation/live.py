@@ -84,7 +84,30 @@ QUESTIONS = {
         "corr_visitors_revenue": "What is the Pearson correlation between website visitors and revenue?",
     },
 }
-VISIBLE_IN_PROFILE = {"row_count"}         # the profile states the row count: reported, not in primary accuracy
+# Labels used in every report: the baseline is NOT the original V1 pipeline (which generates and runs pandas code).
+ARCH_LABELS = {
+    "single_agent": "V1-style single agent, trusted-ops (not the original unrestricted V1 code-generation pipeline)",
+    "multi_agent": "V2 multi-agent Supervisor, trusted-ops (planner, trusted analyst, stdlib verifier, insight agent)",
+}
+
+
+def profile_numbers(profile) -> set:
+    """Every number the shared schema profile shows a model: the row count and per-column missing counts."""
+    return {profile["row_count"]} | {c["missing"] for c in profile["columns"]}
+
+
+def leaked_keys(dataset) -> set:
+    """
+    Questions whose golden answer (or any value inside it) equals a number in the profile metadata, e.g. row_count
+    and attendance's status_counts['Absent'] (= the 1268 missing punch_in values). Excluded from primary accuracy.
+    """
+    nums = profile_numbers(dsmod.profile(dsmod.load(dataset_path(dataset))))
+    out = set()
+    for k, v in golden(dataset).items():
+        vals = list(v.values()) if isinstance(v, dict) else [v]
+        if any(isinstance(x, (int, float)) and not isinstance(x, bool) and x in nums for x in vals):
+            out.add(k)
+    return out
 
 SINGLE_SYSTEM = (
     "You are a data analyst. You see only the dataset's schema, never its rows. For the task, answer every "
@@ -212,9 +235,9 @@ def grade(dataset, claims):
                 per[k] = "correct" if values_match(claims[k], gold[k]) else "incorrect"
             except Exception:
                 per[k] = "incorrect"
-    hidden = [k for k in per if k not in VISIBLE_IN_PROFILE]
-    return {"per_key": per,
-            "correct_hidden": sum(per[k] == "correct" for k in hidden), "total_hidden": len(hidden),
+    primary = [k for k in per if k not in leaked_keys(dataset)]
+    return {"per_key": per, "primary_keys": primary,
+            "correct_hidden": sum(per[k] == "correct" for k in primary), "total_hidden": len(primary),
             "correct_all": sum(v == "correct" for v in per.values()), "total_all": len(per),
             "incorrect_reported": sum(v == "incorrect" for v in per.values()),
             "reported": sum(v != "missing" for v in per.values())}
@@ -281,7 +304,8 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
             log(f"{i:3d} {label:28s} {g['correct_hidden']}/{g['total_hidden']} hidden correct, "
                 f"{port.calls} calls, ${port.spent_usd:.5f}, {wall:.1f}s{'  ERROR ' + error if error else ''}")
         tripwire_hits = trip["n"]
-    return {"harness_version": HARNESS_VERSION, "seed": seed, "datasets": list(datasets), "reps": reps,
+    return {"harness_version": HARNESS_VERSION, "arch_labels": ARCH_LABELS, "seed": seed, "datasets": list(datasets),
+            "reps": reps, "primary_questions": {d: sorted(set(QUESTIONS[d]) - leaked_keys(d)) for d in datasets},
             "results": results, "stopped": stopped, "v1_executor_tripwire_hits": tripwire_hits,
             "summary": summarize(results)}
 
@@ -310,6 +334,7 @@ def summarize(results):
             "total_tokens": sum(x["input_tokens"] + x["output_tokens"] for x in recs),
             "cost_usd": round(sum(r["spent_usd"] for r in rs), 6),
             "calls_charged_worst_case": sum(1 for x in recs if x["charged_worst_case"]),
+            "failed_provider_attempts": sum(1 for x in recs if x.get("failed")),
             "retries": sum(r["run"].get("retries", 0) for r in rs),
             "execution_failures": sum(r["run"].get("execution_failures", 0) for r in rs),
             "task_completion_rate": round(sum(1 for t in tasks if t.get("completed")) / len(tasks), 4) if tasks else None,
@@ -329,6 +354,9 @@ def markdown(bench) -> str:
     src = {a: s[a]["call_source"] for a in ARCHS if a in s}
     live = all(v == [PROVIDER] for v in src.values())
     lines = [f"# Live benchmark ({'PROVIDER calls' if live else 'OFFLINE / MOCK provider: not live results'})", "",
+             f"- single_agent = {ARCH_LABELS['single_agent']}", f"- multi_agent = {ARCH_LABELS['multi_agent']}",
+             "- accuracy_hidden: questions whose answers appear in no prompt (profile-metadata coincidences excluded); "
+             "accuracy_all: all 28", "- cost_usd: provider-reported tokens x list prices (an ESTIMATE, not billing)",
              f"- harness {bench['harness_version']}; seed {bench['seed']}; datasets {bench['datasets']}; reps {bench['reps']}",
              f"- stopped early: {bench['stopped']}", f"- V1 executor tripwire hits: {bench['v1_executor_tripwire_hits']}", "",
              "| metric | single_agent | multi_agent |", "|---|---|---|"]
