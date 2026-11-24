@@ -573,6 +573,8 @@ APPROVED_P6 = {
     "tests/v2/p6/test_provider_resilience_p6.py",
     # P6 optimisation 3 (approved, isolated branch): schema-aware planner guidance, off by default
     "multi_agent/claims.py", "multi_agent/prompts.py", "tests/v2/p6/test_schema_aware_planner_p6.py",
+    # P6 optimisation 4 (approved, isolated branch): semantic planner guidance + evaluation-only diagnostics
+    "tests/v2/p6/test_semantic_accuracy_p6.py",
 }
 
 

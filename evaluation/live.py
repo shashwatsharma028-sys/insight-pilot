@@ -141,10 +141,11 @@ def golden(dataset):
 
 # ── prompts (shared parts are identical for both architectures) ───────────────
 
-def single_claims_prompt(profile, task, attempt, feedback, op_schema=False):
+def single_claims_prompt(profile, task, attempt, feedback, op_schema=False, op_semantics=False):
     return (f"DATASET PROFILE JSON:\n{json.dumps(profile, sort_keys=True)}\n"
             f"CLAIM OPS JSON:\n{json.dumps(describe_ops(), sort_keys=True)}\n"
-            + (prompts.op_schema_section() if op_schema else "") +
+            + (prompts.op_schema_section() if op_schema else "")
+            + (prompts.op_semantics_section() if op_semantics else "") +
             f"TASK ID: {task['id']}\nTASK: {task['title']}\nDESCRIPTION: {task['description']}\n"
             f"REQUIRED QUESTIONS JSON (key -> question):\n{json.dumps(task['questions'], sort_keys=True)}\n"
             f"ATTEMPT: {attempt}\nPROBLEMS WITH THE PREVIOUS ATTEMPT:\n"
@@ -161,18 +162,21 @@ def multi_goal(tasks):
 
 # ── runs ──────────────────────────────────────────────────────────────────────
 
-def run_single_agent(dataset, port, clock=time.perf_counter, schema_aware=False):
-    """schema_aware=True adds the claim-argument schema (P6, opt-in) to the claims prompt; nothing else changes."""
+def run_single_agent(dataset, port, clock=time.perf_counter, schema_aware=False, semantic_guidance=False):
+    """schema_aware / semantic_guidance add the P6 opt-in prompt sections to the claims prompt (independently);
+    nothing else changes."""
     path, tasks = dataset_path(dataset), tasks_for(dataset)
     profile = dsmod.profile(dsmod.load(path))
     out = {"claims": {}, "tasks": {}, "retries": 0, "execution_failures": 0, "llm_errors": 0}
+    used_specs = {}                                    # evaluation-only diagnostics: the specs actually computed
     for t in tasks:
         feedback, values, errors, attempts = [], {}, {}, 0
         for attempt in range(1, MAX_SINGLE_RETRIES + 2):
             attempts = attempt
             try:
                 reply = port.complete("single_agent_claims", SINGLE_SYSTEM,
-                                      single_claims_prompt(profile, t, attempt, feedback, op_schema=schema_aware))
+                                      single_claims_prompt(profile, t, attempt, feedback, op_schema=schema_aware,
+                                                           op_semantics=semantic_guidance))
                 body = _json_reply(reply.content)
                 specs = body.get("claims") if isinstance(body, dict) else None
                 if not isinstance(specs, list):
@@ -182,6 +186,8 @@ def run_single_agent(dataset, port, clock=time.perf_counter, schema_aware=False)
                 feedback = [f"{type(e).__name__}: {e}"[:300]]
                 continue
             specs = [s for s in specs if isinstance(s, dict) and s.get("key") in t["questions"]]
+            for s in specs:
+                used_specs[s["key"]] = _spec_record(t["id"], s)
             values, errors = op_engine.compute_claims(specs, path, profile)
             missing = sorted(set(t["questions"]) - set(values))
             if not missing:
@@ -202,17 +208,50 @@ def run_single_agent(dataset, port, clock=time.perf_counter, schema_aware=False)
         out["claims"].update(values)
         out["tasks"][t["id"]] = {"attempts": attempts, "completed": set(t["questions"]) <= set(values) and insight_ok,
                                  "claim_errors": errors}
+    out["diagnostics"] = {"claim_specs": used_specs, "reported_values": _bounded_values(dataset, out["claims"])}
     return out
 
 
-def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=False, schema_aware=False):
-    """selective_recovery / schema_aware turn on the Supervisor's opt-in P6 features; nothing else changes."""
+# ── evaluation-only diagnostics (P6 optimisation 4). Recorded in run records for the controlled benchmark
+# datasets only; never returned to an agent, never used for grading, bounded in size. ──────────────────────
+
+MAX_DIAG_VALUE_CHARS = 400
+
+
+def _spec_record(task_id, spec):
+    """A claim spec as planned (task id, key, op, args), clipped; model output only, never a golden value."""
+    args = spec.get("args") if isinstance(spec, dict) else None
+    return {"task_id": str(task_id)[:64], "key": str(spec.get("key"))[:64], "op": str(spec.get("op"))[:64],
+            "args": json.loads(json.dumps(args, default=str)[:MAX_DIAG_VALUE_CHARS]) if _short_json(args) else
+            json.dumps(args, default=str)[:MAX_DIAG_VALUE_CHARS]}
+
+
+def _short_json(v):
+    try:
+        return len(json.dumps(v, default=str)) <= MAX_DIAG_VALUE_CHARS
+    except (TypeError, ValueError):
+        return False
+
+
+def _bounded_values(dataset, claims):
+    """Reported (computed) claim values, for the controlled benchmark datasets only; long values are clipped."""
+    if dataset not in DATASETS:
+        return {}
+    return {str(k)[:64]: (v if _short_json(v) else json.dumps(v, default=str)[:MAX_DIAG_VALUE_CHARS] + "...")
+            for k, v in sorted((claims or {}).items())}
+
+
+def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=False, schema_aware=False,
+                    semantic_guidance=False):
+    """selective_recovery / schema_aware / semantic_guidance turn on the Supervisor's opt-in P6 features,
+    independently of each other; nothing else changes."""
     from multi_agent.team import build_team
     from tests.v2.p5 import scripted
     path, tasks = dataset_path(dataset), tasks_for(dataset)
     sup, _ = build_team(port, None, scripted.approve_all, clock=clock, analyst=op_engine.TrustedOpsAnalyst(clock))
     limits = {**({"selective_plan_recovery": True} if selective_recovery else {}),
-              **({"schema_aware_planner": True} if schema_aware else {})}
+              **({"schema_aware_planner": True} if schema_aware else {}),
+              **({"semantic_planner": True} if semantic_guidance else {})}
     res = sup.run(path, goal=multi_goal(tasks), limits=limits or None)
     f = res["final"]
     claims = f["accepted_claims"] or f["verified_claims_for_review"]
@@ -225,7 +264,7 @@ def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=F
             "agent_errors": f.get("agent_errors", 0), "handoffs_rejected": f.get("handoffs_rejected", 0),
             # Diagnostics only (added after baseline attempt 3; not used for grading): the exact validation
             # problems the Supervisor fed back, so planner and task failures can be root-caused.
-            "diagnostics": diagnostics(res),
+            "diagnostics": {**diagnostics(res), **accepted_plan_diagnostics(dataset, res, claims)},
             **({"plan_recovery": f.get("plan_recovery")} if selective_recovery else {})}
 
 
@@ -245,6 +284,88 @@ def diagnostics(res, limit=40):
         # the planner's own rejected replies (model output: task specs only), for replay and root-causing
         "rejected_plans": _rejected_plans(res, events, limit),
     }
+
+
+MAPPING_OPS = frozenset({"group_sum", "group_mean", "value_counts"})
+COLUMN_ARGS = ("column", "x", "y", "numerator", "denominator", "where_column")
+
+
+def question_diagnostics(dataset, arch, out, grade):
+    """
+    Evaluation-only, computed AFTER grading and never shown to an agent: for every benchmark question, the stage at
+    which it was lost, or, for an incorrect answer, the semantic category of the difference between the spec that
+    actually ran and the reviewed reference spec (tests/v2/p5/scripted.CLAIM_SPECS, used here and by the offline
+    oracle only).
+    """
+    from tests.v2.p5 import scripted
+    ref = scripted.CLAIM_SPECS[dataset]
+    d = out.get("diagnostics") or {}
+    specs = d.get("claim_specs") if arch == "single_agent" else d.get("accepted_claim_specs")
+    specs = specs or {}
+    abandoned = {k for a in ((out.get("plan_recovery") or {}).get("abandoned_tasks") or []) for k in a.get("claim_keys", [])}
+    task_errors = {k: e for t in (out.get("tasks") or {}).values() for k, e in (t.get("claim_errors") or {}).items()}
+    res = {}
+    for k in QUESTIONS[dataset]:
+        verdict, spec = grade["per_key"][k], specs.get(k)
+        if verdict == "correct":
+            res[k] = {"outcome": "correct"}
+            continue
+        if verdict == "missing":
+            if arch == "multi_agent" and out.get("status") == "plan_invalid":
+                stage = "no_plan"
+            elif k in abandoned:
+                stage = "abandoned"
+            elif spec is None:
+                stage = "not_planned"
+            elif k in task_errors:
+                stage = "compute_error"
+            else:
+                stage = "not_accepted"                  # planned, but no accepted value (verification / run state)
+            res[k] = {"outcome": "missing", "stage": stage}
+            continue
+        res[k] = {"outcome": "incorrect", "category": semantic_category(spec, ref[k]), "spec": spec}
+    return res
+
+
+def semantic_category(spec, reference):
+    """Why a structurally valid, computed claim answers the wrong question (first matching difference)."""
+    if not spec or not isinstance(spec.get("args"), dict):
+        return "spec_unrecorded"
+    op, args = spec["op"], spec["args"]
+    rop, rargs = reference[0], reference[1]
+    if (op in MAPPING_OPS) != (rop in MAPPING_OPS):
+        return "result_shape"
+    if op != rop:
+        return "operation"
+    if any(args.get(a) != rargs.get(a) for a in ("by", "by_prefix")):
+        return "grouping"
+    if any(args.get(a) != rargs.get(a) for a in COLUMN_ARGS):
+        return "column"
+    if args.get("value") != rargs.get("value"):
+        same = isinstance(args.get("value"), str) and args["value"].strip().lower() == str(rargs.get("value")).lower()
+        return "value_representation" if same else "filter_value"
+    return "same_spec"
+
+
+def accepted_plan_diagnostics(dataset, res, claims, limit=40):
+    """Evaluation-only: the claim specs of the plan that was actually approved and run, the reported (accepted or
+    review-only) values, and each task's verification outcome. Read from the final graph state after the run."""
+    plan = res.get("plan") or {}
+    final = res.get("final") or {}
+    approved = set(final.get("approved_task_ids") or [])
+    specs = {}
+    for t in (plan.get("tasks") or [])[:limit]:
+        if isinstance(t, dict) and t.get("id") in approved:
+            for cl in (t.get("claims") or [])[:limit]:
+                if isinstance(cl, dict) and isinstance(cl.get("key"), str):
+                    specs[cl["key"]] = _spec_record(t["id"], cl)
+    verification = {}
+    for tid, v in (final.get("tasks") or {}).items():
+        verification[tid] = {"status": v.get("status"), "attempts": v.get("attempts"),
+                             "outcomes": [f"{h.get('stage')}:{h.get('outcome')}" for h in (v.get("history") or [])][:limit],
+                             "verified_keys": sorted((v.get("verified_claims") or {}).keys())[:limit]}
+    return {"accepted_claim_specs": specs, "reported_values": _bounded_values(dataset, claims),
+            "verification": verification}
 
 
 def _rejected_plans(res, events, limit):
@@ -343,7 +464,9 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
                 break
             wait = getattr(port, "wait_s", 0.0)
             g = grade(ds, out["claims"])
+            qd = question_diagnostics(ds, arch, out, g) if not error else {}
             rec = {"order": i, "arch": arch, "dataset": ds, "rep": rep, "wall_s": wall, "error": error,
+                   "question_diagnostics": qd,
                    "wait_s": wait, "wall_excl_wait_s": max(0.0, wall - wait),
                    "grade": g, "run": {k: v for k, v in out.items() if k != "claims"},
                    "calls": port.calls, "llm_records": port.records, "spent_usd": port.spent_usd,
@@ -436,6 +559,13 @@ EXPERIMENTS = {
                             "port": {"provider_retry": {"transient": True}, "control": {"transient": False}}},
     # Optimisation 3: schema-aware planner guidance (claim-argument representation). Selective recovery ON and the
     # same provider policy (whatever --transient-retries says) in BOTH arms; only the prompt section differs.
+    # Optimisation 4: semantic planner guidance (op results and grouping). Selective recovery ON in both arms;
+    # schema-aware guidance and the provider policy are set ONCE for both arms (--schema-aware-guidance,
+    # --transient-retries), so only the semantics section differs.
+    "semantic_planner": {"arms": ("semantic", "control"),
+                         "run": {"semantic": {"selective_recovery": True, "semantic_guidance": True},
+                                 "control": {"selective_recovery": True, "semantic_guidance": False}},
+                         "port": {"semantic": {}, "control": {}}},
     "schema_aware_planner": {"arms": ("schema_aware", "control"),
                              "run": {"schema_aware": {"selective_recovery": True, "schema_aware": True},
                                      "control": {"selective_recovery": True, "schema_aware": False}},
@@ -455,8 +585,12 @@ class PromptAudit:
     def __init__(self, port):
         self._port = port
         self.audit = {}
+        self.semantics = {}
 
     def complete(self, skill, system, user):
+        sem = prompts.op_semantics_section() in user
+        s = self.semantics.setdefault(skill, {"with_semantics": 0, "without_semantics": 0})
+        s["with_semantics" if sem else "without_semantics"] += 1
         full = prompts.op_schema_section() in user
         a = self.audit.setdefault(skill, {"with_guidance": 0, "without_guidance": 0, "partial_guidance": 0})
         a["with_guidance" if full else "without_guidance"] += 1
@@ -476,9 +610,12 @@ def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, l
                                   reserve_per_run=reserve_per_run)
 
 
+SINGLE_AGENT_RUN_ARGS = ("schema_aware", "semantic_guidance")
+
+
 def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261124, clock=time.perf_counter,
                            log=print, incremental=None, include_control=True, reserve_per_run=RUN_RESERVE_USD,
-                           slots=None):
+                           slots=None, common_run=None):
     """
     The baseline's seeded (dataset, rep) slots for `arch` (default: its 20 multi-agent slots, in order). Each slot
     runs the optimised arm and, budget permitting, the matched control, adjacent and in a seeded random order, so
@@ -487,6 +624,10 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
     """
     spec = EXPERIMENTS[experiment]
     opt_arm, ctl_arm = spec["arms"]
+    common_run = dict(common_run or {})
+    isolated = set(spec["run"][opt_arm]) - {"selective_recovery"}
+    if isolated & set(common_run):
+        raise ValueError(f"{sorted(isolated & set(common_run))} is the variable this experiment isolates")
     if slots is None:
         slots = [(ds, rep) for a, ds, rep in schedule(DATASETS, 5, seed) if a == arch]
     rng = random.Random(seed + 1)
@@ -509,10 +650,10 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
                 t0, error = clock(), None
                 audited = PromptAudit(port)
                 try:
-                    kw = spec["run"][variant]
+                    kw = {**common_run, **spec["run"][variant]}
                     out = (run_multi_agent(ds, audited, clock, **kw) if arch == "multi_agent"
                            else run_single_agent(ds, audited, clock,
-                                                 **{k: v for k, v in kw.items() if k == "schema_aware"}))
+                                                 **{k: v for k, v in kw.items() if k in SINGLE_AGENT_RUN_ARGS}))
                 except (live_llm.BudgetExceeded, live_llm.QuotaOrBillingStop) as e:
                     stopped = f"{label}: {e}"
                     log(f"stop: {stopped}")
@@ -526,13 +667,16 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
                     break
                 wait = getattr(port, "wait_s", 0.0)
                 g = grade(ds, out["claims"])
+                qd = question_diagnostics(ds, arch, out, g) if not error else {}
                 rec = {"order": order, "slot": si, "variant": variant, "arch": arch, "dataset": ds,
+                       "question_diagnostics": qd,
                        "rep": rep, "wall_s": wall, "error": error, "wait_s": wait,
                        "wall_excl_wait_s": max(0.0, wall - wait), "grade": g,
                        "run": {k: v for k, v in out.items() if k != "claims"}, "calls": port.calls,
                        "llm_records": port.records, "spent_usd": port.spent_usd,
                        "rate_limited": getattr(port, "rate_limited", 0), "call_source": port.call_source,
-                       "prompt_audit": audited.audit, **provider_counters(port)}
+                       "prompt_audit": audited.audit, "semantics_audit": audited.semantics,
+                       **provider_counters(port)}
                 order += 1
                 results.append(rec)
                 if incremental:
@@ -548,7 +692,7 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
                 break
         hits = trip["n"]
     return {"harness_version": HARNESS_VERSION, "experiment": experiment if experiment != "selective_recovery"
-            else "selective_task_recovery", "arch": arch, "seed": seed,
+            else "selective_task_recovery", "arch": arch, "seed": seed, "common_run": common_run,
             "slots": [list(x) for x in slots], "results": results, "stopped": stopped,
             "skipped_controls": skipped_controls, "v1_executor_tripwire_hits": hits,
             "summary": summarize_variants(results, (opt_arm, ctl_arm))}
@@ -614,11 +758,42 @@ def variant_metrics(rs):
         "wait_s_rate_limit": round(sum(r.get("rate_limit_wait_s", 0.0) for r in rs), 2),
         "wait_s_transient": round(sum(r.get("transient_wait_s", 0.0) for r in rs), 2),
         "prompt_audit": _sum_audit(rs),
+        "semantics_audit": _sum_counts([r.get("semantics_audit") for r in rs]),
+        **question_outcome_summary(rs),
         "cost_usd_per_correct_hidden_provider_reported": (round(sum(x["cost_usd"] for x in ok) / ch, 6) if ch else None),
         "provider_tokens_per_correct_hidden": (round(sum(x["input_tokens"] + x["output_tokens"] for x in ok) / ch, 1)
                                                if ch else None),
         "call_source": sorted({r["call_source"] for r in rs}),
     }
+
+
+def question_outcome_summary(rs):
+    """Hidden questions only: incorrect answers by semantic category and missing ones by stage."""
+    cats, stages, answered = {}, {}, 0
+    for r in rs:
+        hidden = set(r["grade"]["primary_keys"])
+        for k, q in (r.get("question_diagnostics") or {}).items():
+            if k not in hidden:
+                continue
+            if q["outcome"] != "missing":
+                answered += 1
+            if q["outcome"] == "incorrect":
+                cats[q["category"]] = cats.get(q["category"], 0) + 1
+            elif q["outcome"] == "missing":
+                stages[q["stage"]] = stages.get(q["stage"], 0) + 1
+    wrong = sum(cats.values())
+    return {"semantic_errors_by_category": dict(sorted(cats.items())), "missing_by_stage": dict(sorted(stages.items())),
+            "semantic_error_rate": round(wrong / answered, 4) if answered else None}
+
+
+def _sum_counts(dicts):
+    out = {}
+    for d in dicts:
+        for skill, a in (d or {}).items():
+            o = out.setdefault(skill, {})
+            for k, v in a.items():
+                o[k] = o.get(k, 0) + v
+    return out
 
 
 def _sum_audit(rs):
@@ -738,13 +913,16 @@ def main(argv=None):
     ap.add_argument("--prices-confirmed", action="store_true")
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience", "schema_aware_planner"),
+    ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience", "schema_aware_planner",
+                                             "semantic_planner"),
                     default="none",
                     help="selective_recovery: the 20 baseline multi-agent slots with recovery ON vs OFF; "
                          "provider_resilience: transient-provider retries ON vs OFF (selective recovery ON in both); "
                          "schema_aware_planner: claim-argument schema guidance ON vs OFF (recovery ON in both); "
                          "each optimised run is paired with an adjacent control when the budget allows")
     ap.add_argument("--arch", choices=ARCHS, default="multi_agent", help="architecture for --experiment")
+    ap.add_argument("--schema-aware-guidance", action="store_true",
+                    help="with --experiment semantic_planner: schema-aware guidance ON in BOTH arms")
     ap.add_argument("--transient-retries", type=int, default=0,
                     help="bounded provider retries of HTTP 500/502/503/504 and timeouts (0 = off)")
     ap.add_argument("--transient-backoff-s", type=float, default=2.0)
@@ -811,7 +989,8 @@ def main(argv=None):
                                        include_control=not a.no_control) if a.experiment == "selective_recovery"
                else run_matched_experiment(make, a.experiment, arch=a.arch, seed=a.seed,
                                            incremental=os.path.join(a.out, "runs.jsonl"),
-                                           include_control=not a.no_control))
+                                           include_control=not a.no_control,
+                                           common_run={"schema_aware": True} if a.schema_aware_guidance else None))
         exp.update(provider=a.provider, model=a.model, budget_usd=a.budget_usd,
                    prices_usd_per_mtok=list(live_llm.PRICES_USD_PER_MTOK[a.model]))
         name = "recovery_experiment.json" if a.experiment == "selective_recovery" else f"{a.experiment}_experiment.json"

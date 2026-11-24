@@ -6,7 +6,7 @@ prompt can and cannot contain.
 
 import json
 
-from multi_agent.claims import CLAIM_RULES, describe_ops, describe_ops_schema
+from multi_agent.claims import CLAIM_RULES, SEMANTIC_RULES, describe_op_results, describe_ops, describe_ops_schema
 
 PLANNING_SYSTEM = (
     "You are the Planning Agent of a data-analysis team. You see only the dataset's schema, never its rows. "
@@ -39,12 +39,21 @@ def op_schema_section() -> str:
             f"CLAIM RULES:\n{_bullets(CLAIM_RULES)}\n")
 
 
+def op_semantics_section() -> str:
+    """P6 semantic planner guidance (opt-in, independent of op_schema_section): what each op returns and how
+    grouping works, as both the trusted engine and the verifier compute it. Names no dataset, column, question or
+    value."""
+    return (f"CLAIM OP RESULTS JSON:\n{json.dumps(describe_op_results(), sort_keys=True)}\n"
+            f"CLAIM SEMANTICS:\n{_bullets(SEMANTIC_RULES)}\n")
+
+
 def planning(req: dict) -> str:
     return (f"PLANNING ATTEMPT: {req['attempt']}\n"
             f"USER GOAL: {req['goal']}\n"
             f"DATASET PROFILE JSON:\n{json.dumps(req['profile'], sort_keys=True)}\n"
             f"CLAIM OPS JSON:\n{json.dumps(describe_ops(), sort_keys=True)}\n"
-            + (op_schema_section() if req.get("op_schema") else "") +
+            + (op_schema_section() if req.get("op_schema") else "")
+            + (op_semantics_section() if req.get("op_semantics") else "") +
             f"MAX TASKS: {req['max_tasks']}\n"
             f"PREVIOUS PROBLEMS:\n{_bullets(req['feedback'])}\n")
 

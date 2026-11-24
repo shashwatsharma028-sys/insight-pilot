@@ -56,6 +56,10 @@ request and planning prompt are byte-identical to before): every plan request, i
 requests, asks the Planning Agent's prompt to include the claim-argument schema (prompts.op_schema_section). Plan
 validation is unchanged: nothing is coerced.
 
+P6 semantic planner guidance (opt-in, independent of the schema flag: limits["semantic_planner"] = True): every
+plan request also asks for the op-result and grouping semantics (prompts.op_semantics_section). Off by default;
+validation, execution and verification are unchanged.
+
 This graph is separate from agent/graph.py (the V1 graph), which is unchanged.
 """
 
@@ -583,6 +587,8 @@ class Supervisor:
                        "feedback": s["plan_feedback"], "max_tasks": max_tasks}
             if lim.get("schema_aware_planner"):          # P6 opt-in: argument-representation guidance in the prompt
                 request["op_schema"] = True
+            if lim.get("semantic_planner"):              # P6 opt-in, independent: op-result / grouping semantics
+                request["op_semantics"] = True
             return self._dispatch(s, c.PLANNING, "plan_request", request, attempt=s["plan_attempts"])
         if s["approved_task_ids"] is None:
             payload = {"plan": s["plan"], "dataset": {"file_name": s["profile"]["file_name"],

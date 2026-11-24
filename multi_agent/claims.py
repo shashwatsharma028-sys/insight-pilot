@@ -72,6 +72,44 @@ def describe_ops_schema() -> dict:
     return {op: {name.rstrip("?"): _describe_arg(rule) for name, rule in spec.items()} for op, spec in OPS.items()}
 
 
+# P6 (opt-in, semantic planner guidance): what each op RETURNS, as computed by both the trusted engine
+# (multi_agent.op_engine) and the independent verifier (multi_agent.verification). Tests check every entry against
+# both implementations on synthetic data, and that the keys match OPS exactly. General op semantics only: no
+# dataset, column, question or value is named.
+OP_RESULTS = {
+    "count_rows": "one integer: the number of rows",
+    "sum": "one number: the total of column",
+    "mean": "one number: the mean of the non-missing values of column",
+    "group_sum": "a mapping {group: total of column}, one entry per group",
+    "group_mean": "a mapping {group: mean of column}, one entry per group",
+    "argmax_group_sum": "one group (its text): the group with the largest total of column",
+    "argmax_group_mean": "one group (its text): the group with the largest mean of column",
+    "ratio_of_sums_pct": "one number: 100 x total of numerator / total of denominator",
+    "count_where_equals": "one integer: the number of rows whose column cell is exactly value",
+    "rate_where_equals": "one fraction from 0 to 1: rows whose column cell is exactly value, divided by all rows",
+    "value_counts": "a mapping {cell text: number of rows}, one entry per distinct non-missing value of column",
+    "mean_where_equals": "one number: the mean of column over the rows whose where_column cell is exactly value",
+    "pearson": "one number from -1 to 1: the Pearson correlation of x and y over rows where both are present",
+}
+
+SEMANTIC_RULES = (
+    "Pick the op whose result has the shape the question asks for: one number or one group for a single answer; "
+    "a mapping only when the question asks for a value for every group.",
+    "For a value restricted to the rows where a column has one value, use a *_where_equals op, not a group_* op.",
+    "Groups are the exact cell text of the by column, or its first by_prefix characters. A group_* or argmax_* "
+    "result uses those groups as keys, and ties go to the first group in sorted order.",
+    "Every cell of a date column starts with YYYY-MM-DD, so by_prefix 7 groups by calendar month (YYYY-MM) and "
+    "by_prefix 4 by calendar year (YYYY).",
+    "Grouping by a text column groups by its exact text only: a text column naming a period without its year "
+    "merges that period across years. For a calendar period, group a date column with by_prefix.",
+)
+
+
+def describe_op_results() -> dict:
+    """Op name -> what its result is (OP_RESULTS), in OPS order."""
+    return {op: OP_RESULTS[op] for op in OPS}
+
+
 def validate_claim(claim, profile) -> list:
     """Problems with one claim spec against a dataset profile ([] = valid)."""
     if not isinstance(claim, dict):
