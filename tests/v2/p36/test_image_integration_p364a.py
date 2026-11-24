@@ -573,6 +573,10 @@ APPROVED_P6 = {
 def test_only_approved_p364a_files_changed_outside_new_documentation():
     changed = set(_git("diff", "--name-only", P36_BASE).split())
     code_changes = {c for c in changed if not (c.startswith("docs/") and c.endswith(".md"))}
+    # P6 live-benchmark evidence: data files only (no code), only under docs/v2/p6/<evidence folder>/.
+    evidence = {c for c in code_changes if c.startswith("docs/v2/p6/") and c.count("/") == 4
+                and c.rsplit("/", 1)[1] in ("live_benchmark.json", "runs.jsonl")}
+    code_changes -= evidence
     approved = APPROVED_364A | APPROVED_364B | APPROVED_P6
     assert code_changes <= approved, sorted(code_changes - approved)
 
