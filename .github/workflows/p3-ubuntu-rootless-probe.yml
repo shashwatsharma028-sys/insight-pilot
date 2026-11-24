@@ -21,6 +21,8 @@
 # - Runs 5 (45121353914) and 6 (45122041350): Stage 1 passed; the real runtime failed closed because
 #   Podman 4.9.3 refuses --dns=none with --network=none. D1 (approved) removed --dns=none; the push
 #   that adds this comment is the single authorized D1 validation attempt (code digest of d7a5dea2).
+# - Run 7 (45125846903): DNS conflict gone; refused on tmpfs nr_inodes. D3 (approved) removed nr_inodes
+#   (inode-count limits no longer enforced); a create-only argument-compatibility diagnostic was added.
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
@@ -239,6 +241,18 @@ jobs:
           "$RUNNER_TEMP/hostenv/bin/python" -VV || true
           cat "$P3_OUT/hostenv-freeze.txt" 2>/dev/null || tail -n 40 "$P3_OUT/hostenv.txt"
           exit "$rc"
+
+      - name: Phase F - Podman argument compatibility diagnostic on verified build 1 (create only, never started; recorded, does not stop the job)
+        timeout-minutes: 8
+        working-directory: src
+        run: |
+          set -uo pipefail
+          P3_OUT="$RUNNER_TEMP/p3"
+          IMAGE="sha256:$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["image_id"].split(":")[-1])' "$P3_OUT/build1.json")"
+          rc=0; python3 -I -B scripts/p3/argv_compat.py --image "$IMAGE" --evidence "$P3_OUT/compat.json" > "$P3_OUT/compat.txt" 2>&1 || rc=$?
+          echo "$rc" > "$P3_OUT/compat.rc"
+          python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); print("full_ok", d["full_ok"], {m: v["error"] for m, v in d["full"].items() if not v["ok"]}); print("run_only", d["run_only"]); print("rejected_alone", {k: d["add_one"].get(k, {}).get("error") for k in d["rejected_alone"]}); print("passes_when_removed", d["passes_when_removed"])' "$P3_OUT/compat.json" || tail -n 40 "$P3_OUT/compat.txt"
+          echo "compat exit=$rc (recorded in the report)"
 
       - name: Phase F - real ContainerRuntime on verified build 1 (preflight, isolation observations, fail-closed, golden numbers and hermetic charts)
         timeout-minutes: 20

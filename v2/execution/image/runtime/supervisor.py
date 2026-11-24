@@ -237,7 +237,9 @@ class RealOS:  # pragma: no cover - exercised only inside the container (P3.6-4 
     def install_signal_plan(self, plan):
         sig = self._signal
         for name, action in plan.items():
-            num = getattr(sig, name)
+            # P3.6-4B: unnamed real-time signals are planned as "SIGRT<number>" (supervisor_helpers.signal_plan);
+            # the signal module has no such attribute, so resolve them by number (host smoke test, 2026-11-24).
+            num = int(name[5:]) if name.startswith("SIGRT") and name[5:].isdigit() else getattr(sig, name)
             if action == "ignore":
                 sig.signal(num, sig.SIG_IGN)
             elif action == "handle":

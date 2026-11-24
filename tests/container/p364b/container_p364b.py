@@ -262,6 +262,16 @@ def test_05_isolation_observed_from_inside_the_container(hardened, rt, parts):
     EVIDENCE["observations"]["dns_related_mounts"] = dns_mounts
     _save()
     assert all("ro" in v["options"].split(",") for v in dns_mounts.values()), dns_mounts
+    # D3: byte-size limits are still enforced; inode counts are only OBSERVED (no explicit inode limit any more)
+    fs = obs["filesystems"]
+    EVIDENCE["observations"]["tmpfs_capacity"] = {
+        p: {"total_bytes": v["f_blocks"] * v["f_frsize"], "inodes_total": v["f_files"], "inodes_free": v["f_ffree"]}
+        for p, v in fs.items()}
+    _save()
+    assert fs["/tmp"]["f_blocks"] * fs["/tmp"]["f_frsize"] == rt.limits.tmp_bytes
+    assert fs["/out"]["f_blocks"] * fs["/out"]["f_frsize"] == rt.limits.out_bytes
+    tmpfs = {m[0]: m[1].split(",") for m in obs["mounts"] if m[0] in ("/tmp", "/out")}
+    assert all({"rw", "nosuid", "nodev", "noexec"} <= set(o) for o in tmpfs.values()) and set(tmpfs) == {"/tmp", "/out"}
     w = obs["writes"]
     assert w["/tmp/p364b"] == "writable" and w["/out/p364b"] == "writable"
     assert all(w[p] != "writable" for p in w if p not in ("/tmp/p364b", "/out/p364b")), w

@@ -550,6 +550,9 @@ APPROVED_364B = {
     # D1 (approved): --dns=none removed from the run argv; regression test; fake podman models Podman 4.9.3
     "v2/execution/podman_argv.py", "tests/v2/p36/test_host_components_p36.py", "tests/v2/p36/fake_podman_main.py",
     "tests/v2/p36/test_podman_dns_d1_p364b.py",
+    # D3 (approved): nr_inodes removed; RealOS real-time-signal fix; argument-compatibility diagnostic
+    "tests/v2/p36/test_podman_tmpfs_d3_p364b.py", "tests/v2/p36/test_realos_smoke_p364b.py",
+    "v2/execution/image/runtime/supervisor.py", "scripts/p3/argv_compat.py",
 }
 
 
@@ -560,8 +563,22 @@ def test_only_approved_p364a_files_changed_outside_new_documentation():
     assert code_changes <= approved, sorted(code_changes - approved)
 
 
+# P3.6-4B: the ONLY approved runtime change since P3.6-3 (real-time signal names resolved by number; found by
+# tests/v2/p36/test_realos_smoke_p364b.py before any CI run). Any other change to the installed files fails.
+APPROVED_RUNTIME_DIFF = [
+    "-            num = getattr(sig, name)",
+    "+            # P3.6-4B: unnamed real-time signals are planned as \"SIGRT<number>\" (supervisor_helpers.signal_plan);",
+    "+            # the signal module has no such attribute, so resolve them by number (host smoke test, 2026-11-24).",
+    "+            num = int(name[5:]) if name.startswith(\"SIGRT\") and name[5:].isdigit() else getattr(sig, name)",
+]
+
+
 def test_the_installed_runtime_is_byte_identical_to_the_reviewed_p36_3_sources():
-    assert _git("diff", "--name-only", P36_BASE, "--", *(src for _, src in layout.RUNTIME_FILES)).strip() == ""
+    srcs = [src for _, src in layout.RUNTIME_FILES]
+    assert _git("diff", "--name-only", P36_BASE, "--", *srcs).split() == ["v2/execution/image/runtime/supervisor.py"]
+    diff = _git("diff", "-U0", P36_BASE, "--", "v2/execution/image/runtime/supervisor.py")
+    body = [ln for ln in diff.splitlines() if ln[:1] in "+-" and not ln.startswith(("+++", "---"))]
+    assert body == APPROVED_RUNTIME_DIFF, body
 
 
 def test_v1_application_and_p4_evidence_are_unchanged():

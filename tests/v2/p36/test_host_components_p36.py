@@ -34,8 +34,8 @@ EXPECTED_RUN_ARGV = [
     "--label", f"org.insightpilot.instance={INST}", "--label", f"org.insightpilot.run={RUN}",
     "--label", "org.insightpilot.schema=1", "--pull=never", "--image-volume=ignore",
     "--read-only", "--read-only-tmpfs=false",
-    "--tmpfs", "/tmp:rw,size=67108864,nr_inodes=4096,mode=1777,noexec,nosuid,nodev",
-    "--tmpfs", "/out:rw,size=33554432,nr_inodes=64,mode=1777,noexec,nosuid,nodev",
+    "--tmpfs", "/tmp:rw,size=67108864,mode=1777,noexec,nosuid,nodev",
+    "--tmpfs", "/out:rw,size=33554432,mode=1777,noexec,nosuid,nodev",
     "--mount", f"type=bind,source={INPUTS},destination=/in,readonly=true",
     "--network=none", "--no-hosts", "--http-proxy=false",         # P3.6-4B D1: --dns=none removed
     "--user", "10001:10001", "--passwd=false", "--cap-drop=ALL", "--security-opt=no-new-privileges",

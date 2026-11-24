@@ -28,6 +28,7 @@ STAGES = [
     ("golden", "Phase E: hash-pinned golden fixtures in the image"),
     ("ospkgs", "Phase E: OS package inventory"),
     ("hostenv", "Phase F: host test environment"),
+    ("compat", "Phase F: Podman argument compatibility (create only, reviewed argv)"),
     ("runtime", "Phase F: real ContainerRuntime (preflight, isolation, fail-closed, golden numbers and charts)"),
     ("p5_v1", "Phase F: P5 20-case suite, V1 prelude, real container port"),
     ("p5_lazy", "Phase F: P5 20-case suite, lazy-seaborn prelude, real container port"),
@@ -143,6 +144,13 @@ def report(d):
 
 def phase_f(d):
     out = []
+    c = load(d, "compat.json")
+    if c:
+        out += ["", "### Phase F: Podman argument compatibility (create only, never started)", "",
+                f"- full reviewed argv accepted in every mode: {c.get('full_ok')}",
+                f"- run-only flags present in `podman run --help`: {c.get('run_only')}",
+                f"- options rejected on their own: {c.get('rejected_alone')}",
+                f"- removal that makes the full argv pass: {c.get('passes_when_removed')}"]
     rt = load(d, "runtime_runtime.json")
     if rt:
         obs, res, tim = rt.get("observations") or {}, rt.get("results") or {}, rt.get("timings") or {}

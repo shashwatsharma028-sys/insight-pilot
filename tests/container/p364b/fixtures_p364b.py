@@ -72,6 +72,8 @@ print("P364B_OBSERVE " + json.dumps({
     "net_interfaces": sorted(os.listdir("/sys/class/net")),
     "proc_net_dev": sorted(l.split(":")[0].strip() for l in (_text("/proc/net/dev") or "").splitlines()[2:] if ":" in l),
     "routes": _routes(), "dns_files": _dns_files(), "getaddrinfo_example_com": _lookup("example.com"),
+    "filesystems": {p: {k: getattr(os.statvfs(p), k) for k in ("f_frsize", "f_blocks", "f_bfree", "f_files", "f_ffree")}
+                    for p in ("/tmp", "/out")},
     "connect_tcp_192_0_2_1_80": _connect(("192.0.2.1", 80)),
     "connect_tcp_loopback_9": _connect(("127.0.0.1", 9)),
     "writes": {p: _try_write(p) for p in ("/p364b", "/opt/ip/p364b", "/in/p364b", "/etc/p364b", "/usr/p364b",
@@ -89,7 +91,7 @@ CHART_NOT_PNG = 'with open("/out/chart.png", "wb") as f:\n    f.write(b"not a pn
 FIXTURES = {"observe": OBSERVE, "code_error": CODE_ERROR, "sleep_past_wall": SLEEP_PAST_WALL,
             "allocate_2_gib": ALLOCATE_2_GIB, "chart_symlink": CHART_SYMLINK, "chart_not_png": CHART_NOT_PNG}
 SHA256 = {
-    "observe": "bc3bca7cf2091d1f69ddc9eb9a4045cacdfd52560af8488f9f3770a6d24db647",
+    "observe": "aa5a2cbdac5a9c7290ad3e4df20091dd8b591a4c068030c1b5d8f9d6db27445e",
     "code_error": "04f316a138368ea0380e0750443b8950a1a152a8db6ab453b8ca9aa028970569",
     "sleep_past_wall": "7eaecb82187b5f0c525f8175cdc2484728c0d096371bd69fe329bfe905c1725a",
     "allocate_2_gib": "a705e22cdd85d9e89bbc961aa5e513b7b2ebcd0606a2714acee713c60a7ad24f",

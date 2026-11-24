@@ -82,6 +82,14 @@ def _run(argv, state, sc):
         _record(state, ["run"] + argv[1:], refused="dns_with_network_none")
         sys.stderr.write("Error: conflicting options: dns and the network mode: none\n")
         return 125
+    # Podman 4.9.3 behaviour observed in CI run 45125846903: nr_inodes is not a tmpfs option.
+    for i, a in enumerate(argv[:-1]):
+        if a == "--tmpfs":
+            bad = [o for o in argv[i + 1].split(":", 1)[-1].split(",") if o.startswith("nr_inodes=")]
+            if bad:
+                _record(state, ["run"] + argv[1:], refused="tmpfs_nr_inodes")
+                sys.stderr.write(f'Error: unknown mount option "{bad[0]}": invalid mount option\n')
+                return 125
     missing = [f for f in REQUIRED_FLAGS if f not in argv]
     name = argv[argv.index("--name") + 1]
     mount = next(a for a in argv if a.startswith("type=bind,source="))

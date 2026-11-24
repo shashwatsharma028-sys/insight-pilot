@@ -91,7 +91,8 @@ def test_no_new_subprocess_launch_sites_outside_the_known_executors():
                "scripts/p3/workload_compat.py", "scripts/p3/hermetic_reference.py", "scripts/p3/ci_report.py",
                "scripts/p3/image_inspect.py", "evaluation/harness.py",
                "v2/execution/image/runtime/supervisor.py",          # P3.6-2: PID 1 starts the runner child
-               "v2/execution/container_runtime.py"}                 # P3.6-3: starts only the podman CLI
+               "v2/execution/container_runtime.py",                 # P3.6-3: starts only the podman CLI
+               "scripts/p3/argv_compat.py"}                         # P3.6-4B: podman create/rm/exists/--help only
     offenders = set()
     for dirpath, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
@@ -245,8 +246,8 @@ P36_P3_FILES = {
     # P3.6-4A (approved, offline only): image-source integration
     "v2/execution/image_layout.py", "v2/execution/image/Containerfile", "scripts/p3/image_tool.py",
     "scripts/p3/image_inspect.py",
-    # P3.6-4B (approved): CI revision and report
-    "scripts/p3/ci_report.py",
+    # P3.6-4B (approved): CI revision and report; D3 argument-compatibility diagnostic
+    "scripts/p3/ci_report.py", "scripts/p3/argv_compat.py",
 }
 
 
@@ -276,7 +277,7 @@ def test_the_ci_workflow_keeps_every_original_gate_and_phase_unchanged():
         assert by_name[step["name"]] == step, step["name"]
     added = [n for n in names if n not in {s["name"] for s in old}]
     assert added[0].startswith("Approved-content gate") and all(
-        n.startswith("Phase F - ") for n in added[1:]) and len(added) == 5, added
+        n.startswith("Phase F - ") for n in added[1:]) and len(added) == 6, added    # D3: + compat diagnostic
 
 
 def test_standard_streamlit_entry_point_imports_no_v2_code():

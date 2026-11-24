@@ -68,7 +68,7 @@ LABEL org.opencontainers.image.title="insightpilot-sandbox" \
       org.opencontainers.image.base.digest="sha256:a83ba18aef0f865b1a4a611c2cf460fe446f2795673bbb9fe43be570439e3b39" \
       io.insightpilot.stage="P3.6" \
       io.insightpilot.lock.sha256="9a355dd6e120ba38d9d91e41bcd52921f3070b5749954cc08635e496aa45e053" \
-      io.insightpilot.runtime.sha256="4132ff83f369ac398e78c2f5281ec5e5622b32e6d492415e011cb3dd39969eb8"
+      io.insightpilot.runtime.sha256="8a468610cf0fb4a453db75d6f3f0003d3f87b011a5c73b4c7ec81fab7648ac9e"
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONNOUSERSITE=1 \
     MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib HOME=/nonexistent
