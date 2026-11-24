@@ -46,6 +46,32 @@ def describe_ops() -> dict:
     return {op: sorted(spec) for op, spec in OPS.items()}
 
 
+CLAIM_RULES = (
+    "args is always a JSON object; use {} for an op that has no arguments.",
+    "A claim has exactly the fields key, op and args.",
+    "Every column argument is the exact name of a column in DATASET PROFILE JSON, as a JSON string.",
+    'value is the exact cell text to compare with, as a JSON string, never a JSON boolean, number or null. '
+    'A boolean column contains only the text "True" or "False", with that exact capitalisation.',
+)
+
+
+def _describe_arg(rule) -> str:
+    if rule == "str":
+        return "cell text (JSON string)"
+    if rule == "prefix":
+        return f"optional integer 1-{MAX_PREFIX}: group by the first N characters"
+    return "column name, any kind" if rule == ANY else f"column name, {'/'.join(rule)}"
+
+
+def describe_ops_schema() -> dict:
+    """
+    P6 (opt-in, schema-aware planner): op name -> {argument: what it must be}, generated from OPS (the table the
+    validator enforces), so the guidance cannot drift from validate_claim. It states representation only (JSON
+    types, column kinds); it names no dataset, column or value, and the validator stays exactly as strict.
+    """
+    return {op: {name.rstrip("?"): _describe_arg(rule) for name, rule in spec.items()} for op, spec in OPS.items()}
+
+
 def validate_claim(claim, profile) -> list:
     """Problems with one claim spec against a dataset profile ([] = valid)."""
     if not isinstance(claim, dict):

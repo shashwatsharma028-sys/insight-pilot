@@ -6,7 +6,7 @@ prompt can and cannot contain.
 
 import json
 
-from multi_agent.claims import describe_ops
+from multi_agent.claims import CLAIM_RULES, describe_ops, describe_ops_schema
 
 PLANNING_SYSTEM = (
     "You are the Planning Agent of a data-analysis team. You see only the dataset's schema, never its rows. "
@@ -32,11 +32,19 @@ def _bullets(items):
     return "\n".join(f"- {x}" for x in items) if items else "- none"
 
 
+def op_schema_section() -> str:
+    """P6 schema-aware planner (opt-in): how each claim argument must be written. Generated from the validator's
+    own op table; states JSON representation only and contains no dataset, column or cell value."""
+    return (f"CLAIM ARGUMENT SCHEMA JSON:\n{json.dumps(describe_ops_schema(), sort_keys=True)}\n"
+            f"CLAIM RULES:\n{_bullets(CLAIM_RULES)}\n")
+
+
 def planning(req: dict) -> str:
     return (f"PLANNING ATTEMPT: {req['attempt']}\n"
             f"USER GOAL: {req['goal']}\n"
             f"DATASET PROFILE JSON:\n{json.dumps(req['profile'], sort_keys=True)}\n"
             f"CLAIM OPS JSON:\n{json.dumps(describe_ops(), sort_keys=True)}\n"
+            + (op_schema_section() if req.get("op_schema") else "") +
             f"MAX TASKS: {req['max_tasks']}\n"
             f"PREVIOUS PROBLEMS:\n{_bullets(req['feedback'])}\n")
 

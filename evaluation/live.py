@@ -141,9 +141,10 @@ def golden(dataset):
 
 # ── prompts (shared parts are identical for both architectures) ───────────────
 
-def single_claims_prompt(profile, task, attempt, feedback):
+def single_claims_prompt(profile, task, attempt, feedback, op_schema=False):
     return (f"DATASET PROFILE JSON:\n{json.dumps(profile, sort_keys=True)}\n"
             f"CLAIM OPS JSON:\n{json.dumps(describe_ops(), sort_keys=True)}\n"
+            + (prompts.op_schema_section() if op_schema else "") +
             f"TASK ID: {task['id']}\nTASK: {task['title']}\nDESCRIPTION: {task['description']}\n"
             f"REQUIRED QUESTIONS JSON (key -> question):\n{json.dumps(task['questions'], sort_keys=True)}\n"
             f"ATTEMPT: {attempt}\nPROBLEMS WITH THE PREVIOUS ATTEMPT:\n"
@@ -160,7 +161,8 @@ def multi_goal(tasks):
 
 # ── runs ──────────────────────────────────────────────────────────────────────
 
-def run_single_agent(dataset, port, clock=time.perf_counter):
+def run_single_agent(dataset, port, clock=time.perf_counter, schema_aware=False):
+    """schema_aware=True adds the claim-argument schema (P6, opt-in) to the claims prompt; nothing else changes."""
     path, tasks = dataset_path(dataset), tasks_for(dataset)
     profile = dsmod.profile(dsmod.load(path))
     out = {"claims": {}, "tasks": {}, "retries": 0, "execution_failures": 0, "llm_errors": 0}
@@ -170,7 +172,7 @@ def run_single_agent(dataset, port, clock=time.perf_counter):
             attempts = attempt
             try:
                 reply = port.complete("single_agent_claims", SINGLE_SYSTEM,
-                                      single_claims_prompt(profile, t, attempt, feedback))
+                                      single_claims_prompt(profile, t, attempt, feedback, op_schema=schema_aware))
                 body = _json_reply(reply.content)
                 specs = body.get("claims") if isinstance(body, dict) else None
                 if not isinstance(specs, list):
@@ -203,14 +205,15 @@ def run_single_agent(dataset, port, clock=time.perf_counter):
     return out
 
 
-def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=False):
-    """selective_recovery=True turns on the Supervisor's opt-in selective task recovery (P6); nothing else changes."""
+def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=False, schema_aware=False):
+    """selective_recovery / schema_aware turn on the Supervisor's opt-in P6 features; nothing else changes."""
     from multi_agent.team import build_team
     from tests.v2.p5 import scripted
     path, tasks = dataset_path(dataset), tasks_for(dataset)
     sup, _ = build_team(port, None, scripted.approve_all, clock=clock, analyst=op_engine.TrustedOpsAnalyst(clock))
-    res = sup.run(path, goal=multi_goal(tasks),
-                  limits={"selective_plan_recovery": True} if selective_recovery else None)
+    limits = {**({"selective_plan_recovery": True} if selective_recovery else {}),
+              **({"schema_aware_planner": True} if schema_aware else {})}
+    res = sup.run(path, goal=multi_goal(tasks), limits=limits or None)
     f = res["final"]
     claims = f["accepted_claims"] or f["verified_claims_for_review"]
     tstat = f.get("tasks") or {}
@@ -431,7 +434,38 @@ EXPERIMENTS = {
                             "run": {"provider_retry": {"selective_recovery": True},
                                     "control": {"selective_recovery": True}},
                             "port": {"provider_retry": {"transient": True}, "control": {"transient": False}}},
+    # Optimisation 3: schema-aware planner guidance (claim-argument representation). Selective recovery ON and the
+    # same provider policy (whatever --transient-retries says) in BOTH arms; only the prompt section differs.
+    "schema_aware_planner": {"arms": ("schema_aware", "control"),
+                             "run": {"schema_aware": {"selective_recovery": True, "schema_aware": True},
+                                     "control": {"selective_recovery": True, "schema_aware": False}},
+                             "port": {"schema_aware": {}, "control": {}}},
 }
+
+
+class PromptAudit:
+    """
+    Observes the prompts actually handed to the provider port and counts, per skill, how many contain the exact
+    schema-guidance section (prompts.op_schema_section). Lets a live run PROVE which arm received the guidance
+    without storing any prompt text. Everything else is delegated unchanged to the wrapped BudgetedPort.
+    """
+
+    MARKER = "CLAIM ARGUMENT SCHEMA JSON:"
+
+    def __init__(self, port):
+        self._port = port
+        self.audit = {}
+
+    def complete(self, skill, system, user):
+        full = prompts.op_schema_section() in user
+        a = self.audit.setdefault(skill, {"with_guidance": 0, "without_guidance": 0, "partial_guidance": 0})
+        a["with_guidance" if full else "without_guidance"] += 1
+        if not full and self.MARKER in user:
+            a["partial_guidance"] += 1
+        return self._port.complete(skill, system, user)
+
+    def __getattr__(self, name):
+        return getattr(self._port, name)
 
 
 def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, log=print, incremental=None,
@@ -473,9 +507,12 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
                         log(f"skip: {label} (budget reserved for the optimised runs)")
                         continue
                 t0, error = clock(), None
+                audited = PromptAudit(port)
                 try:
-                    out = (run_multi_agent(ds, port, clock, **spec["run"][variant]) if arch == "multi_agent"
-                           else run_single_agent(ds, port, clock))
+                    kw = spec["run"][variant]
+                    out = (run_multi_agent(ds, audited, clock, **kw) if arch == "multi_agent"
+                           else run_single_agent(ds, audited, clock,
+                                                 **{k: v for k, v in kw.items() if k == "schema_aware"}))
                 except (live_llm.BudgetExceeded, live_llm.QuotaOrBillingStop) as e:
                     stopped = f"{label}: {e}"
                     log(f"stop: {stopped}")
@@ -495,7 +532,7 @@ def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261
                        "run": {k: v for k, v in out.items() if k != "claims"}, "calls": port.calls,
                        "llm_records": port.records, "spent_usd": port.spent_usd,
                        "rate_limited": getattr(port, "rate_limited", 0), "call_source": port.call_source,
-                       **provider_counters(port)}
+                       "prompt_audit": audited.audit, **provider_counters(port)}
                 order += 1
                 results.append(rec)
                 if incremental:
@@ -576,11 +613,22 @@ def variant_metrics(rs):
         "wait_s_pacing": round(sum(r.get("pacing_wait_s", 0.0) for r in rs), 2),
         "wait_s_rate_limit": round(sum(r.get("rate_limit_wait_s", 0.0) for r in rs), 2),
         "wait_s_transient": round(sum(r.get("transient_wait_s", 0.0) for r in rs), 2),
+        "prompt_audit": _sum_audit(rs),
         "cost_usd_per_correct_hidden_provider_reported": (round(sum(x["cost_usd"] for x in ok) / ch, 6) if ch else None),
         "provider_tokens_per_correct_hidden": (round(sum(x["input_tokens"] + x["output_tokens"] for x in ok) / ch, 1)
                                                if ch else None),
         "call_source": sorted({r["call_source"] for r in rs}),
     }
+
+
+def _sum_audit(rs):
+    out = {}
+    for r in rs:
+        for skill, a in (r.get("prompt_audit") or {}).items():
+            o = out.setdefault(skill, {"with_guidance": 0, "without_guidance": 0, "partial_guidance": 0})
+            for k in o:
+                o[k] += a.get(k, 0)
+    return out
 
 
 def summarize_variants(results, arms=VARIANTS):
@@ -690,9 +738,11 @@ def main(argv=None):
     ap.add_argument("--prices-confirmed", action="store_true")
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience"), default="none",
+    ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience", "schema_aware_planner"),
+                    default="none",
                     help="selective_recovery: the 20 baseline multi-agent slots with recovery ON vs OFF; "
                          "provider_resilience: transient-provider retries ON vs OFF (selective recovery ON in both); "
+                         "schema_aware_planner: claim-argument schema guidance ON vs OFF (recovery ON in both); "
                          "each optimised run is paired with an adjacent control when the budget allows")
     ap.add_argument("--arch", choices=ARCHS, default="multi_agent", help="architecture for --experiment")
     ap.add_argument("--transient-retries", type=int, default=0,

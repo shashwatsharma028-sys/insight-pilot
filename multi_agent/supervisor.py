@@ -51,6 +51,11 @@ nothing below runs and the run state has no plan_recovery key):
   completed_with_failures status); it is never silently dropped;
 - the merged plan is re-validated as a whole before the human approval gate; verification is unchanged.
 
+P6 schema-aware planner (opt-in: limits["schema_aware_planner"] = True; off by default, and when off the plan
+request and planning prompt are byte-identical to before): every plan request, including selective-recovery repair
+requests, asks the Planning Agent's prompt to include the claim-argument schema (prompts.op_schema_section). Plan
+validation is unchanged: nothing is coerced.
+
 This graph is separate from agent/graph.py (the V1 graph), which is unchanged.
 """
 
@@ -574,9 +579,11 @@ class Supervisor:
             s["plan_attempts"] += 1
             rec = s["plan_recovery"] if lim.get("selective_plan_recovery") else None
             max_tasks = len(rec["slots"]) if rec is not None and rec["slots"] else c.MAX_TASKS
-            return self._dispatch(s, c.PLANNING, "plan_request", {
-                "goal": s["goal"], "profile": s["profile"], "attempt": s["plan_attempts"],
-                "feedback": s["plan_feedback"], "max_tasks": max_tasks}, attempt=s["plan_attempts"])
+            request = {"goal": s["goal"], "profile": s["profile"], "attempt": s["plan_attempts"],
+                       "feedback": s["plan_feedback"], "max_tasks": max_tasks}
+            if lim.get("schema_aware_planner"):          # P6 opt-in: argument-representation guidance in the prompt
+                request["op_schema"] = True
+            return self._dispatch(s, c.PLANNING, "plan_request", request, attempt=s["plan_attempts"])
         if s["approved_task_ids"] is None:
             payload = {"plan": s["plan"], "dataset": {"file_name": s["profile"]["file_name"],
                                                       "row_count": s["profile"]["row_count"]}}
