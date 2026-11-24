@@ -45,6 +45,47 @@ class BudgetExceeded(RuntimeError):
     """A call was refused BEFORE it was made: it could exceed the budget or a hard limit."""
 
 
+class QuotaOrBillingStop(RuntimeError):
+    """Daily quota exhausted or billing/credits insufficient: not a temporary rate limit. The benchmark stops."""
+
+
+_FATAL_MARKERS = ("perday", "per day", "per_day", "billing", "credit", "prepay", "payment")
+
+
+def fatal_reason(status, text):
+    """A reason string if this failure is a daily-quota or billing stop rather than a temporary rate limit."""
+    t = (text or "").lower().replace(" ", "")
+    if status in (400, 402, 403, 429) and any(m.replace(" ", "") in t for m in _FATAL_MARKERS):
+        return f"HTTP {status}: daily quota or billing/credits ({text[:200]})"
+    return None
+
+
+def retry_delay_from_body(text):
+    """Seconds from Gemini's google.rpc.RetryInfo ("retryDelay": "35s"), if present."""
+    import re
+    m = re.search(r'"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"', text or "")
+    return float(m.group(1)) if m else None
+
+
+class Pacer:
+    """Proactive pacing shared by every port of a benchmark: at least `min_interval_s` between call starts."""
+
+    def __init__(self, min_interval_s=0.0, clock=time.monotonic, sleep=time.sleep):
+        self.min_interval_s, self.clock, self.sleep = min_interval_s, clock, sleep
+        self._last = None
+        self._lock = threading.Lock()
+
+    def wait(self) -> float:
+        with self._lock:
+            waited = 0.0
+            if self._last is not None and self.min_interval_s > 0:
+                waited = max(0.0, self._last + self.min_interval_s - self.clock())
+                if waited:
+                    self.sleep(waited)
+            self._last = self.clock()
+            return waited
+
+
 class ProviderError(RuntimeError):
     """The provider call failed; the message is redacted. `status` is the HTTP status when there was one."""
 
@@ -173,9 +214,12 @@ class GeminiOpenAICompatPort:
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:400] if hasattr(e, "read") else ""
             ra = (e.headers or {}).get("Retry-After") if hasattr(e, "headers") else None
-            retry_after = float(ra) if ra and str(ra).replace(".", "", 1).isdigit() else None
-            raise ProviderError(f"HTTP {e.code}: {redact(detail, self._secret)}", status=e.code,
-                                retry_after_s=retry_after) from None
+            retry_after = float(ra) if ra and str(ra).replace(".", "", 1).isdigit() else retry_delay_from_body(detail)
+            safe = redact(detail, self._secret)
+            reason = fatal_reason(e.code, safe)
+            if reason:
+                raise QuotaOrBillingStop(reason) from None
+            raise ProviderError(f"HTTP {e.code}: {safe}", status=e.code, retry_after_s=retry_after) from None
         except Exception as e:
             raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}") from None
 
@@ -204,7 +248,8 @@ class BudgetedPort:
 
     def __init__(self, inner, *, model, budget_usd, ledger, max_calls, max_total_tokens,
                  max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS, prices=None, run_label="", clock=time.time,
-                 rate_limit_retries=0, rate_limit_wait_s=20.0, charge_429="worst_case", sleep=time.sleep):
+                 rate_limit_retries=0, rate_limit_wait_s=20.0, charge_429="worst_case", sleep=time.sleep,
+                 pacer=None, rng=None):
         self.inner, self.model = inner, model
         self.call_source, self.code_trust = inner.call_source, CodeTrust(inner.code_trust)
         self.prices = prices or PRICES_USD_PER_MTOK[model]
@@ -217,7 +262,11 @@ class BudgetedPort:
             raise ValueError("charge_429 must be 'worst_case' or 'zero'")
         self.rate_limit_retries, self.rate_limit_wait_s = rate_limit_retries, rate_limit_wait_s
         self.charge_429, self.sleep = charge_429, sleep
-        self.rate_limited = 0
+        self.pacer = pacer
+        import random
+        self.rng = rng or random.Random(20261124)
+        self.rate_limited = 0                     # provider-level retries (HTTP 429), separate from agent retries
+        self.wait_s = 0.0                         # pacing + rate-limit backoff time spent sleeping
         self.calls = self.tokens = self.failed_attempts = 0
         self.spent_usd = 0.0
         self.exhausted = False
@@ -236,16 +285,25 @@ class BudgetedPort:
 
     def complete(self, skill, system, user):
         for attempt in range(self.rate_limit_retries + 1):
+            if self.pacer is not None:
+                self.wait_s += self.pacer.wait()
             try:
                 return self._attempt(skill, system, user)
+            except QuotaOrBillingStop as e:
+                self.exhausted, self.stop_reason = True, f"quota/billing stop: {e}"
+                raise
             except ProviderError as e:
                 if e.status != 429 or attempt == self.rate_limit_retries:
                     raise
                 self.rate_limited += 1
-                wait = e.retry_after_s if e.retry_after_s else self.rate_limit_wait_s * (2 ** attempt)
-                self.sleep(min(wait, 120.0))
+                backoff = self.rate_limit_wait_s * (2 ** attempt) * self.rng.uniform(0.8, 1.2)     # jitter
+                wait = min(e.retry_after_s if e.retry_after_s else backoff, 120.0)   # server hint wins
+                self.wait_s += wait
+                self.sleep(wait)
 
     def _attempt(self, skill, system, user):
+        if getattr(self, "stop_reason", None):
+            raise BudgetExceeded(self.stop_reason)
         tin, tout, worst = self.worst_case(system, user)
         if self.calls >= self.max_calls:
             self._refuse(f"call limit {self.max_calls} reached")
@@ -270,7 +328,8 @@ class BudgetedPort:
             record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                       "call_source": self.call_source, "input_tokens": tin, "output_tokens": tout,
                       "cost_usd": round(charge, 8), "charged_worst_case": charge > 0, "failed": type(e).__name__,
-                      "http_status": status, "seconds": round(self.clock() - t0, 3)}
+                      "http_status": status, "seconds": round(self.clock() - t0, 3),
+                      "billing_status": ("provisional_unbilled_429" if charge == 0 else "conservative_worst_case")}
             self.records.append(record)
             self.ledger.append(record)
             raise

@@ -274,8 +274,11 @@ def schedule(datasets, reps, seed):
     return jobs
 
 
-def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_counter, log=print):
-    """make_port(run_label) -> a BudgetedPort. Stops scheduling new runs as soon as the budget is exhausted."""
+def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_counter, log=print, incremental=None):
+    """
+    make_port(run_label) -> a BudgetedPort. Stops scheduling new runs as soon as the budget is exhausted or a
+    quota/billing stop occurs. `incremental`: a JSON-lines path; every completed run is appended at once.
+    """
     results, stopped = [], None
     with v1_executor_tripwire() as trip:
         for i, (arch, ds, rep) in enumerate(schedule(datasets, reps, seed)):
@@ -285,23 +288,29 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
             try:
                 out = RUNNERS[arch](ds, port, clock)
                 error = None
-            except live_llm.BudgetExceeded as e:
+            except (live_llm.BudgetExceeded, live_llm.QuotaOrBillingStop) as e:
                 stopped = f"{label}: {e}"
-                log(f"budget stop: {stopped}")
+                log(f"stop: {stopped}")
                 break
             except Exception as e:                               # recorded, never silently dropped
                 out, error = {"claims": {}, "tasks": {}}, f"{type(e).__name__}: {str(e)[:300]}"
             wall = clock() - t0
             if port.exhausted:
-                stopped = f"{label}: budget or limit reached during the run (run excluded)"
+                stopped = f"{label}: {getattr(port, 'stop_reason', None) or 'budget or limit reached'} (run excluded)"
+                log(f"stop: {stopped}")
                 break
+            wait = getattr(port, "wait_s", 0.0)
             g = grade(ds, out["claims"])
             rec = {"order": i, "arch": arch, "dataset": ds, "rep": rep, "wall_s": wall, "error": error,
+                   "wait_s": wait, "wall_excl_wait_s": max(0.0, wall - wait),
                    "grade": g, "run": {k: v for k, v in out.items() if k != "claims"},
                    "calls": port.calls, "llm_records": port.records, "spent_usd": port.spent_usd,
                    "rate_limited": getattr(port, "rate_limited", 0),
                    "call_source": port.call_source}
             results.append(rec)
+            if incremental:
+                with open(incremental, "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
             log(f"{i:3d} {label:28s} {g['correct_hidden']}/{g['total_hidden']} hidden correct, "
                 f"{port.calls} calls, ${port.spent_usd:.5f}, {wall:.1f}s{'  ERROR ' + error if error else ''}")
         tripwire_hits = trip["n"]
@@ -330,16 +339,19 @@ def summarize(results):
             "claim_precision": round(correct_all / rep_n, 4) if rep_n else None,
             "claim_recall": round(correct_all / sum(r["grade"]["total_all"] for r in rs), 4),
             "latency_s": metrics.latency_stats([r["wall_s"] for r in rs]),
+            "latency_excl_wait_s": metrics.latency_stats([r.get("wall_excl_wait_s", r["wall_s"]) for r in rs]),
+            "wait_s_total": round(sum(r.get("wait_s", 0.0) for r in rs), 2),
             "llm_calls": sum(r["calls"] for r in rs),
             "input_tokens": sum(x["input_tokens"] for x in recs), "output_tokens": sum(x["output_tokens"] for x in recs),
             "total_tokens": sum(x["input_tokens"] + x["output_tokens"] for x in recs),
             "cost_usd": round(sum(r["spent_usd"] for r in rs), 6),
             "calls_charged_worst_case": sum(1 for x in recs if x["charged_worst_case"]),
             "failed_provider_attempts": sum(1 for x in recs if x.get("failed")),
+            "provisional_unbilled_429": sum(1 for x in recs if x.get("billing_status") == "provisional_unbilled_429"),
             "failed_http_status": {str(k): sum(1 for x in recs if x.get("failed") and x.get("http_status") == k)
                                    for k in sorted({x.get("http_status") for x in recs if x.get("failed")}, key=str)},
-            "rate_limited_retries": sum(r.get("rate_limited", 0) for r in rs),
-            "retries": sum(r["run"].get("retries", 0) for r in rs),
+            "provider_retries_429": sum(r.get("rate_limited", 0) for r in rs),
+            "agent_retries": sum(r["run"].get("retries", 0) for r in rs),
             "execution_failures": sum(r["run"].get("execution_failures", 0) for r in rs),
             "task_completion_rate": round(sum(1 for t in tasks if t.get("completed")) / len(tasks), 4) if tasks else None,
             "call_source": sorted({r["call_source"] for r in rs}),
@@ -350,6 +362,9 @@ def summarize(results):
     both = [p for p in pairs.values() if set(p) == set(ARCHS) and not any(x["error"] for x in p.values())]
     out["paired_latency_single_vs_multi"] = paired.paired_latency(
         [(p["single_agent"]["wall_s"], p["multi_agent"]["wall_s"]) for p in both])
+    out["paired_latency_excl_wait_single_vs_multi"] = paired.paired_latency(
+        [(p["single_agent"].get("wall_excl_wait_s", p["single_agent"]["wall_s"]),
+          p["multi_agent"].get("wall_excl_wait_s", p["multi_agent"]["wall_s"])) for p in both])
     return out
 
 
@@ -364,16 +379,20 @@ def markdown(bench) -> str:
              f"- harness {bench['harness_version']}; seed {bench['seed']}; datasets {bench['datasets']}; reps {bench['reps']}",
              f"- stopped early: {bench['stopped']}", f"- V1 executor tripwire hits: {bench['v1_executor_tripwire_hits']}", "",
              "| metric | single_agent | multi_agent |", "|---|---|---|"]
-    keys = ["runs", "run_errors", "failed_provider_attempts", "failed_http_status", "rate_limited_retries",
+    keys = ["runs", "run_errors", "failed_provider_attempts", "failed_http_status", "provider_retries_429",
+            "provisional_unbilled_429", "agent_retries", "wait_s_total",
             "accuracy_hidden", "accuracy_all", "incorrect_claims_reported", "claim_precision",
-            "claim_recall", "llm_calls", "input_tokens", "output_tokens", "total_tokens", "cost_usd", "retries",
+            "claim_recall", "llm_calls", "input_tokens", "output_tokens", "total_tokens", "cost_usd",
             "execution_failures", "task_completion_rate"]
     for k in keys:
         lines.append(f"| {k} | " + " | ".join(str(s.get(a, {}).get(k)) for a in ARCHS) + " |")
     for a in ARCHS:
         if a in s:
             lines.append(f"| latency p50/p95 ms ({a}) | {s[a]['latency_s']['median_ms']} / {s[a]['latency_s']['p95_ms']} | |")
-    lines += ["", f"Paired latency (single -> multi): {s.get('paired_latency_single_vs_multi')}"]
+            lines.append(f"| latency excl. pacing/rate-limit waits p50/p95 ms ({a}) | "
+                         f"{s[a]['latency_excl_wait_s']['median_ms']} / {s[a]['latency_excl_wait_s']['p95_ms']} | |")
+    lines += ["", f"Paired latency (single -> multi): {s.get('paired_latency_single_vs_multi')}",
+              f"Paired latency excl. waits (single -> multi): {s.get('paired_latency_excl_wait_single_vs_multi')}"]
     return "\n".join(lines) + "\n"
 
 
@@ -415,6 +434,7 @@ def main(argv=None):
     ap.add_argument("--ledger", default=live_llm.DEFAULT_LEDGER)
     ap.add_argument("--rate-limit-retries", type=int, default=0, help="explicit, recorded retries on HTTP 429")
     ap.add_argument("--charge-429", choices=("worst_case", "zero"), default="worst_case")
+    ap.add_argument("--min-interval-s", type=float, default=0.0, help="proactive pacing between call starts")
     ap.add_argument("--transport", choices=("openai_compat", "native"), default="openai_compat",
                     help="openai_compat: Bearer key injected by the session proxy; native: x-goog-api-key SDK")
     ap.add_argument("--prices-confirmed", action="store_true")
@@ -432,6 +452,7 @@ def main(argv=None):
         ledger = live_llm.Ledger(a.ledger)
         if ledger.spent_usd() >= a.budget_usd:
             raise SystemExit(f"ledger already records ${ledger.spent_usd():.4f} of the ${a.budget_usd:.2f} budget")
+        pacer = live_llm.Pacer(a.min_interval_s)
         inner = (live_llm.GeminiOpenAICompatPort(a.model, a.max_output_tokens) if a.transport == "openai_compat"
                  else live_llm.GeminiPort(a.model, a.max_output_tokens))
         if a.transport == "openai_compat":
@@ -445,20 +466,21 @@ def main(argv=None):
                                       run_label="preflight_probe")
         try:
             probe.complete("preflight", "Reply with the single word OK.", "OK?")
-        except live_llm.ProviderError as e:
+        except (live_llm.ProviderError, live_llm.QuotaOrBillingStop) as e:
             raise SystemExit(f"model {a.model!r} cannot generate for this key: {e}")
         print(f"model {a.model} generated a reply (preflight probe ${probe.spent_usd:.6f})")
         make = lambda label: live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,  # noqa: E731
                                                    max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
                                                    max_output_tokens=a.max_output_tokens, run_label=label,
-                                                   rate_limit_retries=a.rate_limit_retries, charge_429=a.charge_429)
+                                                   rate_limit_retries=a.rate_limit_retries, charge_429=a.charge_429,
+                                                   pacer=pacer)
     else:
         ledger = live_llm.Ledger(os.path.join(a.out, "dry_run_ledger.jsonl"))       # never the live ledger
         make = lambda label: live_llm.BudgetedPort(  # noqa: E731
             live_llm.FakeProvider(oracle_answer(label.split("/")[1])), model=a.model, budget_usd=a.budget_usd,
             ledger=ledger, max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
             max_output_tokens=a.max_output_tokens, run_label=label)
-    bench = run_benchmark(datasets, reps, make, seed=a.seed)
+    bench = run_benchmark(datasets, reps, make, seed=a.seed, incremental=os.path.join(a.out, "runs.jsonl"))
     bench.update(provider=a.provider, model=a.model, mode=a.mode, budget_usd=a.budget_usd,
                  prices_usd_per_mtok=list(live_llm.PRICES_USD_PER_MTOK[a.model]))
     with open(os.path.join(a.out, "live_benchmark.json"), "w", encoding="utf-8") as f:

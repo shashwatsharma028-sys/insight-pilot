@@ -415,3 +415,65 @@ def test_other_failures_are_never_retried_and_always_charged_the_worst_case(tmp_
     with pytest.raises(live_llm.ProviderError):
         p.complete("s", "a", "b")
     assert inner.n == 1 and p.records[0]["cost_usd"] > 0 and p.records[0]["http_status"] == 503
+
+
+def test_daily_quota_or_billing_errors_stop_and_are_never_retried(tmp_path):
+    import io
+    import urllib.error
+    calls = []
+
+    def urlopen(req, timeout):
+        calls.append(1)
+        body = '{"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "details": [{"quotaId": "GenerateRequestsPerDayPerProjectPerModel"}]}}'
+        raise urllib.error.HTTPError(req.full_url, 429, "x", {}, io.BytesIO(body.encode()))
+    inner = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": "x"}, urlopen=urlopen)
+    p = _port(tmp_path, inner, rate_limit_retries=3, charge_429="zero", sleep=lambda s: None)
+    with pytest.raises(live_llm.QuotaOrBillingStop):
+        p.complete("s", "a", "b")
+    assert len(calls) == 1 and p.exhausted and p.records[0]["cost_usd"] > 0      # not a 429-free rate limit
+    with pytest.raises(live_llm.BudgetExceeded):
+        p.complete("s", "a", "b")                                                 # latched: no further calls
+    assert live_llm.fatal_reason(403, "Billing account has insufficient credits") is not None
+    assert live_llm.fatal_reason(429, "Quota exceeded per minute; retryDelay") is None
+
+
+def test_retry_delay_is_read_from_the_body_and_backoff_is_jittered(tmp_path):
+    import io
+    import urllib.error
+    n = []
+
+    def urlopen(req, timeout):
+        n.append(1)
+        if len(n) == 1:
+            body = '{"error": {"code": 429, "details": [{"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "31s"}]}}'
+            raise urllib.error.HTTPError(req.full_url, 429, "x", {}, io.BytesIO(body.encode()))
+        return _Resp({"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": 3, "completion_tokens": 1}})
+    slept = []
+    inner = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": "x"}, urlopen=urlopen)
+    p = _port(tmp_path, inner, rate_limit_retries=2, charge_429="zero", sleep=slept.append, rate_limit_wait_s=1.0)
+    p.complete("s", "a", "b")
+    assert slept == [31.0] and p.wait_s == 31.0 and p.rate_limited == 1
+    assert p.records[0]["billing_status"] == "provisional_unbilled_429" and p.records[0]["cost_usd"] == 0
+
+
+def test_the_pacer_spaces_call_starts():
+    t = [0.0]
+    slept = []
+    pacer = live_llm.Pacer(4.0, clock=lambda: t[0], sleep=lambda s: (slept.append(s), t.__setitem__(0, t[0] + s)))
+    assert pacer.wait() == 0.0
+    t[0] += 1.0
+    assert pacer.wait() == 3.0 and slept == [3.0]
+
+
+def test_completed_runs_are_saved_incrementally(tmp_path):
+    jl = str(tmp_path / "runs.jsonl")
+
+    def make(label):
+        return live_llm.BudgetedPort(live_llm.FakeProvider(live.oracle_answer(label.split("/")[1])),
+                                     model="gemini-2.5-flash-lite", budget_usd=1, max_calls=100, max_total_tokens=10 ** 7,
+                                     ledger=live_llm.Ledger(str(tmp_path / "l.jsonl")), run_label=label)
+    bench = live.run_benchmark(("student",), 1, make, log=lambda *_: None, incremental=jl)
+    lines = [json.loads(x) for x in open(jl, encoding="utf-8")]
+    assert len(lines) == 2 == len(bench["results"]) and all("wall_excl_wait_s" in x for x in lines)
+    s = bench["summary"]["multi_agent"]
+    assert "agent_retries" in s and "provider_retries_429" in s and "latency_excl_wait_s" in s
