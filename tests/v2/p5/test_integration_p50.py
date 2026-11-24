@@ -154,8 +154,12 @@ def test_multi_agent_requires_no_new_dependency():
                         imported |= {a.name.split(".")[0] for a in node.names}
     third_party = imported - {"csv", "hashlib", "os", "re", "math", "collections", "dataclasses", "json", "copy",
                               "operator", "time", "typing", "enum", "sys", "importlib",
+                              "threading", "types",                                  # P6: standard library
                               "multi_agent", "config", "sandbox", "sandbox_v2", "agent", "v2"}
-    assert third_party == {"langgraph", "langchain_core"}
+    # P6: pandas (trusted-ops engine) and langchain_google_genai (live Gemini port) are existing V1
+    # requirements, not new dependencies.
+    assert third_party == {"langgraph", "langchain_core", "pandas", "langchain_google_genai"}
+    assert "pandas" in req and "langchain-google-genai" in req
     assert "langgraph" in req and "langchain" in req
 
 

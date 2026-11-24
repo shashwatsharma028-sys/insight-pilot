@@ -562,10 +562,18 @@ APPROVED_364B = {
 }
 
 
+# P6 (approved): live-LLM integration and benchmarking in trusted-ops mode (no generated code runs)
+APPROVED_P6 = {
+    "multi_agent/op_engine.py", "multi_agent/live_llm.py", "multi_agent/team.py", "evaluation/live.py",
+    "tests/v2/p6/__init__.py", "tests/v2/p6/test_live_p6.py",
+    "tests/v2/p5/test_integration_p50.py", "tests/v2/p51/test_integration_controls_p51a.py",
+}
+
+
 def test_only_approved_p364a_files_changed_outside_new_documentation():
     changed = set(_git("diff", "--name-only", P36_BASE).split())
     code_changes = {c for c in changed if not (c.startswith("docs/") and c.endswith(".md"))}
-    approved = APPROVED_364A | APPROVED_364B
+    approved = APPROVED_364A | APPROVED_364B | APPROVED_P6
     assert code_changes <= approved, sorted(code_changes - approved)
 
 

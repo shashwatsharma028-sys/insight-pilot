@@ -49,6 +49,7 @@ CENSUS_ALLOWLIST = {
     ("v2/execution/binding.py", "attr v1_module"),
     ("v2/execution/binding.py", "attr lazy_module"),
     ("v2/execution/binding.py", "attr _installed['lazy_module']"),
+    ("evaluation/live.py", "attr m"),                              # P6: replaces both V1 executors with a refusing tripwire
 }
 _SKIP_DIRS = {".git", "venv", "tests", "docs", "__pycache__", "node_modules"}
 
