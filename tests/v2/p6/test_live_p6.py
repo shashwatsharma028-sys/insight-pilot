@@ -437,6 +437,38 @@ def test_daily_quota_or_billing_errors_stop_and_are_never_retried(tmp_path):
     assert live_llm.fatal_reason(429, "Quota exceeded per minute; retryDelay") is None
 
 
+GENERIC_429 = ('{"error": {"code": 429, "message": "You exceeded your current quota, please check your plan and billing '
+               'details.", "status": "RESOURCE_EXHAUSTED", "details": [{"@type": "type.googleapis.com/google.rpc.QuotaFailure", '
+               '"violations": [{"quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests", '
+               '"quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "quotaValue": "15"}]}, '
+               '{"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": "7s"}]}}')
+
+
+def test_the_generic_429_billing_wording_is_a_temporary_rate_limit_not_a_stop(tmp_path):
+    """Google sends 'check your plan and billing details' for PER-MINUTE limits too: retry, do not stop."""
+    import io
+    import urllib.error
+    assert live_llm.fatal_reason(429, GENERIC_429) is None
+    assert live_llm.fatal_reason(429, "You exceeded your current quota, please check your plan and billing details.") is None
+    assert live_llm.fatal_reason(429, GENERIC_429.replace("PerMinute", "PerDay")) is not None
+    assert live_llm.fatal_reason(429, '{"quotaMetric": "x/requests_per_day"}') is not None
+    assert live_llm.fatal_reason(429, "Your prepayment credits are depleted.") is not None
+    assert live_llm.fatal_reason(403, '{"status": "PERMISSION_DENIED", "reason": "BILLING_DISABLED"}') is not None
+    assert live_llm.fatal_reason(402, "") is not None
+    assert "quotaId=GenerateRequestsPerMinutePerProjectPerModel-FreeTier" in live_llm.quota_details(GENERIC_429)
+    n, slept = [], []
+
+    def urlopen(req, timeout):
+        n.append(1)
+        if len(n) == 1:
+            raise urllib.error.HTTPError(req.full_url, 429, "x", {}, io.BytesIO(GENERIC_429.encode()))
+        return _Resp({"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": 3, "completion_tokens": 1}})
+    inner = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": "x"}, urlopen=urlopen)
+    p = _port(tmp_path, inner, rate_limit_retries=2, charge_429="zero", sleep=slept.append, rate_limit_wait_s=1.0)
+    p.complete("s", "a", "b")
+    assert len(n) == 2 and slept == [7.0] and not p.exhausted and p.rate_limited == 1
+
+
 def test_retry_delay_is_read_from_the_body_and_backoff_is_jittered(tmp_path):
     import io
     import urllib.error

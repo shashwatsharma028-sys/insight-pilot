@@ -20,6 +20,7 @@ the operator must confirm them (evaluation.live --prices-confirmed) before any l
 import json
 import math
 import os
+import re
 import threading
 import time
 from types import SimpleNamespace
@@ -49,20 +50,44 @@ class QuotaOrBillingStop(RuntimeError):
     """Daily quota exhausted or billing/credits insufficient: not a temporary rate limit. The benchmark stops."""
 
 
-_FATAL_MARKERS = ("perday", "per day", "per_day", "billing", "credit", "prepay", "payment")
+_DAILY_QUOTA = re.compile(r'"quota(?:id|metric)"\s*:\s*"[^"]*per_?day', re.I)
+_BILLING_STATUS = ("billing_disabled", "billingdisabled")
+_CREDIT_MARKERS = ("insufficient credit", "credits are depleted", "credits depleted", "prepayment", "prepaid credit",
+                   "out of credit", "credit balance", "insufficient funds", "payment required")
 
 
 def fatal_reason(status, text):
-    """A reason string if this failure is a daily-quota or billing stop rather than a temporary rate limit."""
-    t = (text or "").lower().replace(" ", "")
-    if status in (400, 402, 403, 429) and any(m.replace(" ", "") in t for m in _FATAL_MARKERS):
-        return f"HTTP {status}: daily quota or billing/credits ({text[:200]})"
-    return None
+    """A reason string if this failure is a daily-quota or billing/credit stop rather than a temporary rate limit.
+
+    Gemini's generic 429 text ("You exceeded your current quota, please check your plan and billing details") is sent
+    for per-minute limits too, so the word "billing" alone is NOT a stop. A stop needs: a structured QuotaFailure
+    whose quotaId/quotaMetric is a per-DAY quota; HTTP 402; a BILLING_DISABLED status; or an explicit
+    credit/prepayment exhaustion message.
+    """
+    t = text or ""
+    low = t.lower()
+    why = None
+    if status == 402:
+        why = "payment required"
+    elif status in (400, 403, 429) and _DAILY_QUOTA.search(t):
+        why = "daily quota exhausted"
+    elif status in (400, 403, 429) and any(m in low.replace(" ", "") for m in _BILLING_STATUS):
+        why = "billing disabled"
+    elif status in (400, 403, 429) and any(m in low for m in _CREDIT_MARKERS):
+        why = "insufficient billing credits"
+    return f"HTTP {status}: {why} ({t[:200]})" if why else None
+
+
+def quota_details(text):
+    """Structured QuotaFailure/RetryInfo fields from an error body (ids and numbers only; for the ledger)."""
+    out = []
+    for m in re.finditer(r'"(quotaId|quotaMetric|quotaValue|retryDelay)"\s*:\s*"([^"]{0,120})"', text or ""):
+        out.append(f"{m.group(1)}={m.group(2)}")
+    return ";".join(out)[:500]
 
 
 def retry_delay_from_body(text):
     """Seconds from Gemini's google.rpc.RetryInfo ("retryDelay": "35s"), if present."""
-    import re
     m = re.search(r'"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"', text or "")
     return float(m.group(1)) if m else None
 
@@ -212,14 +237,16 @@ class GeminiOpenAICompatPort:
             with self._urlopen(req, timeout=self.timeout_s) as r:
                 return json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
-            detail = e.read().decode("utf-8", "replace")[:400] if hasattr(e, "read") else ""
+            full = e.read().decode("utf-8", "replace")[:20000] if hasattr(e, "read") else ""
             ra = (e.headers or {}).get("Retry-After") if hasattr(e, "headers") else None
-            retry_after = float(ra) if ra and str(ra).replace(".", "", 1).isdigit() else retry_delay_from_body(detail)
-            safe = redact(detail, self._secret)
-            reason = fatal_reason(e.code, safe)
+            retry_after = float(ra) if ra and str(ra).replace(".", "", 1).isdigit() else retry_delay_from_body(full)
+            safe_full = redact(full, self._secret)
+            details = quota_details(safe_full)
+            reason = fatal_reason(e.code, safe_full)
             if reason:
-                raise QuotaOrBillingStop(reason) from None
-            raise ProviderError(f"HTTP {e.code}: {safe}", status=e.code, retry_after_s=retry_after) from None
+                raise QuotaOrBillingStop(f"{reason} [{details}]") from None
+            raise ProviderError(f"HTTP {e.code}: {safe_full[:400]} [{details}]", status=e.code,
+                                retry_after_s=retry_after) from None
         except Exception as e:
             raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}") from None
 
