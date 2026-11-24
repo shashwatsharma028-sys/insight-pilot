@@ -119,3 +119,15 @@ def test_phase_f_runs_only_the_suite_with_the_explicit_validation_environment():
         assert "GOOGLE_API_KEY" not in run and "secrets." not in run
     assert [s["name"] for s in job["steps"]].index(
         "Approved-content gate - the pushed code is exactly the reviewed P3.6-4B content (stops the job on failure)") == 1
+
+
+def test_suite_helpers_only_use_fixture_instances_they_receive():
+    """Run #9: a helper called _assert_clean(parts, rt) with the module-level fixture FUNCTIONS. Never again."""
+    tree = ast.parse(_read(SUITE))
+    fixtures = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)
+                and any("fixture" in ast.unparse(d) for d in n.decorator_list)}
+    assert {"parts", "rt", "hardened"} <= fixtures
+    for fn in [n for n in tree.body if isinstance(n, ast.FunctionDef)]:
+        params = {a.arg for a in fn.args.args}
+        used = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+        assert not (used & fixtures) - params - {fn.name}, (fn.name, sorted((used & fixtures) - params))

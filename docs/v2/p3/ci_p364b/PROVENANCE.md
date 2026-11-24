@@ -8,6 +8,7 @@ The logs were retrieved through the GitHub API (MCP `get_job_logs`).
 |---|---|---|---|---|
 | #5 | 45121353914 | 137515602649 | `7d63b0f78fb88b9cea39b7a8c7644f5647c92d79` | Stage 1 passed; Phase F runtime refused at preflight |
 | #6 | 45122041350 | 137517791540 | `15a2a5b6572bac270de60301ce63683c77e0e0ed` | the same, with diagnostics recorded (root cause) |
+| #9 | 45344790686 | 138276631114 | `36b0beb306f4a753fad2ef490e5cca536322a920` | D2 attempt: preflight and attestation passed; real runtime 16 passed, 1 failed (test-code defect: a helper used fixture functions), 2 deselected; P5 steps NOT RUN |
 | #8 | 45341414519 | 138265701550 | `5868f46360c0947b3171e4d12032caccd9c1405b` | D3 attempt: Stage 1 and the argument-compatibility check passed; the container started; the attestation was refused only on `writable_mounts` (D2) |
 | #7 | 45125846903 | 137529873779 | `d1e208cbccbe8c67e4c540f166b03d50f103b0ca` | D1 attempt: Stage 1 passed; the DNS conflict is gone; the runtime was refused on the tmpfs option `nr_inodes` (D3) |
 
@@ -15,6 +16,9 @@ The logs were retrieved through the GitHub API (MCP `get_job_logs`).
 |---|---|
 | raw log #5, as retrieved (NOT committed) | `6ca18fc9b8d4ce6ca7ab5546d2a9f741fa374e78767a29bb2bc94366aee125bd` |
 | raw log #6, as retrieved (NOT committed) | `81a830f8bf8e5da8bda46cc1562ed05eb76f446876fd3d4da06337226da1b299` |
+| raw log #9, as retrieved (NOT committed) | `939c9acb9bac779af52c90ec7692063787f8c46467550e2b0cb141d71a9801c1` |
+| `run9_job_138276631114.sanitized.log` | `f52b22397f9cf42515efa2cba48eacef54e3383468e981d6950b57c037b7682a` |
+| `run9_report.md` | `8e576bc90691e328c27c6c89dd61f7294abd43529fa3b41c2fc1325d2530db9e` |
 | raw log #8, as retrieved (NOT committed) | `9e2deafd673cf53f240c09231e25cf967409303171a4c4bfa288aea8ddde9343` |
 | `run8_job_138265701550.sanitized.log` | `b22bba2592185f90768edca7a9c03320529642274312be472985313fd557bd02` |
 | `run8_report.md` | `18eb74b41b5b6883ea57af4713a8dd14086d315c1b65b3140ad236644e220cf6` |

@@ -273,6 +273,10 @@ def test_05_isolation_observed_from_inside_the_container(hardened, rt, parts):
     tmpfs = {m[0]: m[1].split(",") for m in obs["mounts"] if m[0] in ("/tmp", "/out")}
     assert all({"rw", "nosuid", "nodev", "noexec"} <= set(o) for o in tmpfs.values()) and set(tmpfs) == {"/tmp", "/out"}
     _assert_d2_dev_entries(obs)
+    w = obs["writes"]
+    assert w["/tmp/p364b"] == "writable" and w["/out/p364b"] == "writable"
+    assert all(w[p] != "writable" for p in w if p not in ("/tmp/p364b", "/out/p364b")), w
+    _assert_clean(parts, rt)
 
 
 # D2 (approved): standard Linux character-device numbers of the six permitted /dev binds
@@ -308,10 +312,6 @@ def _assert_d2_dev_entries(obs):
     storage = sorted(mp for mp, m in rw.items() if m["fstype"] not in ("proc", "devtmpfs", "devpts", "mqueue"))
     assert storage == ["/out", "/tmp"], storage                          # the only writable ordinary storage
     assert sorted(mp for mp, m in rw.items() if m["fstype"] == "devtmpfs") == sorted(f"/dev/{n}" for n in CHAR_DEVICES)
-    w = obs["writes"]
-    assert w["/tmp/p364b"] == "writable" and w["/out/p364b"] == "writable"
-    assert all(w[p] != "writable" for p in w if p not in ("/tmp/p364b", "/out/p364b")), w
-    _assert_clean(parts, rt)
 
 
 @pytest.mark.parametrize("name,outcome,reason", [
