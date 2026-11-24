@@ -431,7 +431,16 @@ def main(argv=None):
             available = inner.list_models()
             if not any(m.split("/")[-1] == a.model for m in available):
                 raise SystemExit(f"model {a.model!r} is not available to this key; available: {available[:40]}")
-            print(f"model {a.model} is available to this key ({len(available)} models listed)")
+        # A listed model may still refuse generation (pilot 1: gemini-2.5-flash-lite "no longer available to new
+        # users"). One tiny budgeted generation probe proves availability before any benchmark run.
+        probe = live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger, max_calls=1,
+                                      max_total_tokens=a.max_total_tokens, max_output_tokens=a.max_output_tokens,
+                                      run_label="preflight_probe")
+        try:
+            probe.complete("preflight", "Reply with the single word OK.", "OK?")
+        except live_llm.ProviderError as e:
+            raise SystemExit(f"model {a.model!r} cannot generate for this key: {e}")
+        print(f"model {a.model} generated a reply (preflight probe ${probe.spent_usd:.6f})")
         make = lambda label: live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,  # noqa: E731
                                                    max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
                                                    max_output_tokens=a.max_output_tokens, run_label=label)

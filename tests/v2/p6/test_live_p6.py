@@ -367,3 +367,20 @@ def test_openai_compat_model_listing_and_unconfirmed_models_refused():
     assert p.list_models() == ["models/gemini-2.5-flash-lite", "models/gemini-2.5-pro"]
     with pytest.raises(ValueError, match="no confirmed price"):
         live_llm.GeminiOpenAICompatPort(model="gemini-2.5-flash", env={"GOOGLE_API_KEY": "x"})
+
+
+def test_a_model_that_refuses_generation_stops_the_run_before_any_benchmark(tmp_path, monkeypatch):
+    class Refusing(live_llm.GeminiOpenAICompatPort):
+        def list_models(self):
+            return ["models/gemini-2.5-flash-lite"]
+
+        def complete(self, *a):
+            raise live_llm.ProviderError("HTTP 404: no longer available to new users")
+    monkeypatch.setattr(live_llm, "GeminiOpenAICompatPort", Refusing)
+    monkeypatch.setenv("GOOGLE_API_KEY", "proxy-injected")
+    ledger = str(tmp_path / "l.jsonl")
+    with pytest.raises(SystemExit, match="cannot generate"):
+        live.main(["--provider", "gemini", "--mode", "pilot", "--prices-confirmed",
+                   "--i-understand-this-makes-live-calls", "--ledger", ledger, "--out", str(tmp_path / "o")])
+    assert not os.path.exists(tmp_path / "o" / "live_benchmark.json")
+    assert live_llm.Ledger(ledger).spent_usd() > 0                 # the failed probe is charged conservatively
