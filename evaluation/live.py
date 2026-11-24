@@ -217,7 +217,26 @@ def run_multi_agent(dataset, port, clock=time.perf_counter):
                             "completed": v.get("status") == "completed"} for tid, v in tstat.items()},
             "retries": sum(max(0, (v.get("attempts") or 1) - 1) + max(0, (v.get("insight_attempts") or 1) - 1)
                            for v in tstat.values()),
-            "agent_errors": f.get("agent_errors", 0), "handoffs_rejected": f.get("handoffs_rejected", 0)}
+            "agent_errors": f.get("agent_errors", 0), "handoffs_rejected": f.get("handoffs_rejected", 0),
+            # Diagnostics only (added after baseline attempt 3; not used for grading): the exact validation
+            # problems the Supervisor fed back, so planner and task failures can be root-caused.
+            "diagnostics": diagnostics(res)}
+
+
+def diagnostics(res, limit=40):
+    """Exact plan/handoff/task problems from the final graph state (validation text only, truncated)."""
+    def clip(xs):
+        return [str(x)[:300] for x in (xs or [])][:limit]
+    lessons = res.get("lessons") or []
+    events = res.get("events") or []
+    tasks = (res.get("final") or {}).get("tasks") or {}
+    return {
+        "plan_problems": [{"attempt": l.get("attempt"), "problems": clip(l.get("problems"))}
+                          for l in lessons if l.get("stage") == "planning"][:limit],
+        "handoff_problems": [{"kind": e.get("kind"), "problems": clip(e.get("problems"))}
+                             for e in events if e.get("type") in ("handoff_rejected", "agent_error")][:limit],
+        "task_failures": {tid: str(v.get("failure"))[:300] for tid, v in tasks.items() if v.get("failure")},
+    }
 
 
 RUNNERS = {"single_agent": run_single_agent, "multi_agent": run_multi_agent}

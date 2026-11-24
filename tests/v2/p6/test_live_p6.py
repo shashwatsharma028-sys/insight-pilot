@@ -283,6 +283,26 @@ def test_wrong_model_choices_are_graded_as_incorrect_not_hidden(tmp_path):
         assert g["per_key"]["pass_rate"] == "incorrect" and g["correct_hidden"] == 5
 
 
+def test_planner_validation_problems_are_recorded_exactly_for_diagnosis(tmp_path):
+    def bad_plan(skill, system, user):
+        return '{"tasks": [{"id": "t1", "question": "q", "claims": [{"key": "k", "op": "no_such_op", "args": {}}]}]}' \
+            if skill == "planner" else "{}"
+    port = live_llm.BudgetedPort(live_llm.FakeProvider(bad_plan), model="gemini-2.5-flash-lite", budget_usd=1,
+                                 ledger=live_llm.Ledger(str(tmp_path / "l.jsonl")), max_calls=100,
+                                 max_total_tokens=10 ** 7)
+    r = live.run_multi_agent("student", port)
+    assert r["status"] == "plan_invalid" and r["claims"] == {}
+    d = r["diagnostics"]
+    assert d["plan_problems"] and all(p["problems"] for p in d["plan_problems"])
+    assert d["plan_problems"][0]["problems"] == ["invalid handoff: task 0 is missing ['title', 'description', 'analysis_type']",
+                                                "invalid handoff: task 0 has unknown fields ['question']"]
+    assert len(d["plan_problems"]) == 2 and d["handoff_problems"][0]["kind"] == "plan"
+    text = json.dumps(d)
+    gold = live.golden("student")
+    assert not any(json.dumps(v) in text for k, v in gold.items() if k in live.QUESTIONS["student"]
+                   and k not in live.leaked_keys("student") and not isinstance(v, str))
+
+
 def test_a_v1_executor_call_during_a_run_is_counted_and_refused():
     import sandbox.executor as v1
     with live.v1_executor_tripwire() as trip:
