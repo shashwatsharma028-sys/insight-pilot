@@ -1,4 +1,7 @@
-**Status (after the D3 attempt, run #8): STOPPED at decision D2.** D1 and D3 are implemented and confirmed on the
+**Status: P3.6-4B FUNCTIONALLY VALIDATED (CI run #10 `45346901216`, commit `f50af3dd`, code digest of `65fd6726`).**
+Every stage passed on a GitHub-hosted ubuntu-24.04 runner with rootless Podman 4.9.3. This is FUNCTIONAL evidence
+only: the runner account is root-equivalent, and nothing here is independently validated security (VE-2, P3.7).
+Hardened execution remains refused in production. Final record: §10.
 real runtime. The container now starts: the trusted supervisor runs as PID 1 and returns valid frames, and the
 memory and pids self-tests pass. The attestation differs from the required isolation in exactly one field,
 `writable_mounts`. See §9.
@@ -224,3 +227,60 @@ writable_mounts required: /out /tmp
 P5 needs 78 container executions per strategy, which fits the 20-minute steps. Run-mode-only behaviour (`/in` reads by the
 mapped uid, charts) has not been observed yet. It is covered by the existing workspace modes (0755/0644), but it is the
 remaining unknown.
+
+## 10. Final functional validation: run #10 (`45346901216`)
+
+**D2, as implemented (approved, Option A):**
+- **Required set:** the writable mounts are exactly `/out`, `/tmp` and the eight `/dev` paths from run #8. Exact matching is preserved: tests cover six kinds of extra mount and each missing entry.
+- **Mutation:** 4/4 D2 mutants detected, including "`writable_mounts` ignored" (W4).
+- **Run #9:** preflight and attestation passed, 16/17. The one failure was a test-code defect, fixed in `65fd6726`: moved lines put `_assert_clean(parts, rt)` inside a helper. A new static guard now fails on any suite function that uses a fixture it does not receive.
+- **Offline regression at `fae4986b`:** 1888 passed, 13 xfailed, 0 failed, 0 skipped.
+
+| Stage | Result (run #10) |
+|---|---|
+| Stage 1: build | Content gate, host gates 1–3, two clean builds: image ID `a9f31b115177e216b591b30b4fa67b6d149b7edfb5a8231be3168ddd4fad8be7`, identical in runs #9 and #10 (different runners). `verify` passed (hashes, owners and modes of the 14 `/opt/ip` files). In-image golden fixtures 28/28 and 12/12. Start-up warm median 121.9 ms, cold 119.7 ms |
+| Argument compatibility | the full reviewed argv is accepted in all 4 modes; nothing rejected |
+| Real `ContainerRuntime` suite | **17 passed, 0 failed, 0 skipped** (2 deselected = the P5 tests, run in their own steps) |
+| P5 20-case suite, V1 prelude | **2/2 passed**: 20/20 expectations met; clean-run golden answers **28/28**; 0 incorrect claims accepted; verification accuracy 1.0 (143 claims, detection rate 1.0, false-rejection rate 0.0); 0 provider calls |
+| P5 20-case suite, lazy-seaborn prelude | **2/2 passed**: 20/20; 28/28; 0 incorrect; accuracy 1.0; 0 provider calls |
+| Readiness tests | 226 passed; 8 skipped, the same environment-conditional refusal-path tests as in run #4 |
+| Evidence report | `VERDICT: every stage ran and passed` |
+
+**Real-runtime observations** (run #10; run #9 identical where measured):
+- **Preflight:** passed in 1,537 ms. Attestation differences: none. Memory self-test: OOM-killed (SIGKILL). Pids self-test: exit 4 at `pids.max` 64.
+- **Identity and privileges:** uid/gid 10001; CapEff/CapPrm/CapBnd/CapInh/CapAmb all zero; NoNewPrivs 1; seccomp mode 2; the child environment has exactly the 11 reviewed names.
+- **Network:** interfaces `lo` only, both in `/sys/class/net` and `/proc/net/dev`; no IPv4 routes, only IPv6 loopback routes;
+  `getaddrinfo` fails (`gaierror -3`); TCP to 192.0.2.1 fails (`ENETUNREACH`). There is no `/etc/hosts`, and `/etc/hostname` is a read-only tmpfs.
+- **DNS:** `/etc/resolv.conf` is present (104 bytes) as an image-layer file, not a mount. Only its SHA-256 is recorded; it is not usable without a network. **Follow-up (P3.7): check whether that image file contains build-host resolver data.**
+- **`/dev`:** the six devices are character devices with the standard numbers (null 1:3, zero 1:5, full 1:7, random 1:8, urandom 1:9, tty 5:0) and are `devtmpfs` binds of exactly those nodes. `/dev/pts` is `devpts`: a separate instance from the host's, containing only `ptmx`. `/dev/mqueue` is `mqueue`. The ipc, mnt, pid, net, uts, cgroup and user namespaces all differ from the host's. `/dev` itself is a read-only tmpfs.
+- **Storage:** `/tmp` and `/out` are the only writable ordinary storage, exactly 64 MiB and 32 MiB, each with about 2.0 million inodes and no explicit inode limit (D3). Writes to `/`, `/etc`, `/usr`, `/opt/ip`, `/in`, `/dev` and `/var/tmp` fail with `EROFS`.
+- **Dataset and code:** `/in` holds exactly `code.py` and `dataset.csv`, whose SHA-256 equals the approved pin. A dataset-identity mismatch is refused before any container starts.
+- **Fail-closed outcomes:** code error → `code_error`; a sleep past the 30 s wall → `timed_out`; a 2 GiB allocation → `memory_limit`; a symlinked chart → rejected as `symlink`; a non-PNG chart → rejected as `decode_failed`. Nothing was published.
+- **Golden fixtures through the runtime:** 28/28 numbers and 12/12 hermetic charts (identical decoded pixels after both canonicalisation stages), for both preludes.
+- **Charts:** stored in the chart store under server-generated names. The V1 graph node through the same runtime produced the hermetic chart.
+- **No fallback:** the V1 subprocess executor tripwire refused; `tripwire_hits` was 0 throughout P5.
+- **Cleanup:** no leftover containers (checked by instance label) or workspaces after every phase.
+
+**Latency** (podman client wall clock; one GitHub-hosted runner; not a controlled benchmark):
+
+| Measure | Value |
+|---|---|
+| Start-up, no-argument refusal | warm median 121.9 ms (p95 135.0); cold median 119.7 ms (p95 126.7) |
+| Runtime preflight (attest + 2 self-tests + checks) | 1,537 ms (runtime phase); 1,605 ms and 1,555 ms (P5 phases) |
+| Per-execution, golden and fail-closed fixtures (n=30, including one 30 s timeout) | container median 1,303.5 ms, p95 1,574 ms; host wall median 1,358 ms, p95 1,666 ms |
+| P5 suite wall time (20 cases, 78 container executions) | V1 101.5 s; lazy-seaborn 68.4 s |
+| P5 per-case pipeline | V1 median 5,884.8 ms; lazy-seaborn median 3,879.4 ms; lazy/V1 ratio median 0.673 (range 0.653–0.993), lower in 20/20 cases |
+
+The lazy-seaborn result is consistent with the P4.1 finding, but it is one repetition per strategy in a fixed order (V1 first), so
+it is not a controlled benchmark. A matched, repeated, order-randomised comparison is needed before claiming a figure.
+
+**Residual risks, carried into P3.7:**
+1. The runtime attestation for writable mounts is **path-only**. Types and device numbers are verified by this suite, not on every run.
+2. **Explicit inode-count limits are not enforced** (D3); inode memory is bounded only by the 1 GiB memory cgroup. `frame.py` still refuses more than 64 other `/out` entries (fail closed).
+3. `/dev/pts` and `/dev/mqueue` remain available to generated code (namespace-private, non-persistent). Masking them, plus attestation of the top-most mount and filesystem types, is a P3.7 candidate.
+4. Default Podman seccomp only; there is no custom profile. Resource limits are not independently validated beyond the self-tests.
+5. The child shares uid 10001 with PID 1, and the supervisor decodes untrusted PNG files with Pillow.
+6. `/etc/resolv.conf` is in the image layer (see above).
+7. Root-equivalent CI runner: **no security claim**. VE-2 (a non-root account, hostile-code and cross-account probes) is required before any claim. Production hardened execution stays refused, and public untrusted-code execution is not enabled.
+
+**Rollback:** delete `feature/v2-p364b-real-container-validation`. No protected branch was changed.
