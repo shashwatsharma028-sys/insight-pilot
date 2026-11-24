@@ -23,6 +23,7 @@
 #   that adds this comment is the single authorized D1 validation attempt (code digest of d7a5dea2).
 # - Run 7 (45125846903): DNS conflict gone; refused on tmpfs nr_inodes. D3 (approved) removed nr_inodes
 #   (inode-count limits no longer enforced); a create-only argument-compatibility diagnostic was added.
+#   The push that adds this line is the single authorized D3 validation attempt (code digest of 4b7f7244).
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
