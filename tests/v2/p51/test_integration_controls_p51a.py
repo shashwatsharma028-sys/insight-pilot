@@ -252,6 +252,9 @@ P36_P3_FILES = {
     # P3.6-4B D2 (approved): exact writable-mount set
     "v2/execution/frame.py",
 }
+# UI-1 (approved, isolated branch): a NEW UI-agnostic application service under v2/; it changes no P3 file and is
+# not wired to any entry point (tests/v2/ui1, tests/v2/p3/test_contract_purity.py).
+UI1_FILES = {"v2/app_service.py"}
 
 
 def test_p3_lineage_is_fully_contained_and_only_reviewed_p3_files_changed():
@@ -259,7 +262,8 @@ def test_p3_lineage_is_fully_contained_and_only_reviewed_p3_files_changed():
     _git("merge-base", "--is-ancestor", P5_COMMIT, "HEAD")
     changed = set(_git("diff", "--name-only", P3_PROBE_COMMIT, "--", "v2", "scripts/p3", "tests/v2/p3",
                        ".github").split())
-    assert changed <= P51A_P3_FILES | P36_P3_FILES, sorted(changed - P51A_P3_FILES - P36_P3_FILES)
+    approved = P51A_P3_FILES | P36_P3_FILES | UI1_FILES
+    assert changed <= approved, sorted(changed - approved)
 
 
 def test_the_ci_workflow_keeps_every_original_gate_and_phase_unchanged():
