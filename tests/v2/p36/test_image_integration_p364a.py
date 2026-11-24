@@ -618,8 +618,12 @@ def test_the_installed_runtime_is_byte_identical_to_the_reviewed_p36_3_sources()
 def test_v1_application_and_p4_evidence_are_unchanged():
     assert _git("diff", "--name-only", EXAM_COMMIT, "--", "ui", "agent", "sandbox", "utils", "rules", "skills",
                 "data", "lessons", "requirements.txt").strip() == ""
-    assert _git("diff", "--name-only", P36_BASE, "--", "sandbox_v2", "docs/v2/p4", "docs/v2/p5", "evaluation",
+    assert _git("diff", "--name-only", P36_BASE, "--", "sandbox_v2", "docs/v2/p4", "docs/v2/p5",
                 "requirements-v2.txt", "docs/v2/p3/ci_run4").strip() == ""
+    # every existing evaluation file (the P4.1/P5 harness) is unchanged; P6 only ADDS evaluation/live.py
+    assert _git("diff", "--name-only", "--diff-filter=MDRT", P36_BASE, "--", "evaluation").strip() == ""
+    assert set(_git("diff", "--name-only", "--diff-filter=A", P36_BASE, "--", "evaluation").split()) <= \
+        {"evaluation/live.py"}
 
 
 def test_the_inert_p35a_reference_is_a_byte_copy_of_the_last_inert_definition():
