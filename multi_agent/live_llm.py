@@ -46,7 +46,11 @@ class BudgetExceeded(RuntimeError):
 
 
 class ProviderError(RuntimeError):
-    """The provider call failed; the message is redacted."""
+    """The provider call failed; the message is redacted. `status` is the HTTP status when there was one."""
+
+    def __init__(self, message, status=None, retry_after_s=None):
+        super().__init__(message)
+        self.status, self.retry_after_s = status, retry_after_s
 
 
 def redact(text, secret):
@@ -168,7 +172,10 @@ class GeminiOpenAICompatPort:
                 return json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:400] if hasattr(e, "read") else ""
-            raise ProviderError(f"HTTP {e.code}: {redact(detail, self._secret)}") from None
+            ra = (e.headers or {}).get("Retry-After") if hasattr(e, "headers") else None
+            retry_after = float(ra) if ra and str(ra).replace(".", "", 1).isdigit() else None
+            raise ProviderError(f"HTTP {e.code}: {redact(detail, self._secret)}", status=e.code,
+                                retry_after_s=retry_after) from None
         except Exception as e:
             raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}") from None
 
@@ -196,13 +203,21 @@ class BudgetedPort:
     """Wraps a provider port; enforces the budget and hard limits; records usage and cost per call."""
 
     def __init__(self, inner, *, model, budget_usd, ledger, max_calls, max_total_tokens,
-                 max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS, prices=None, run_label="", clock=time.time):
+                 max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS, prices=None, run_label="", clock=time.time,
+                 rate_limit_retries=0, rate_limit_wait_s=20.0, charge_429="worst_case", sleep=time.sleep):
         self.inner, self.model = inner, model
         self.call_source, self.code_trust = inner.call_source, CodeTrust(inner.code_trust)
         self.prices = prices or PRICES_USD_PER_MTOK[model]
         self.budget_usd, self.ledger = float(budget_usd), ledger
         self.max_calls, self.max_total_tokens, self.max_output_tokens = max_calls, max_total_tokens, max_output_tokens
         self.run_label, self.clock = run_label, clock
+        # P6 (rate limits): HTTP 429 may be retried EXPLICITLY, each attempt budget-checked, counted and recorded.
+        # charge_429: "worst_case" (default, conservative) or "zero" (a 429 is a rejection before any generation).
+        if charge_429 not in ("worst_case", "zero"):
+            raise ValueError("charge_429 must be 'worst_case' or 'zero'")
+        self.rate_limit_retries, self.rate_limit_wait_s = rate_limit_retries, rate_limit_wait_s
+        self.charge_429, self.sleep = charge_429, sleep
+        self.rate_limited = 0
         self.calls = self.tokens = self.failed_attempts = 0
         self.spent_usd = 0.0
         self.exhausted = False
@@ -220,6 +235,17 @@ class BudgetedPort:
         raise BudgetExceeded(why)
 
     def complete(self, skill, system, user):
+        for attempt in range(self.rate_limit_retries + 1):
+            try:
+                return self._attempt(skill, system, user)
+            except ProviderError as e:
+                if e.status != 429 or attempt == self.rate_limit_retries:
+                    raise
+                self.rate_limited += 1
+                wait = e.retry_after_s if e.retry_after_s else self.rate_limit_wait_s * (2 ** attempt)
+                self.sleep(min(wait, 120.0))
+
+    def _attempt(self, skill, system, user):
         tin, tout, worst = self.worst_case(system, user)
         if self.calls >= self.max_calls:
             self._refuse(f"call limit {self.max_calls} reached")
@@ -234,14 +260,17 @@ class BudgetedPort:
         try:
             response = self.inner.complete(skill, system, user)
         except Exception as e:
-            # A failed attempt may still be billed (e.g. a timeout after generation): charge the worst case.
+            # A failed attempt may still be billed (e.g. a timeout after generation): charge the worst case,
+            # except an HTTP 429 when the operator chose charge_429="zero" (rejected before any generation).
+            status = getattr(e, "status", None)
+            charge = 0.0 if (status == 429 and self.charge_429 == "zero") else worst
             self.tokens += tin + tout
-            self.spent_usd += worst
+            self.spent_usd += charge
             self.failed_attempts += 1
             record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                       "call_source": self.call_source, "input_tokens": tin, "output_tokens": tout,
-                      "cost_usd": round(worst, 8), "charged_worst_case": True, "failed": type(e).__name__,
-                      "seconds": round(self.clock() - t0, 3)}
+                      "cost_usd": round(charge, 8), "charged_worst_case": charge > 0, "failed": type(e).__name__,
+                      "http_status": status, "seconds": round(self.clock() - t0, 3)}
             self.records.append(record)
             self.ledger.append(record)
             raise

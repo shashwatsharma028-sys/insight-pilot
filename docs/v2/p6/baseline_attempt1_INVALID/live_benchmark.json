@@ -1,0 +1,2402 @@
+{
+ "arch_labels": {
+  "multi_agent": "V2 multi-agent Supervisor, trusted-ops (planner, trusted analyst, stdlib verifier, insight agent)",
+  "single_agent": "V1-style single agent, trusted-ops (not the original unrestricted V1 code-generation pipeline)"
+ },
+ "budget_usd": 0.5,
+ "datasets": [
+  "sales",
+  "attendance",
+  "student",
+  "ecommerce"
+ ],
+ "harness_version": "p6.0-live-trusted-ops",
+ "mode": "full",
+ "model": "gemini-3.5-flash-lite",
+ "prices_usd_per_mtok": [
+  0.3,
+  2.5
+ ],
+ "primary_questions": {
+  "attendance": [
+   "gps_mismatch_count",
+   "mean_hours_by_department",
+   "mean_hours_worked",
+   "present_rate",
+   "top_department_by_mean_hours"
+  ],
+  "ecommerce": [
+   "corr_visitors_revenue",
+   "mean_revenue_weekday",
+   "mean_revenue_weekend",
+   "top_month_by_revenue",
+   "total_orders",
+   "total_revenue"
+  ],
+  "sales": [
+   "mean_customer_satisfaction",
+   "sales_by_region",
+   "target_attainment_pct",
+   "top_region",
+   "total_returns",
+   "total_sales_amount"
+  ],
+  "student": [
+   "corr_study_hours_score",
+   "grade_letter_counts",
+   "mean_score",
+   "mean_score_by_subject",
+   "pass_rate",
+   "top_subject_by_mean_score"
+  ]
+ },
+ "provider": "gemini",
+ "reps": 5,
+ "results": [
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 9,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 6,
+    "correct_hidden": 4,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 6,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0005725,
+     "failed": null,
+     "input_tokens": 700,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 145,
+     "run": "single_agent/attendance/r3",
+     "seconds": 1.151,
+     "skill": "single_agent_claims",
+     "ts": 1795513554.498
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052958,
+     "failed": "ProviderError",
+     "input_tokens": 586,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.166,
+     "skill": "single_agent_insight",
+     "ts": 1795513555.724
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057521,
+     "failed": "ProviderError",
+     "input_tokens": 2107,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.192,
+     "skill": "single_agent_claims",
+     "ts": 1795513555.89
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0058409,
+     "failed": "ProviderError",
+     "input_tokens": 2403,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.192,
+     "skill": "single_agent_claims",
+     "ts": 1795513556.082
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0006873,
+     "failed": null,
+     "input_tokens": 791,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 180,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.907,
+     "skill": "single_agent_claims",
+     "ts": 1795513556.275
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003447,
+     "failed": null,
+     "input_tokens": 249,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 108,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.827,
+     "skill": "single_agent_insight",
+     "ts": 1795513557.245
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056975,
+     "failed": "ProviderError",
+     "input_tokens": 1925,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.195,
+     "skill": "single_agent_claims",
+     "ts": 1795513558.072
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057863,
+     "failed": "ProviderError",
+     "input_tokens": 2221,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.179,
+     "skill": "single_agent_claims",
+     "ts": 1795513558.268
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003453,
+     "failed": null,
+     "input_tokens": 751,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 48,
+     "run": "single_agent/attendance/r3",
+     "seconds": 0.782,
+     "skill": "single_agent_claims",
+     "ts": 1795513558.448
+    }
+   ],
+   "order": 0,
+   "rep": 3,
+   "run": {
+    "execution_failures": 1,
+    "llm_errors": 5,
+    "retries": 4,
+    "tasks": {
+     "att_t1": {
+      "attempts": 1,
+      "claim_errors": {},
+      "completed": false
+     },
+     "att_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": true
+     },
+     "att_t3": {
+      "attempts": 3,
+      "claim_errors": {
+       "gps_mismatch_count": "claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+      },
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.0303224,
+   "wall_s": 4.8797527539999805
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 7,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 5,
+    "correct_hidden": 4,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "missing",
+     "target_attainment_pct": "correct",
+     "top_region": "missing",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 5,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0006635,
+     "failed": null,
+     "input_tokens": 695,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 182,
+     "run": "single_agent/sales/r3",
+     "seconds": 1.333,
+     "skill": "single_agent_claims",
+     "ts": 1795513559.954
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005291,
+     "failed": "ProviderError",
+     "input_tokens": 570,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/sales/r3",
+     "seconds": 0.197,
+     "skill": "single_agent_insight",
+     "ts": 1795513561.292
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0005158,
+     "failed": null,
+     "input_tokens": 661,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "run": "single_agent/sales/r3",
+     "seconds": 1.025,
+     "skill": "single_agent_claims",
+     "ts": 1795513561.49
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003788,
+     "failed": null,
+     "input_tokens": 696,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 68,
+     "run": "single_agent/sales/r3",
+     "seconds": 1.738,
+     "skill": "single_agent_claims",
+     "ts": 1795513562.52
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004304,
+     "failed": null,
+     "input_tokens": 768,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 80,
+     "run": "single_agent/sales/r3",
+     "seconds": 0.969,
+     "skill": "single_agent_claims",
+     "ts": 1795513564.263
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003255,
+     "failed": null,
+     "input_tokens": 660,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 51,
+     "run": "single_agent/sales/r3",
+     "seconds": 0.798,
+     "skill": "single_agent_claims",
+     "ts": 1795513565.238
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001395,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 39,
+     "run": "single_agent/sales/r3",
+     "seconds": 0.697,
+     "skill": "single_agent_insight",
+     "ts": 1795513566.041
+    }
+   ],
+   "order": 1,
+   "rep": 3,
+   "run": {
+    "execution_failures": 6,
+    "llm_errors": 1,
+    "retries": 2,
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "claim_errors": {},
+      "completed": false
+     },
+     "sales_t2": {
+      "attempts": 3,
+      "claim_errors": {
+       "sales_by_region": "claim 'sales_by_region': unknown column ['region']",
+       "top_region": "claim 'top_region': unknown column ['region']"
+      },
+      "completed": false
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "claim_errors": {},
+      "completed": true
+     }
+    }
+   },
+   "spent_usd": 0.0077445000000000005,
+   "wall_s": 6.785753359000012
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 4,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "run": "multi_agent/sales/r1",
+     "seconds": 1.816,
+     "skill": "planner",
+     "ts": 1795513567.401
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000304,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 100,
+     "run": "multi_agent/sales/r1",
+     "seconds": 0.954,
+     "skill": "business_insight",
+     "ts": 1795513569.23
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000373,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "run": "multi_agent/sales/r1",
+     "seconds": 0.713,
+     "skill": "business_insight",
+     "ts": 1795513570.202
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001445,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 41,
+     "run": "multi_agent/sales/r1",
+     "seconds": 0.968,
+     "skill": "business_insight",
+     "ts": 1795513570.929
+    }
+   ],
+   "order": 2,
+   "rep": 1,
+   "run": {
+    "agent_errors": 0,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "spent_usd": 0.0024447,
+   "wall_s": 5.151001522000001
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 5,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 5,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016798,
+     "failed": null,
+     "input_tokens": 941,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 559,
+     "run": "multi_agent/attendance/r2",
+     "seconds": 2.163,
+     "skill": "planner",
+     "ts": 1795513572.063
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016941,
+     "failed": null,
+     "input_tokens": 972,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 561,
+     "run": "multi_agent/attendance/r2",
+     "seconds": 1.979,
+     "skill": "planner",
+     "ts": 1795513574.228
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003108,
+     "failed": null,
+     "input_tokens": 186,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 102,
+     "run": "multi_agent/attendance/r2",
+     "seconds": 0.834,
+     "skill": "business_insight",
+     "ts": 1795513576.35
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0005172,
+     "failed": null,
+     "input_tokens": 249,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 177,
+     "run": "multi_agent/attendance/r2",
+     "seconds": 1.47,
+     "skill": "business_insight",
+     "ts": 1795513577.318
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001515,
+     "failed": null,
+     "input_tokens": 130,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 45,
+     "run": "multi_agent/attendance/r2",
+     "seconds": 0.746,
+     "skill": "business_insight",
+     "ts": 1795513578.875
+    }
+   ],
+   "order": 3,
+   "rep": 2,
+   "run": {
+    "agent_errors": 0,
+    "handoffs_rejected": 1,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "att_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "spent_usd": 0.0043533999999999995,
+   "wall_s": 7.7153867050000144
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "missing",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/ecommerce/r1",
+     "seconds": 0.215,
+     "skill": "planner",
+     "ts": 1795513580.123
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016776,
+     "failed": null,
+     "input_tokens": 942,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 558,
+     "run": "multi_agent/ecommerce/r1",
+     "seconds": 1.583,
+     "skill": "planner",
+     "ts": 1795513580.339
+    }
+   ],
+   "order": 4,
+   "rep": 1,
+   "run": {
+    "agent_errors": 1,
+    "handoffs_rejected": 1,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0076154,
+   "wall_s": 1.8108486980000293
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "missing",
+     "row_count": "missing",
+     "sales_by_region": "missing",
+     "target_attainment_pct": "missing",
+     "top_region": "missing",
+     "total_returns": "missing",
+     "total_sales_amount": "missing"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060263,
+     "failed": "ProviderError",
+     "input_tokens": 3021,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/sales/r2",
+     "seconds": 0.177,
+     "skill": "planner",
+     "ts": 1795513581.951
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061526,
+     "failed": "ProviderError",
+     "input_tokens": 3442,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/sales/r2",
+     "seconds": 0.181,
+     "skill": "planner",
+     "ts": 1795513582.13
+    }
+   ],
+   "order": 5,
+   "rep": 2,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0121789,
+   "wall_s": 0.37245403499997565
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 10,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 2,
+    "correct_hidden": 2,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "missing",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "missing",
+     "pass_rate": "missing",
+     "row_count": "missing",
+     "top_subject_by_mean_score": "missing"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 2,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0006545,
+     "failed": null,
+     "input_tokens": 615,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 188,
+     "run": "single_agent/student/r1",
+     "seconds": 0.863,
+     "skill": "single_agent_claims",
+     "ts": 1795513582.337
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057092,
+     "failed": "ProviderError",
+     "input_tokens": 1964,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.176,
+     "skill": "single_agent_claims",
+     "ts": 1795513583.214
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004981,
+     "failed": null,
+     "input_tokens": 702,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 115,
+     "run": "single_agent/student/r1",
+     "seconds": 1.145,
+     "skill": "single_agent_claims",
+     "ts": 1795513583.391
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052808,
+     "failed": "ProviderError",
+     "input_tokens": 536,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.281,
+     "skill": "single_agent_insight",
+     "ts": 1795513584.549
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056564,
+     "failed": "ProviderError",
+     "input_tokens": 1788,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.201,
+     "skill": "single_agent_claims",
+     "ts": 1795513584.831
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057452,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.184,
+     "skill": "single_agent_claims",
+     "ts": 1795513585.033
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057452,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.186,
+     "skill": "single_agent_claims",
+     "ts": 1795513585.218
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056444,
+     "failed": "ProviderError",
+     "input_tokens": 1748,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.18,
+     "skill": "single_agent_claims",
+     "ts": 1795513585.405
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057332,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.153,
+     "skill": "single_agent_claims",
+     "ts": 1795513585.585
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057332,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r1",
+     "seconds": 0.21,
+     "skill": "single_agent_claims",
+     "ts": 1795513585.739
+    }
+   ],
+   "order": 6,
+   "rep": 1,
+   "run": {
+    "execution_failures": 3,
+    "llm_errors": 8,
+    "retries": 6,
+    "tasks": {
+     "stu_t1": {
+      "attempts": 3,
+      "claim_errors": {
+       "pass_rate": "claim 'pass_rate': 'value' must be a string of at most 200 characters",
+       "row_count": "claim 'row_count': args must be an object"
+      },
+      "completed": false
+     },
+     "stu_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "stu_t3": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.046400199999999996,
+   "wall_s": 3.6215029819999813
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 10,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 1,
+    "correct_hidden": 1,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 1,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056522,
+     "failed": "ProviderError",
+     "input_tokens": 1774,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.175,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.018
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.179,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.193
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.184,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.374
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056447,
+     "failed": "ProviderError",
+     "input_tokens": 1749,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.157,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.559
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057335,
+     "failed": "ProviderError",
+     "input_tokens": 2045,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.192,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.717
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004421,
+     "failed": null,
+     "input_tokens": 657,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 98,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.863,
+     "skill": "single_agent_claims",
+     "ts": 1795513586.909
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005654,
+     "failed": "ProviderError",
+     "input_tokens": 1780,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.182,
+     "skill": "single_agent_claims",
+     "ts": 1795513587.777
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004014,
+     "failed": null,
+     "input_tokens": 663,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 81,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.977,
+     "skill": "single_agent_claims",
+     "ts": 1795513587.959
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004019,
+     "failed": null,
+     "input_tokens": 598,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 89,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.73,
+     "skill": "single_agent_claims",
+     "ts": 1795513588.945
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052697,
+     "failed": "ProviderError",
+     "input_tokens": 499,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r2",
+     "seconds": 0.2,
+     "skill": "single_agent_insight",
+     "ts": 1795513589.683
+    }
+   ],
+   "order": 7,
+   "rep": 2,
+   "run": {
+    "execution_failures": 4,
+    "llm_errors": 7,
+    "retries": 6,
+    "tasks": {
+     "eco_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "eco_t2": {
+      "attempts": 3,
+      "claim_errors": {
+       "mean_revenue_weekday": "claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+       "mean_revenue_weekend": "claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+      },
+      "completed": false
+     },
+     "eco_t3": {
+      "attempts": 3,
+      "claim_errors": {
+       "top_month_by_revenue": "claim 'top_month_by_revenue': unknown column ['date']; claim 'top_month_by_revenue': 'by_prefix' must be an integer between 1 and 64"
+      },
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.0406815,
+   "wall_s": 3.867311174000008
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "missing",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/ecommerce/r2",
+     "seconds": 0.183,
+     "skill": "planner",
+     "ts": 1795513589.909
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060641,
+     "failed": "ProviderError",
+     "input_tokens": 3147,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/ecommerce/r2",
+     "seconds": 0.179,
+     "skill": "planner",
+     "ts": 1795513590.094
+    }
+   ],
+   "order": 8,
+   "rep": 2,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0120019,
+   "wall_s": 0.37640932299996166
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "missing",
+     "mean_hours_worked": "missing",
+     "present_rate": "missing",
+     "row_count": "missing",
+     "status_counts": "missing",
+     "top_department_by_mean_hours": "missing"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/attendance/r1",
+     "seconds": 0.187,
+     "skill": "planner",
+     "ts": 1795513590.393
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061529,
+     "failed": "ProviderError",
+     "input_tokens": 3443,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/attendance/r1",
+     "seconds": 0.175,
+     "skill": "planner",
+     "ts": 1795513590.582
+    }
+   ],
+   "order": 9,
+   "rep": 1,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0121795,
+   "wall_s": 0.467069155000047
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 10,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 1,
+    "correct_hidden": 1,
+    "incorrect_reported": 1,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "incorrect",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 2,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056522,
+     "failed": "ProviderError",
+     "input_tokens": 1774,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.196,
+     "skill": "single_agent_claims",
+     "ts": 1795513591.218
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.197,
+     "skill": "single_agent_claims",
+     "ts": 1795513591.415
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.184,
+     "skill": "single_agent_claims",
+     "ts": 1795513591.613
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056447,
+     "failed": "ProviderError",
+     "input_tokens": 1749,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.183,
+     "skill": "single_agent_claims",
+     "ts": 1795513591.797
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057335,
+     "failed": "ProviderError",
+     "input_tokens": 2045,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.183,
+     "skill": "single_agent_claims",
+     "ts": 1795513591.98
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057335,
+     "failed": "ProviderError",
+     "input_tokens": 2045,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.186,
+     "skill": "single_agent_claims",
+     "ts": 1795513592.164
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005654,
+     "failed": "ProviderError",
+     "input_tokens": 1780,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.189,
+     "skill": "single_agent_claims",
+     "ts": 1795513592.35
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057428,
+     "failed": "ProviderError",
+     "input_tokens": 2076,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.192,
+     "skill": "single_agent_claims",
+     "ts": 1795513592.539
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004014,
+     "failed": null,
+     "input_tokens": 663,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 81,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.998,
+     "skill": "single_agent_claims",
+     "ts": 1795513592.732
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052796,
+     "failed": "ProviderError",
+     "input_tokens": 532,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r3",
+     "seconds": 0.219,
+     "skill": "single_agent_insight",
+     "ts": 1795513593.743
+    }
+   ],
+   "order": 10,
+   "rep": 3,
+   "run": {
+    "execution_failures": 0,
+    "llm_errors": 9,
+    "retries": 6,
+    "tasks": {
+     "eco_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "eco_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "eco_t3": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.0513237,
+   "wall_s": 2.746345885999972
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 9,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "missing",
+     "mean_hours_worked": "missing",
+     "present_rate": "missing",
+     "row_count": "missing",
+     "status_counts": "missing",
+     "top_department_by_mean_hours": "missing"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057473,
+     "failed": "ProviderError",
+     "input_tokens": 2091,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.169,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.071
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0058361,
+     "failed": "ProviderError",
+     "input_tokens": 2387,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.178,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.241
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0058361,
+     "failed": "ProviderError",
+     "input_tokens": 2387,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.184,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.419
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057521,
+     "failed": "ProviderError",
+     "input_tokens": 2107,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.152,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.604
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0058409,
+     "failed": "ProviderError",
+     "input_tokens": 2403,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.193,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.756
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0058409,
+     "failed": "ProviderError",
+     "input_tokens": 2403,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.156,
+     "skill": "single_agent_claims",
+     "ts": 1795513594.95
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056975,
+     "failed": "ProviderError",
+     "input_tokens": 1925,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.188,
+     "skill": "single_agent_claims",
+     "ts": 1795513595.107
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057863,
+     "failed": "ProviderError",
+     "input_tokens": 2221,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.19,
+     "skill": "single_agent_claims",
+     "ts": 1795513595.296
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057863,
+     "failed": "ProviderError",
+     "input_tokens": 2221,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/attendance/r1",
+     "seconds": 0.191,
+     "skill": "single_agent_claims",
+     "ts": 1795513595.486
+    }
+   ],
+   "order": 11,
+   "rep": 1,
+   "run": {
+    "execution_failures": 0,
+    "llm_errors": 9,
+    "retries": 6,
+    "tasks": {
+     "att_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "att_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "att_t3": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.052123499999999996,
+   "wall_s": 1.6947953650000045
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 9,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "missing",
+     "grade_letter_counts": "missing",
+     "mean_score": "missing",
+     "mean_score_by_subject": "missing",
+     "pass_rate": "missing",
+     "row_count": "missing",
+     "top_subject_by_mean_score": "missing"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056864,
+     "failed": "ProviderError",
+     "input_tokens": 1888,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.188,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.061
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057752,
+     "failed": "ProviderError",
+     "input_tokens": 2184,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.129,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.25
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057752,
+     "failed": "ProviderError",
+     "input_tokens": 2184,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.184,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.38
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056564,
+     "failed": "ProviderError",
+     "input_tokens": 1788,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.153,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.565
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057452,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.168,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.718
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057452,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.159,
+     "skill": "single_agent_claims",
+     "ts": 1795513596.887
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056444,
+     "failed": "ProviderError",
+     "input_tokens": 1748,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.189,
+     "skill": "single_agent_claims",
+     "ts": 1795513597.047
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057332,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.17,
+     "skill": "single_agent_claims",
+     "ts": 1795513597.237
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057332,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.191,
+     "skill": "single_agent_claims",
+     "ts": 1795513597.408
+    }
+   ],
+   "order": 12,
+   "rep": 0,
+   "run": {
+    "execution_failures": 0,
+    "llm_errors": 9,
+    "retries": 6,
+    "tasks": {
+     "stu_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "stu_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "stu_t3": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.051494399999999996,
+   "wall_s": 1.54240576899997
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "missing",
+     "mean_hours_worked": "missing",
+     "present_rate": "missing",
+     "row_count": "missing",
+     "status_counts": "missing",
+     "top_department_by_mean_hours": "missing"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/attendance/r4",
+     "seconds": 0.174,
+     "skill": "planner",
+     "ts": 1795513597.712
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061529,
+     "failed": "ProviderError",
+     "input_tokens": 3443,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/attendance/r4",
+     "seconds": 0.185,
+     "skill": "planner",
+     "ts": 1795513597.888
+    }
+   ],
+   "order": 13,
+   "rep": 4,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0121795,
+   "wall_s": 0.43853902399996514
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "missing",
+     "grade_letter_counts": "missing",
+     "mean_score": "missing",
+     "mean_score_by_subject": "missing",
+     "pass_rate": "missing",
+     "row_count": "missing",
+     "top_subject_by_mean_score": "missing"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059375,
+     "failed": "ProviderError",
+     "input_tokens": 2725,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/student/r0",
+     "seconds": 0.176,
+     "skill": "planner",
+     "ts": 1795513598.543
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060638,
+     "failed": "ProviderError",
+     "input_tokens": 3146,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/student/r0",
+     "seconds": 0.166,
+     "skill": "planner",
+     "ts": 1795513598.721
+    }
+   ],
+   "order": 14,
+   "rep": 0,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0120013,
+   "wall_s": 0.35799040199998444
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "missing",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/ecommerce/r4",
+     "seconds": 0.157,
+     "skill": "planner",
+     "ts": 1795513598.937
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060641,
+     "failed": "ProviderError",
+     "input_tokens": 3147,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/ecommerce/r4",
+     "seconds": 0.156,
+     "skill": "planner",
+     "ts": 1795513599.095
+    }
+   ],
+   "order": 15,
+   "rep": 4,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0120019,
+   "wall_s": 0.3246578029999796
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 10,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 1,
+    "correct_hidden": 1,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 1,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056522,
+     "failed": "ProviderError",
+     "input_tokens": 1774,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.165,
+     "skill": "single_agent_claims",
+     "ts": 1795513599.267
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.151,
+     "skill": "single_agent_claims",
+     "ts": 1795513599.433
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005741,
+     "failed": "ProviderError",
+     "input_tokens": 2070,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.17,
+     "skill": "single_agent_claims",
+     "ts": 1795513599.585
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0056447,
+     "failed": "ProviderError",
+     "input_tokens": 1749,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.187,
+     "skill": "single_agent_claims",
+     "ts": 1795513599.755
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057335,
+     "failed": "ProviderError",
+     "input_tokens": 2045,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.151,
+     "skill": "single_agent_claims",
+     "ts": 1795513599.943
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057335,
+     "failed": "ProviderError",
+     "input_tokens": 2045,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.182,
+     "skill": "single_agent_claims",
+     "ts": 1795513600.095
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005654,
+     "failed": "ProviderError",
+     "input_tokens": 1780,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.165,
+     "skill": "single_agent_claims",
+     "ts": 1795513600.278
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0057428,
+     "failed": "ProviderError",
+     "input_tokens": 2076,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.173,
+     "skill": "single_agent_claims",
+     "ts": 1795513600.444
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004214,
+     "failed": null,
+     "input_tokens": 663,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 89,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.885,
+     "skill": "single_agent_claims",
+     "ts": 1795513600.618
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052697,
+     "failed": "ProviderError",
+     "input_tokens": 499,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/ecommerce/r0",
+     "seconds": 0.163,
+     "skill": "single_agent_insight",
+     "ts": 1795513601.51
+    }
+   ],
+   "order": 16,
+   "rep": 0,
+   "run": {
+    "execution_failures": 1,
+    "llm_errors": 9,
+    "retries": 6,
+    "tasks": {
+     "eco_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "eco_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "eco_t3": {
+      "attempts": 3,
+      "claim_errors": {
+       "top_month_by_revenue": "claim 'top_month_by_revenue': unexpected argument 'by_prefix?' for op 'argmax_group_sum'"
+      },
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.0513338,
+   "wall_s": 2.407955171000026
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "missing",
+     "row_count": "missing",
+     "sales_by_region": "missing",
+     "target_attainment_pct": "missing",
+     "top_region": "missing",
+     "total_returns": "missing",
+     "total_sales_amount": "missing"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060263,
+     "failed": "ProviderError",
+     "input_tokens": 3021,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/sales/r4",
+     "seconds": 0.194,
+     "skill": "planner",
+     "ts": 1795513601.696
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061526,
+     "failed": "ProviderError",
+     "input_tokens": 3442,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/sales/r4",
+     "seconds": 0.16,
+     "skill": "planner",
+     "ts": 1795513601.893
+    }
+   ],
+   "order": 17,
+   "rep": 4,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0121789,
+   "wall_s": 0.3659143759999779
+  }
+ ],
+ "seed": 20261124,
+ "stopped": "single_agent/attendance/r2: budget $0.5000 could be exceeded (spent $0.495563, worst case of this call $0.005786)",
+ "summary": {
+  "multi_agent": {
+   "accuracy_all": 0.2,
+   "accuracy_hidden": 0.193,
+   "call_source": [
+    "provider"
+   ],
+   "calls_charged_worst_case": 15,
+   "claim_precision": 1.0,
+   "claim_recall": 0.2,
+   "correct_hidden": 11,
+   "cost_usd": 0.099135,
+   "execution_failures": 0,
+   "failed_provider_attempts": 15,
+   "incorrect_claims_reported": 0,
+   "input_tokens": 51043,
+   "latency_s": {
+    "max_ms": 7715.4,
+    "median_ms": 407.5,
+    "min_ms": 324.7,
+    "n": 10,
+    "p95_ms": 7715.4
+   },
+   "llm_calls": 25,
+   "output_tokens": 33529,
+   "retries": 0,
+   "run_errors": 0,
+   "runs": 10,
+   "task_completion_rate": 1.0,
+   "total_hidden": 57,
+   "total_tokens": 84572
+  },
+  "paired_latency_single_vs_multi": {
+   "median_a_ms": 1694.8,
+   "median_b_ms": 376.41,
+   "median_diff_ms": -1227.73,
+   "n": 3,
+   "relative_change_of_medians": -0.7779,
+   "relative_median_paired_diff": -0.7244,
+   "verdict": "insufficient pairs"
+  },
+  "single_agent": {
+   "accuracy_all": 0.2857,
+   "accuracy_hidden": 0.2826,
+   "call_source": [
+    "provider"
+   ],
+   "calls_charged_worst_case": 57,
+   "claim_precision": 0.9412,
+   "claim_recall": 0.2857,
+   "correct_hidden": 13,
+   "cost_usd": 0.331424,
+   "execution_failures": 15,
+   "failed_provider_attempts": 57,
+   "incorrect_claims_reported": 1,
+   "input_tokens": 117205,
+   "latency_s": {
+    "max_ms": 6785.8,
+    "median_ms": 3183.9,
+    "min_ms": 1542.4,
+    "n": 8,
+    "p95_ms": 6785.8
+   },
+   "llm_calls": 74,
+   "output_tokens": 118505,
+   "retries": 42,
+   "run_errors": 0,
+   "runs": 8,
+   "task_completion_rate": 0.0833,
+   "total_hidden": 46,
+   "total_tokens": 235710
+  }
+ },
+ "v1_executor_tripwire_hits": 0
+}

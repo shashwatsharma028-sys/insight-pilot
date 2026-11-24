@@ -1,0 +1,356 @@
+{
+ "arch_labels": {
+  "multi_agent": "V2 multi-agent Supervisor, trusted-ops (planner, trusted analyst, stdlib verifier, insight agent)",
+  "single_agent": "V1-style single agent, trusted-ops (not the original unrestricted V1 code-generation pipeline)"
+ },
+ "budget_usd": 0.05,
+ "datasets": [
+  "student"
+ ],
+ "harness_version": "p6.0-live-trusted-ops",
+ "mode": "pilot",
+ "model": "gemini-2.5-flash-lite",
+ "prices_usd_per_mtok": [
+  0.1,
+  0.4
+ ],
+ "primary_questions": {
+  "student": [
+   "corr_study_hours_score",
+   "grade_letter_counts",
+   "mean_score",
+   "mean_score_by_subject",
+   "pass_rate",
+   "top_subject_by_mean_score"
+  ]
+ },
+ "provider": "gemini",
+ "reps": 1,
+ "results": [
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "missing",
+     "grade_letter_counts": "missing",
+     "mean_score": "missing",
+     "mean_score_by_subject": "missing",
+     "pass_rate": "missing",
+     "row_count": "missing",
+     "top_subject_by_mean_score": "missing"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010917,
+     "failed": "ProviderError",
+     "input_tokens": 2725,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/student/r0",
+     "seconds": 0.28,
+     "skill": "planner",
+     "ts": 1795513291.578
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0011294,
+     "failed": "ProviderError",
+     "input_tokens": 3102,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "multi_agent/student/r0",
+     "seconds": 0.279,
+     "skill": "planner",
+     "ts": 1795513291.861
+    }
+   ],
+   "order": 0,
+   "rep": 0,
+   "run": {
+    "agent_errors": 2,
+    "handoffs_rejected": 0,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "spent_usd": 0.0022211,
+   "wall_s": 5.480853691
+  },
+  {
+   "arch": "single_agent",
+   "call_source": "provider",
+   "calls": 9,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "missing",
+     "grade_letter_counts": "missing",
+     "mean_score": "missing",
+     "mean_score_by_subject": "missing",
+     "pass_rate": "missing",
+     "row_count": "missing",
+     "top_subject_by_mean_score": "missing"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.001008,
+     "failed": "ProviderError",
+     "input_tokens": 1888,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.252,
+     "skill": "single_agent_claims",
+     "ts": 1795513292.206
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010376,
+     "failed": "ProviderError",
+     "input_tokens": 2184,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.222,
+     "skill": "single_agent_claims",
+     "ts": 1795513292.459
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010376,
+     "failed": "ProviderError",
+     "input_tokens": 2184,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.213,
+     "skill": "single_agent_claims",
+     "ts": 1795513292.682
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.000998,
+     "failed": "ProviderError",
+     "input_tokens": 1788,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.215,
+     "skill": "single_agent_claims",
+     "ts": 1795513292.896
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010276,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.207,
+     "skill": "single_agent_claims",
+     "ts": 1795513293.111
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010276,
+     "failed": "ProviderError",
+     "input_tokens": 2084,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.238,
+     "skill": "single_agent_claims",
+     "ts": 1795513293.319
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.000994,
+     "failed": "ProviderError",
+     "input_tokens": 1748,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.209,
+     "skill": "single_agent_claims",
+     "ts": 1795513293.558
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010236,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.209,
+     "skill": "single_agent_claims",
+     "ts": 1795513293.768
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0010236,
+     "failed": "ProviderError",
+     "input_tokens": 2044,
+     "model": "gemini-2.5-flash-lite",
+     "output_tokens": 2048,
+     "run": "single_agent/student/r0",
+     "seconds": 0.22,
+     "skill": "single_agent_claims",
+     "ts": 1795513293.978
+    }
+   ],
+   "order": 1,
+   "rep": 0,
+   "run": {
+    "execution_failures": 0,
+    "llm_errors": 9,
+    "retries": 6,
+    "tasks": {
+     "stu_t1": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "stu_t2": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     },
+     "stu_t3": {
+      "attempts": 3,
+      "claim_errors": {},
+      "completed": false
+     }
+    }
+   },
+   "spent_usd": 0.0091776,
+   "wall_s": 1.9991680719999962
+  }
+ ],
+ "seed": 20261124,
+ "stopped": null,
+ "summary": {
+  "multi_agent": {
+   "accuracy_all": 0.0,
+   "accuracy_hidden": 0.0,
+   "call_source": [
+    "provider"
+   ],
+   "calls_charged_worst_case": 2,
+   "claim_precision": null,
+   "claim_recall": 0.0,
+   "correct_hidden": 0,
+   "cost_usd": 0.002221,
+   "execution_failures": 0,
+   "failed_provider_attempts": 2,
+   "incorrect_claims_reported": 0,
+   "input_tokens": 5827,
+   "latency_s": {
+    "max_ms": 5480.9,
+    "median_ms": 5480.9,
+    "min_ms": 5480.9,
+    "n": 1,
+    "p95_ms": 5480.9
+   },
+   "llm_calls": 2,
+   "output_tokens": 4096,
+   "retries": 0,
+   "run_errors": 0,
+   "runs": 1,
+   "task_completion_rate": null,
+   "total_hidden": 6,
+   "total_tokens": 9923
+  },
+  "paired_latency_single_vs_multi": {
+   "median_a_ms": 1999.17,
+   "median_b_ms": 5480.85,
+   "median_diff_ms": 3481.69,
+   "n": 1,
+   "relative_change_of_medians": 1.7416,
+   "relative_median_paired_diff": 1.7416,
+   "verdict": "insufficient pairs"
+  },
+  "single_agent": {
+   "accuracy_all": 0.0,
+   "accuracy_hidden": 0.0,
+   "call_source": [
+    "provider"
+   ],
+   "calls_charged_worst_case": 9,
+   "claim_precision": null,
+   "claim_recall": 0.0,
+   "correct_hidden": 0,
+   "cost_usd": 0.009178,
+   "execution_failures": 0,
+   "failed_provider_attempts": 9,
+   "incorrect_claims_reported": 0,
+   "input_tokens": 18048,
+   "latency_s": {
+    "max_ms": 1999.2,
+    "median_ms": 1999.2,
+    "min_ms": 1999.2,
+    "n": 1,
+    "p95_ms": 1999.2
+   },
+   "llm_calls": 9,
+   "output_tokens": 18432,
+   "retries": 6,
+   "run_errors": 0,
+   "runs": 1,
+   "task_completion_rate": 0.0,
+   "total_hidden": 6,
+   "total_tokens": 36480
+  }
+ },
+ "v1_executor_tripwire_hits": 0
+}

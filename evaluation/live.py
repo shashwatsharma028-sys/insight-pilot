@@ -299,6 +299,7 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
             rec = {"order": i, "arch": arch, "dataset": ds, "rep": rep, "wall_s": wall, "error": error,
                    "grade": g, "run": {k: v for k, v in out.items() if k != "claims"},
                    "calls": port.calls, "llm_records": port.records, "spent_usd": port.spent_usd,
+                   "rate_limited": getattr(port, "rate_limited", 0),
                    "call_source": port.call_source}
             results.append(rec)
             log(f"{i:3d} {label:28s} {g['correct_hidden']}/{g['total_hidden']} hidden correct, "
@@ -335,6 +336,9 @@ def summarize(results):
             "cost_usd": round(sum(r["spent_usd"] for r in rs), 6),
             "calls_charged_worst_case": sum(1 for x in recs if x["charged_worst_case"]),
             "failed_provider_attempts": sum(1 for x in recs if x.get("failed")),
+            "failed_http_status": {str(k): sum(1 for x in recs if x.get("failed") and x.get("http_status") == k)
+                                   for k in sorted({x.get("http_status") for x in recs if x.get("failed")}, key=str)},
+            "rate_limited_retries": sum(r.get("rate_limited", 0) for r in rs),
             "retries": sum(r["run"].get("retries", 0) for r in rs),
             "execution_failures": sum(r["run"].get("execution_failures", 0) for r in rs),
             "task_completion_rate": round(sum(1 for t in tasks if t.get("completed")) / len(tasks), 4) if tasks else None,
@@ -360,7 +364,8 @@ def markdown(bench) -> str:
              f"- harness {bench['harness_version']}; seed {bench['seed']}; datasets {bench['datasets']}; reps {bench['reps']}",
              f"- stopped early: {bench['stopped']}", f"- V1 executor tripwire hits: {bench['v1_executor_tripwire_hits']}", "",
              "| metric | single_agent | multi_agent |", "|---|---|---|"]
-    keys = ["runs", "run_errors", "accuracy_hidden", "accuracy_all", "incorrect_claims_reported", "claim_precision",
+    keys = ["runs", "run_errors", "failed_provider_attempts", "failed_http_status", "rate_limited_retries",
+            "accuracy_hidden", "accuracy_all", "incorrect_claims_reported", "claim_precision",
             "claim_recall", "llm_calls", "input_tokens", "output_tokens", "total_tokens", "cost_usd", "retries",
             "execution_failures", "task_completion_rate"]
     for k in keys:
@@ -408,6 +413,8 @@ def main(argv=None):
     ap.add_argument("--max-total-tokens", type=int, default=3_000_000)
     ap.add_argument("--max-output-tokens", type=int, default=live_llm.DEFAULT_MAX_OUTPUT_TOKENS)
     ap.add_argument("--ledger", default=live_llm.DEFAULT_LEDGER)
+    ap.add_argument("--rate-limit-retries", type=int, default=0, help="explicit, recorded retries on HTTP 429")
+    ap.add_argument("--charge-429", choices=("worst_case", "zero"), default="worst_case")
     ap.add_argument("--transport", choices=("openai_compat", "native"), default="openai_compat",
                     help="openai_compat: Bearer key injected by the session proxy; native: x-goog-api-key SDK")
     ap.add_argument("--prices-confirmed", action="store_true")
@@ -443,7 +450,8 @@ def main(argv=None):
         print(f"model {a.model} generated a reply (preflight probe ${probe.spent_usd:.6f})")
         make = lambda label: live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,  # noqa: E731
                                                    max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
-                                                   max_output_tokens=a.max_output_tokens, run_label=label)
+                                                   max_output_tokens=a.max_output_tokens, run_label=label,
+                                                   rate_limit_retries=a.rate_limit_retries, charge_429=a.charge_429)
     else:
         ledger = live_llm.Ledger(os.path.join(a.out, "dry_run_ledger.jsonl"))       # never the live ledger
         make = lambda label: live_llm.BudgetedPort(  # noqa: E731

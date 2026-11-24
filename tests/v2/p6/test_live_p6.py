@@ -384,3 +384,34 @@ def test_a_model_that_refuses_generation_stops_the_run_before_any_benchmark(tmp_
                    "--i-understand-this-makes-live-calls", "--ledger", ledger, "--out", str(tmp_path / "o")])
     assert not os.path.exists(tmp_path / "o" / "live_benchmark.json")
     assert live_llm.Ledger(ledger).spent_usd() > 0                 # the failed probe is charged conservatively
+
+
+def test_http_429_is_retried_explicitly_counted_and_charged_per_policy(tmp_path):
+    class RateLimited(_Inner):
+        def complete(self, *a):
+            self.n += 1
+            if self.n <= 2:
+                raise live_llm.ProviderError("HTTP 429: RESOURCE_EXHAUSTED", status=429, retry_after_s=7)
+            return SimpleNamespace(content="{}", usage_metadata={"input_tokens": 5, "output_tokens": 1, "total_tokens": 6})
+    slept = []
+    inner = RateLimited()
+    p = _port(tmp_path, inner, rate_limit_retries=3, charge_429="zero", sleep=slept.append)
+    assert p.complete("s", "a", "b").content == "{}"
+    assert inner.n == 3 and p.calls == 3 and p.rate_limited == 2 and slept == [7, 7]
+    fails = [r for r in p.records if r["failed"]]
+    assert [r["http_status"] for r in fails] == [429, 429] and all(r["cost_usd"] == 0 for r in fails)
+    q = _port(tmp_path, RateLimited(), rate_limit_retries=3, sleep=lambda s: None)      # default: worst case
+    q.complete("s", "a", "b")
+    assert all(r["cost_usd"] > 0 for r in q.records if r["failed"])
+
+
+def test_other_failures_are_never_retried_and_always_charged_the_worst_case(tmp_path):
+    class ServerError(_Inner):
+        def complete(self, *a):
+            self.n += 1
+            raise live_llm.ProviderError("HTTP 503", status=503)
+    inner = ServerError()
+    p = _port(tmp_path, inner, rate_limit_retries=3, charge_429="zero", sleep=lambda s: None)
+    with pytest.raises(live_llm.ProviderError):
+        p.complete("s", "a", "b")
+    assert inner.n == 1 and p.records[0]["cost_usd"] > 0 and p.records[0]["http_status"] == 503
