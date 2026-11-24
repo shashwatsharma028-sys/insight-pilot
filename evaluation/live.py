@@ -203,12 +203,14 @@ def run_single_agent(dataset, port, clock=time.perf_counter):
     return out
 
 
-def run_multi_agent(dataset, port, clock=time.perf_counter):
+def run_multi_agent(dataset, port, clock=time.perf_counter, selective_recovery=False):
+    """selective_recovery=True turns on the Supervisor's opt-in selective task recovery (P6); nothing else changes."""
     from multi_agent.team import build_team
     from tests.v2.p5 import scripted
     path, tasks = dataset_path(dataset), tasks_for(dataset)
     sup, _ = build_team(port, None, scripted.approve_all, clock=clock, analyst=op_engine.TrustedOpsAnalyst(clock))
-    res = sup.run(path, goal=multi_goal(tasks))
+    res = sup.run(path, goal=multi_goal(tasks),
+                  limits={"selective_plan_recovery": True} if selective_recovery else None)
     f = res["final"]
     claims = f["accepted_claims"] or f["verified_claims_for_review"]
     tstat = f.get("tasks") or {}
@@ -220,7 +222,8 @@ def run_multi_agent(dataset, port, clock=time.perf_counter):
             "agent_errors": f.get("agent_errors", 0), "handoffs_rejected": f.get("handoffs_rejected", 0),
             # Diagnostics only (added after baseline attempt 3; not used for grading): the exact validation
             # problems the Supervisor fed back, so planner and task failures can be root-caused.
-            "diagnostics": diagnostics(res)}
+            "diagnostics": diagnostics(res),
+            **({"plan_recovery": f.get("plan_recovery")} if selective_recovery else {})}
 
 
 def diagnostics(res, limit=40):
@@ -236,7 +239,24 @@ def diagnostics(res, limit=40):
         "handoff_problems": [{"kind": e.get("kind"), "problems": clip(e.get("problems"))}
                              for e in events if e.get("type") in ("handoff_rejected", "agent_error")][:limit],
         "task_failures": {tid: str(v.get("failure"))[:300] for tid, v in tasks.items() if v.get("failure")},
+        # the planner's own rejected replies (model output: task specs only), for replay and root-causing
+        "rejected_plans": _rejected_plans(res, events, limit),
     }
+
+
+def _rejected_plans(res, events, limit):
+    bad = {e.get("seq") for e in events if e.get("type") == "handoff_rejected" and e.get("kind") == "plan"}
+    return [{"attempt": m.get("attempt"), "plan_json": json.dumps(m.get("payload"), sort_keys=True, default=str)[:6000]}
+            for m in (res.get("messages") or []) if m.get("kind") == "plan" and m.get("seq") in bad][:limit]
+
+
+def required_task_completion(dataset, per_key):
+    """(completed, required) for one run: a required task (tasks_for) is complete when every one of its questions
+    was answered (reported, correct or not). Denominator: ALL required tasks of the run, whatever happened to the
+    plan, so plan_invalid runs and abandoned tasks count as incomplete. Same definition for every architecture."""
+    tasks = tasks_for(dataset)
+    done = sum(1 for t in tasks if all(per_key.get(k, "missing") != "missing" for k in t["questions"]))
+    return done, len(tasks)
 
 
 RUNNERS = {"single_agent": run_single_agent, "multi_agent": run_multi_agent}
@@ -339,6 +359,12 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
             "summary": summarize(results)}
 
 
+def _required_rate(rs):
+    pairs = [required_task_completion(r["dataset"], r["grade"]["per_key"]) for r in rs]
+    total = sum(t for _, t in pairs)
+    return round(sum(d for d, _ in pairs) / total, 4) if total else None
+
+
 def summarize(results):
     out = {}
     for arch in ARCHS:
@@ -373,6 +399,7 @@ def summarize(results):
             "agent_retries": sum(r["run"].get("retries", 0) for r in rs),
             "execution_failures": sum(r["run"].get("execution_failures", 0) for r in rs),
             "task_completion_rate": round(sum(1 for t in tasks if t.get("completed")) / len(tasks), 4) if tasks else None,
+            "required_task_completion_rate": _required_rate(rs),
             "call_source": sorted({r["call_source"] for r in rs}),
         }
     pairs = {}
@@ -384,6 +411,143 @@ def summarize(results):
     out["paired_latency_excl_wait_single_vs_multi"] = paired.paired_latency(
         [(p["single_agent"].get("wall_excl_wait_s", p["single_agent"]["wall_s"]),
           p["multi_agent"].get("wall_excl_wait_s", p["multi_agent"]["wall_s"])) for p in both])
+    return out
+
+
+# ── P6 optimisation experiment: selective task recovery vs a contemporaneous control ─────────────────────
+
+VARIANTS = ("selective_recovery", "control")
+RUN_RESERVE_USD = 0.010          # conservative reservation per multi-agent run when deciding whether to add a control
+
+
+def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, log=print, incremental=None,
+                            include_control=True, reserve_per_run=RUN_RESERVE_USD):
+    """
+    The baseline's 20 multi-agent (dataset, rep) slots in the baseline's seeded order. Each slot runs the optimised
+    variant (selective task recovery ON) and, budget permitting, a matched control (OFF: the baseline code path),
+    adjacent and in a seeded random order, so provider load affects both alike. A control runs only if the
+    remaining ledger budget still reserves `reserve_per_run` for every remaining optimised run.
+    """
+    slots = [(ds, rep) for arch, ds, rep in schedule(DATASETS, 5, seed) if arch == "multi_agent"]
+    rng = random.Random(seed + 1)
+    results, stopped, skipped_controls, order = [], None, [], 0
+    with v1_executor_tripwire() as trip:
+        for si, (ds, rep) in enumerate(slots):
+            variants = list(VARIANTS) if include_control else ["selective_recovery"]
+            rng.shuffle(variants)
+            for variant in variants:
+                label = f"{variant}/{ds}/r{rep}"
+                port = make_port(label)
+                if variant == "control":
+                    remaining = port.budget_usd - port.ledger.spent_usd()
+                    optimised_pending_here = "selective_recovery" in variants[variants.index(variant) + 1:]
+                    left = (len(slots) - si - 1) + (1 if optimised_pending_here else 0)
+                    if remaining - reserve_per_run < left * reserve_per_run:
+                        skipped_controls.append(label)
+                        log(f"skip: {label} (budget reserved for the optimised runs)")
+                        continue
+                t0, error = clock(), None
+                try:
+                    out = run_multi_agent(ds, port, clock, selective_recovery=(variant == "selective_recovery"))
+                except (live_llm.BudgetExceeded, live_llm.QuotaOrBillingStop) as e:
+                    stopped = f"{label}: {e}"
+                    log(f"stop: {stopped}")
+                    break
+                except Exception as e:                                       # recorded, never hidden
+                    out, error = {"claims": {}, "tasks": {}}, f"{type(e).__name__}: {str(e)[:300]}"
+                wall = clock() - t0
+                if port.exhausted:
+                    stopped = f"{label}: {getattr(port, 'stop_reason', None) or 'budget or limit reached'} (run excluded)"
+                    log(f"stop: {stopped}")
+                    break
+                wait = getattr(port, "wait_s", 0.0)
+                g = grade(ds, out["claims"])
+                rec = {"order": order, "slot": si, "variant": variant, "arch": "multi_agent", "dataset": ds,
+                       "rep": rep, "wall_s": wall, "error": error, "wait_s": wait,
+                       "wall_excl_wait_s": max(0.0, wall - wait), "grade": g,
+                       "run": {k: v for k, v in out.items() if k != "claims"}, "calls": port.calls,
+                       "llm_records": port.records, "spent_usd": port.spent_usd,
+                       "rate_limited": getattr(port, "rate_limited", 0), "call_source": port.call_source}
+                order += 1
+                results.append(rec)
+                if incremental:
+                    with open(incremental, "a", encoding="utf-8") as fh:
+                        fh.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
+                pr = (out.get("plan_recovery") or {})
+                log(f"{rec['order']:3d} {label:36s} {str(out.get('status')):24s} {g['correct_hidden']}/{g['total_hidden']} "
+                    f"hidden, {port.calls} calls, ${port.spent_usd:.5f}, {wall:.1f}s"
+                    + (f", recovered {pr.get('recovered_task_ids')}, abandoned "
+                       f"{[a['id'] for a in pr.get('abandoned_tasks') or []]}" if pr else ""))
+            if stopped:
+                break
+        hits = trip["n"]
+    return {"harness_version": HARNESS_VERSION, "experiment": "selective_task_recovery", "seed": seed,
+            "slots": [list(x) for x in slots], "results": results, "stopped": stopped,
+            "skipped_controls": skipped_controls, "v1_executor_tripwire_hits": hits,
+            "summary": summarize_variants(results)}
+
+
+def _provider_problem(problems):
+    return any("ProviderError" in str(p) for p in problems)
+
+
+def variant_metrics(rs):
+    """The P6 optimisation metrics for one group of multi-agent runs (baseline, control or optimised)."""
+    if not rs:
+        return None
+    recs = [x for r in rs for x in r["llm_records"]]
+    ok = [x for x in recs if not x.get("failed")]
+    failed = [x for x in recs if x.get("failed")]
+    ch, th = sum(r["grade"]["correct_hidden"] for r in rs), sum(r["grade"]["total_hidden"] for r in rs)
+    req = [required_task_completion(r["dataset"], r["grade"]["per_key"]) for r in rs]
+    hp = [h for r in rs for h in (r["run"].get("diagnostics") or {}).get("handoff_problems", [])]
+    rec = [r["run"].get("plan_recovery") or {} for r in rs]
+    return {
+        "runs": len(rs), "run_errors": sum(1 for r in rs if r["error"]),
+        "accuracy_hidden": round(ch / th, 4) if th else None, "correct_hidden": ch, "total_hidden": th,
+        "complete_planner_failures": sum(1 for r in rs if r["run"].get("status") == "plan_invalid"),
+        "complete_planner_failure_rate": round(sum(1 for r in rs if r["run"].get("status") == "plan_invalid")
+                                               / len(rs), 4),
+        "required_tasks_completed": sum(d for d, _ in req), "required_tasks": sum(t for _, t in req),
+        "required_task_completion_rate": round(sum(d for d, _ in req) / sum(t for _, t in req), 4),
+        "incorrect_claims_reported": sum(r["grade"]["incorrect_reported"] for r in rs),
+        "recovered_tasks": sum(len(x.get("recovered_task_ids") or []) for x in rec),
+        "abandoned_tasks": sum(len(x.get("abandoned_tasks") or []) for x in rec),
+        "runs_with_recovery_triggered": sum(1 for x in rec if x.get("recovered_task_ids") or x.get("abandoned_tasks")),
+        "agent_retries_task": sum(r["run"].get("retries", 0) for r in rs),
+        "planner_calls": sum(1 for x in recs if x["skill"] == "planner"),
+        "provider_failures": len(failed),
+        "provider_failures_by_status": {str(k): sum(1 for x in failed if x.get("http_status") == k)
+                                        for k in sorted({x.get("http_status") for x in failed}, key=str)},
+        "agent_validation_rejections": sum(1 for h in hp if h.get("kind") is not None and not _provider_problem(h["problems"])),
+        "agent_output_errors": sum(1 for h in hp if h.get("kind") is None and not _provider_problem(h["problems"])),
+        "successful_calls": len(ok),
+        "provider_tokens_in": sum(x["input_tokens"] for x in ok), "provider_tokens_out": sum(x["output_tokens"] for x in ok),
+        "provider_tokens_total": sum(x["input_tokens"] + x["output_tokens"] for x in ok),
+        "cost_usd_total_estimate": round(sum(x["cost_usd"] for x in recs), 6),
+        "cost_usd_provider_reported": round(sum(x["cost_usd"] for x in ok), 6),
+        "cost_usd_worst_case_failed_attempts": round(sum(x["cost_usd"] for x in failed), 6),
+        "latency_s": metrics.latency_stats([r["wall_s"] for r in rs]),
+        "latency_excl_wait_s": metrics.latency_stats([r["wall_excl_wait_s"] for r in rs]),
+        "call_source": sorted({r["call_source"] for r in rs}),
+    }
+
+
+def summarize_variants(results):
+    out = {v: variant_metrics([r for r in results if r.get("variant") == v]) for v in VARIANTS}
+    by = {}
+    for r in results:
+        by.setdefault(r["slot"], {})[r["variant"]] = r
+    both = [p for p in by.values() if set(p) == set(VARIANTS) and not any(x["error"] for x in p.values())]
+    out["matched_pairs"] = len(both)
+    out["paired_latency_control_vs_selective"] = paired.paired_latency(
+        [(p["control"]["wall_s"], p["selective_recovery"]["wall_s"]) for p in both])
+    out["paired_latency_excl_wait_control_vs_selective"] = paired.paired_latency(
+        [(p["control"]["wall_excl_wait_s"], p["selective_recovery"]["wall_excl_wait_s"]) for p in both])
+    out["paired_hidden_correct"] = {"control": sum(p["control"]["grade"]["correct_hidden"] for p in both),
+                                    "selective_recovery": sum(p["selective_recovery"]["grade"]["correct_hidden"]
+                                                              for p in both),
+                                    "of": sum(p["control"]["grade"]["total_hidden"] for p in both)}
     return out
 
 
@@ -402,7 +566,7 @@ def markdown(bench) -> str:
             "provisional_unbilled_429", "agent_retries", "wait_s_total",
             "accuracy_hidden", "accuracy_all", "incorrect_claims_reported", "claim_precision",
             "claim_recall", "llm_calls", "input_tokens", "output_tokens", "total_tokens", "cost_usd",
-            "execution_failures", "task_completion_rate"]
+            "execution_failures", "task_completion_rate", "required_task_completion_rate"]
     for k in keys:
         lines.append(f"| {k} | " + " | ".join(str(s.get(a, {}).get(k)) for a in ARCHS) + " |")
     for a in ARCHS:
@@ -459,6 +623,10 @@ def main(argv=None):
     ap.add_argument("--prices-confirmed", action="store_true")
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--experiment", choices=("none", "selective_recovery"), default="none",
+                    help="selective_recovery: the 20 baseline multi-agent slots with recovery ON, each paired with a "
+                         "contemporaneous control (OFF) when the budget allows")
+    ap.add_argument("--no-control", action="store_true", help="with --experiment: run the optimised variant only")
     a = ap.parse_args(argv)
     if a.budget_usd > 5.0:
         raise SystemExit("the authorized budget is at most $5.00")
@@ -499,6 +667,17 @@ def main(argv=None):
             live_llm.FakeProvider(oracle_answer(label.split("/")[1])), model=a.model, budget_usd=a.budget_usd,
             ledger=ledger, max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
             max_output_tokens=a.max_output_tokens, run_label=label)
+    if a.experiment == "selective_recovery":
+        exp = run_recovery_experiment(make, seed=a.seed, incremental=os.path.join(a.out, "runs.jsonl"),
+                                      include_control=not a.no_control)
+        exp.update(provider=a.provider, model=a.model, budget_usd=a.budget_usd,
+                   prices_usd_per_mtok=list(live_llm.PRICES_USD_PER_MTOK[a.model]))
+        with open(os.path.join(a.out, "recovery_experiment.json"), "w", encoding="utf-8") as f:
+            json.dump(exp, f, indent=1, sort_keys=True, default=str)
+        print(json.dumps(exp["summary"], indent=1, sort_keys=True, default=str))
+        print(f"stopped early: {exp['stopped']}; skipped controls: {len(exp['skipped_controls'])}; "
+              f"V1 executor tripwire hits: {exp['v1_executor_tripwire_hits']}")
+        return 0 if not exp["stopped"] and exp["v1_executor_tripwire_hits"] == 0 else 1
     bench = run_benchmark(datasets, reps, make, seed=a.seed, incremental=os.path.join(a.out, "runs.jsonl"))
     bench.update(provider=a.provider, model=a.model, mode=a.mode, budget_usd=a.budget_usd,
                  prices_usd_per_mtok=list(live_llm.PRICES_USD_PER_MTOK[a.model]))

@@ -135,6 +135,43 @@ def validate_plan(payload, profile):
     return problems
 
 
+def triage_plan(payload, profile, kept=(), allowed_ids=None):
+    """
+    P6 selective task recovery (opt-in): split a plan into tasks that are valid and tasks that are not.
+
+    Returns (structural_problems, accepted_tasks, rejected) where rejected is [(index, task, problems)].
+    - The plan's structure (a single "tasks" list of 1..MAX_TASKS) is checked exactly as validate_plan does; a
+      structural problem rejects the whole reply (structural_problems non-empty, nothing accepted).
+    - Each task is checked with validate_plan itself (strict claim validation, unchanged), then validate_plan is
+      run on kept + accepted + [task], so duplicate ids, duplicate claim keys and the task limit still apply to the
+      merged plan. The first valid occurrence wins; a later conflicting task is rejected with the exact problems.
+    - allowed_ids (repair replies): a task whose id is not one of the tasks being repaired is rejected.
+    Nothing is repaired here; problems are reported exactly as validate_plan words them.
+    """
+    problems = []
+    if not _fields(problems, payload, "plan", ("tasks",)):
+        return problems, [], []
+    tasks = payload["tasks"]
+    if not _require(problems, isinstance(tasks, list) and 1 <= len(tasks) <= MAX_TASKS,
+                    f"plan must have 1 to {MAX_TASKS} tasks"):
+        return problems, [], []
+    accepted, rejected = [], []
+    for i, t in enumerate(tasks):
+        if allowed_ids is not None and not (isinstance(t, dict) and t.get("id") in allowed_ids):
+            rejected.append((i, t, [f"task {i}: id {t.get('id') if isinstance(t, dict) else None!r} is not one of "
+                                    f"the tasks to repair {sorted(allowed_ids)}"]))
+            continue
+        own = [p.replace("task 0", f"task {i}", 1) for p in validate_plan({"tasks": [t]}, profile)]
+        if not own:
+            own = [f"task {i} conflicts with the accepted tasks: {p}"
+                   for p in validate_plan({"tasks": list(kept) + accepted + [t]}, profile)]
+        if own:
+            rejected.append((i, t, own))
+        else:
+            accepted.append(t)
+    return [], accepted, rejected
+
+
 def validate_approval(payload, plan):
     problems = []
     if not _fields(problems, payload, "approval", ("decision",), ("keep_task_ids", "reviewer_note")):

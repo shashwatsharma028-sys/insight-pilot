@@ -567,6 +567,8 @@ APPROVED_P6 = {
     "multi_agent/op_engine.py", "multi_agent/live_llm.py", "multi_agent/team.py", "evaluation/live.py",
     "tests/v2/p6/__init__.py", "tests/v2/p6/test_live_p6.py",
     "tests/v2/p5/test_integration_p50.py", "tests/v2/p51/test_integration_controls_p51a.py",
+    # P6 optimisation (approved): opt-in selective task recovery in the Supervisor, off by default
+    "multi_agent/supervisor.py", "multi_agent/contracts.py", "tests/v2/p6/test_selective_recovery_p6.py",
 }
 
 

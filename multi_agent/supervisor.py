@@ -41,10 +41,21 @@ P5.1A execution-failure policy:
   claims already verified by independent recomputation under
   verified_claims_for_review, with accepted_claims empty and run_complete False.
 
+P6 selective task recovery (opt-in: limits["selective_plan_recovery"] = True; off by default, and when off
+nothing below runs and the run state has no plan_recovery key):
+- a plan reply with a valid structure is triaged task by task (contracts.triage_plan: strict claim validation
+  unchanged; duplicate ids/keys and the task limit checked against the merged plan). Valid tasks are kept;
+  invalid tasks are sent back, alone, with their exact validation problems, through the same planning prompt
+  and within the same max_plan_attempts;
+- a task that cannot be repaired is reported as abandoned (final["plan_recovery"], the approval request and a
+  completed_with_failures status); it is never silently dropped;
+- the merged plan is re-validated as a whole before the human approval gate; verification is unchanged.
+
 This graph is separate from agent/graph.py (the V1 graph), which is unchanged.
 """
 
 import copy
+import json
 import operator
 import time
 from typing import Annotated, Optional, TypedDict
@@ -79,6 +90,7 @@ class SupervisorState(TypedDict, total=False):
     plan: Optional[dict]
     plan_attempts: int
     plan_feedback: list
+    plan_recovery: Optional[dict]
     approved_task_ids: Optional[list]
     approval_note: Optional[str]
     task_index: int
@@ -204,7 +216,10 @@ class Supervisor:
         if self.approval_port is not None:
             decision = self.approval_port(copy.deepcopy(env["payload"]))
         elif interactive:
-            decision = interrupt({"kind": "plan_approval", "plan": env["payload"]["plan"]})
+            question = {"kind": "plan_approval", "plan": env["payload"]["plan"]}
+            if "abandoned_tasks" in env["payload"]:                          # P6 selective recovery only
+                question["abandoned_tasks"] = env["payload"]["abandoned_tasks"]
+            decision = interrupt(question)
         else:
             return self._reply(state, env, c.APPROVAL, "agent_error",
                                {"error_type": "NoApprover", "message": "no human approver configured; failing closed"})
@@ -219,12 +234,15 @@ class Supervisor:
         s = {k: copy.deepcopy(state[k]) if state.get(k) is not None else copy.deepcopy(_DEFAULTS.get(k))
              for k in _SCALARS}
         s["dataset_path"], s["goal"] = state["dataset_path"], state.get("goal", DEFAULT_GOAL)
+        s["plan_recovery"] = copy.deepcopy(state.get("plan_recovery"))          # P6, opt-in; None when unused
         events, lessons = [], []
         env = state.get("pending")
         if env is not None and env.get("recipient") == c.SUPERVISOR:
             self._absorb(s, env, lim, events, lessons)
         request = self._decide(s, lim, events)
         out = {k: s[k] for k in _SCALARS}
+        if s["plan_recovery"] is not None:
+            out["plan_recovery"] = s["plan_recovery"]
         out.update(events=events, lessons=lessons, pending=request,
                    route=request["recipient"] if request else FINALIZE)
         if request:
@@ -275,6 +293,9 @@ class Supervisor:
             problems = c.validate_agent_error(payload) or [f"{payload['error_type']}: {payload['message']}"]
             events.append({"type": "agent_error", "agent": env["sender"], "seq": env["seq"], "problems": problems})
             self._step_failed(s, aw, problems, lim, lessons)
+            return
+        if kind == "plan" and lim.get("selective_plan_recovery"):
+            self._absorb_plan_selective(s, env, payload, lim, events, lessons)
             return
         task = self._current_spec(s) if aw["task_id"] else None
         validator = {
@@ -347,6 +368,98 @@ class Supervisor:
         else:
             self._fail_insight(s, lim, lessons, payload["problems"])
 
+    # P6 selective task recovery (opt-in)
+
+    @staticmethod
+    def _slot_id(i, t, taken):
+        tid = t.get("id") if isinstance(t, dict) else None
+        if not (isinstance(tid, str) and c.TASK_ID.match(tid)) or tid in taken:
+            tid = f"repair_task_{i}"
+            n = 0
+            while tid in taken:
+                n += 1
+                tid = f"repair_task_{i}_{n}"
+        return tid
+
+    def _absorb_plan_selective(self, s, env, payload, lim, events, lessons):
+        rec = s["plan_recovery"]
+        repairing = rec is not None and bool(rec["slots"])
+        kept = rec["kept"] if repairing else []
+        allowed = {sl["id"] for sl in rec["slots"]} if repairing else None
+        structural, accepted, rejected = c.triage_plan(payload, s["profile"], kept=kept, allowed_ids=allowed)
+        if structural:                                   # the reply as a whole is unusable: original handling
+            events.append({"type": "handoff_rejected", "seq": env["seq"], "kind": "plan", "problems": structural})
+            self._step_failed(s, {"kind": "plan_request", "attempt": env["attempt"]},
+                              ["invalid handoff: " + p for p in structural], lim, lessons)
+            return
+        task_problems = [p for _, _, ps in rejected for p in ps]
+        if rejected:
+            events.append({"type": "handoff_rejected", "seq": env["seq"], "kind": "plan", "problems": task_problems,
+                           "partial": True, "accepted_task_ids": [t["id"] for t in accepted]})
+            lessons.append({"stage": "planning", "attempt": env["attempt"],
+                            "problems": ["invalid handoff: " + p for p in task_problems]})
+        else:
+            events.append({"type": "handoff_accepted", "seq": env["seq"], "kind": "plan"})
+        if not repairing:
+            if not rejected:                             # fully valid first plan: exactly the original outcome
+                if rec is not None:
+                    rec["kept"] = list(accepted)
+                s["plan"] = payload
+                return
+            taken = {t["id"] for t in accepted}
+            slots = []
+            for i, t, ps in rejected:
+                sid = self._slot_id(i, t, taken)
+                taken.add(sid)
+                slots.append({"id": sid, "original": t, "problems": ps})
+            s["plan_recovery"] = rec = {"kept": list(accepted), "slots": slots, "recovered": [], "abandoned": [],
+                                        "triaged_at_attempt": env["attempt"]}
+        else:
+            fixed = {t["id"] for t in accepted}
+            rec["kept"] += accepted
+            rec["recovered"] += [t["id"] for t in accepted]
+            by_id = {}
+            for i, t, ps in rejected:
+                if isinstance(t, dict) and t.get("id") in allowed:
+                    by_id[t["id"]] = ps
+            remaining = []
+            for sl in rec["slots"]:
+                if sl["id"] in fixed:
+                    continue
+                sl["problems"] = by_id.get(sl["id"], [f"task {sl['id']!r} was not returned by repair attempt "
+                                                      f"{env['attempt']}"])
+                remaining.append(sl)
+            rec["slots"] = remaining
+        if not rec["slots"] or s["plan_attempts"] >= lim["max_plan_attempts"]:
+            self._settle_recovery(s, lim)
+        else:
+            s["plan_feedback"] = self._repair_feedback(rec, lim)
+
+    @staticmethod
+    def _repair_feedback(rec, lim):
+        head = (f"REPAIR ONLY: tasks {[t['id'] for t in rec['kept']]} were valid and are kept unchanged. Reply with "
+                f'{{"tasks": [...]}} containing ONLY corrected versions of the {len(rec["slots"])} invalid task(s) '
+                f"below, each keeping the id shown.")
+        items = [head] + [f"invalid task id {sl['id']!r}: {json.dumps(sl['original'], sort_keys=True, default=str)[:1500]}"
+                          f" -- problems: {'; '.join(sl['problems'])[:1500]}" for sl in rec["slots"]]
+        return items[:lim["max_feedback_items"]]
+
+    def _settle_recovery(self, s, lim):
+        """No repair attempts left (or nothing left to repair): proceed with the kept tasks, report the rest."""
+        rec = s["plan_recovery"]
+        for sl in rec["slots"]:
+            o = sl["original"] if isinstance(sl["original"], dict) else {}
+            cl = o.get("claims") if isinstance(o.get("claims"), list) else []
+            rec["abandoned"].append({"id": sl["id"], "title": str(o.get("title"))[:120] if "title" in o else None,
+                                     "claim_keys": [str(x.get("key"))[:64] for x in cl if isinstance(x, dict)],
+                                     "problems": [str(p)[:300] for p in sl["problems"]][:lim["max_feedback_items"]]})
+        rec["slots"] = []
+        plan = {"tasks": list(rec["kept"])}
+        if rec["kept"] and not c.validate_plan(plan, s["profile"]):          # whole-plan validation, again
+            s["plan"] = plan
+        else:
+            s["status"] = "plan_invalid"
+
     # failure handling (bounded)
 
     def _terminate_execution(self, s, category, error_class):
@@ -363,6 +476,18 @@ class Supervisor:
     def _step_failed(self, s, aw, problems, lim, lessons):
         kind = aw["kind"]
         if kind == "plan_request":
+            rec = s["plan_recovery"] if lim.get("selective_plan_recovery") else None
+            if rec is not None and rec["slots"]:
+                # a repair attempt failed as a whole (e.g. a provider error): the kept tasks stay kept
+                lessons.append({"stage": "planning", "attempt": aw["attempt"], "problems": problems})
+                for sl in rec["slots"]:
+                    sl["problems"] = (sl["problems"] + [f"repair attempt {aw['attempt']} failed: {p}"
+                                                        for p in problems])[-lim["max_feedback_items"]:]
+                if s["plan_attempts"] >= lim["max_plan_attempts"]:
+                    self._settle_recovery(s, lim)
+                else:
+                    s["plan_feedback"] = self._repair_feedback(rec, lim)
+                return
             s["plan_feedback"] = (s["plan_feedback"] + problems)[-lim["max_feedback_items"]:]
             lessons.append({"stage": "planning", "attempt": aw["attempt"], "problems": problems})
             if s["plan_attempts"] >= lim["max_plan_attempts"]:
@@ -439,13 +564,17 @@ class Supervisor:
                 s["status"] = "plan_invalid"
                 return None
             s["plan_attempts"] += 1
+            rec = s["plan_recovery"] if lim.get("selective_plan_recovery") else None
+            max_tasks = len(rec["slots"]) if rec is not None and rec["slots"] else c.MAX_TASKS
             return self._dispatch(s, c.PLANNING, "plan_request", {
                 "goal": s["goal"], "profile": s["profile"], "attempt": s["plan_attempts"],
-                "feedback": s["plan_feedback"], "max_tasks": c.MAX_TASKS}, attempt=s["plan_attempts"])
+                "feedback": s["plan_feedback"], "max_tasks": max_tasks}, attempt=s["plan_attempts"])
         if s["approved_task_ids"] is None:
-            return self._dispatch(s, c.APPROVAL, "approval_request", {
-                "plan": s["plan"], "dataset": {"file_name": s["profile"]["file_name"],
-                                               "row_count": s["profile"]["row_count"]}})
+            payload = {"plan": s["plan"], "dataset": {"file_name": s["profile"]["file_name"],
+                                                      "row_count": s["profile"]["row_count"]}}
+            if s["plan_recovery"] is not None and s["plan_recovery"]["abandoned"]:
+                payload["abandoned_tasks"] = s["plan_recovery"]["abandoned"]     # the human sees what was lost
+            return self._dispatch(s, c.APPROVAL, "approval_request", payload)
         if s["task_index"] >= len(s["approved_task_ids"]):
             return None
         tid = self._current_id(s)
@@ -480,9 +609,11 @@ class Supervisor:
         tasks = state.get("tasks") or {}
         ids = state.get("approved_task_ids") or []
         status = state.get("status")
+        rec = state.get("plan_recovery")
+        abandoned = (rec or {}).get("abandoned") or []
         if not status:
-            status = "completed" if ids and all(tasks[i]["status"] == "completed" for i in ids) else \
-                "completed_with_failures"
+            status = "completed" if ids and not abandoned and all(tasks[i]["status"] == "completed" for i in ids) \
+                else "completed_with_failures"
         verified = {}
         for i in ids:
             if tasks[i]["status"] != "aborted":
@@ -510,4 +641,9 @@ class Supervisor:
             "lessons": len(state.get("lessons") or []),
             "approval_note": state.get("approval_note"),
         }
+        if rec is not None:                              # P6 selective recovery only: what was kept, fixed, lost
+            final["plan_recovery"] = {"kept_task_ids": [t["id"] for t in rec.get("kept") or []],
+                                      "recovered_task_ids": list(rec.get("recovered") or []),
+                                      "abandoned_tasks": abandoned,
+                                      "triaged_at_attempt": rec.get("triaged_at_attempt")}
         return {"status": status, "final": final, "route": END, "pending": None}
