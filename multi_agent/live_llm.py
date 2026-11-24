@@ -112,11 +112,30 @@ class Pacer:
 
 
 class ProviderError(RuntimeError):
-    """The provider call failed; the message is redacted. `status` is the HTTP status when there was one."""
+    """The provider call failed; the message is redacted. `status` is the HTTP status when there was one.
+    `timeout` marks a client-side timeout (no HTTP status)."""
 
-    def __init__(self, message, status=None, retry_after_s=None):
+    def __init__(self, message, status=None, retry_after_s=None, timeout=False):
         super().__init__(message)
-        self.status, self.retry_after_s = status, retry_after_s
+        self.status, self.retry_after_s, self.timeout = status, retry_after_s, timeout
+
+
+TRANSIENT_HTTP_STATUSES = (500, 502, 503, 504)
+
+
+def is_transient(e):
+    """A provider failure worth retrying: HTTP 500/502/503/504 or a client timeout. Never 429 (its own policy),
+    never a daily-quota/billing stop, never another 4xx/5xx or a non-timeout network error."""
+    return isinstance(e, ProviderError) and (e.status in TRANSIENT_HTTP_STATUSES
+                                             or (e.status is None and bool(getattr(e, "timeout", False))))
+
+
+def _is_timeout(e):
+    import socket
+    import urllib.error
+    if isinstance(e, (TimeoutError, socket.timeout)):
+        return True
+    return isinstance(e, urllib.error.URLError) and isinstance(getattr(e, "reason", None), (TimeoutError, socket.timeout))
 
 
 def redact(text, secret):
@@ -248,7 +267,7 @@ class GeminiOpenAICompatPort:
             raise ProviderError(f"HTTP {e.code}: {safe_full[:400]} [{details}]", status=e.code,
                                 retry_after_s=retry_after) from None
         except Exception as e:
-            raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}") from None
+            raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}", timeout=_is_timeout(e)) from None
 
     def list_models(self):
         """Model ids available to this key (free; no generation)."""
@@ -276,7 +295,8 @@ class BudgetedPort:
     def __init__(self, inner, *, model, budget_usd, ledger, max_calls, max_total_tokens,
                  max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS, prices=None, run_label="", clock=time.time,
                  rate_limit_retries=0, rate_limit_wait_s=20.0, charge_429="worst_case", sleep=time.sleep,
-                 pacer=None, rng=None):
+                 pacer=None, rng=None, transient_retries=0, transient_backoff_s=2.0, transient_max_wait_s=30.0,
+                 transient_max_elapsed_s=120.0):
         self.inner, self.model = inner, model
         self.call_source, self.code_trust = inner.call_source, CodeTrust(inner.code_trust)
         self.prices = prices or PRICES_USD_PER_MTOK[model]
@@ -293,7 +313,15 @@ class BudgetedPort:
         import random
         self.rng = rng or random.Random(20261124)
         self.rate_limited = 0                     # provider-level retries (HTTP 429), separate from agent retries
-        self.wait_s = 0.0                         # pacing + rate-limit backoff time spent sleeping
+        self.wait_s = 0.0                         # ALL time spent sleeping: pacing + 429 backoff + transient backoff
+        # P6 provider resilience (opt-in; 0 = previous behaviour): bounded retries of transient provider failures
+        # (is_transient) BELOW the agents, so they never consume an agent's planning/claims attempts. Each retry is
+        # budget-checked by _attempt and every failed attempt is still charged the conservative worst case.
+        self.transient_retries, self.transient_backoff_s = int(transient_retries), float(transient_backoff_s)
+        self.transient_max_wait_s, self.transient_max_elapsed_s = float(transient_max_wait_s), float(transient_max_elapsed_s)
+        self.transient_retried = 0                # provider-level retries of HTTP 5xx / timeouts
+        self.transient_given_up = 0               # calls whose transient retries (or elapsed limit) ran out
+        self.pacing_wait_s = self.rate_limit_wait_s_total = self.transient_wait_s = 0.0
         self.calls = self.tokens = self.failed_attempts = 0
         self.spent_usd = 0.0
         self.exhausted = False
@@ -311,24 +339,50 @@ class BudgetedPort:
         raise BudgetExceeded(why)
 
     def complete(self, skill, system, user):
-        for attempt in range(self.rate_limit_retries + 1):
+        n429 = ntr = 0
+        started = self.clock()
+        reason = None
+        while True:
             if self.pacer is not None:
-                self.wait_s += self.pacer.wait()
+                w = self.pacer.wait()
+                self.wait_s += w
+                self.pacing_wait_s += w
             try:
-                return self._attempt(skill, system, user)
+                return self._attempt(skill, system, user, retry_reason=reason, provider_attempt=1 + n429 + ntr)
             except QuotaOrBillingStop as e:
                 self.exhausted, self.stop_reason = True, f"quota/billing stop: {e}"
                 raise
             except ProviderError as e:
-                if e.status != 429 or attempt == self.rate_limit_retries:
+                if e.status == 429:                                   # unchanged rate-limit policy
+                    if n429 >= self.rate_limit_retries:
+                        raise
+                    self.rate_limited += 1
+                    backoff = self.rate_limit_wait_s * (2 ** n429) * self.rng.uniform(0.8, 1.2)     # jitter
+                    wait = min(e.retry_after_s if e.retry_after_s else backoff, 120.0)   # server hint wins
+                    n429 += 1
+                    self.wait_s += wait
+                    self.rate_limit_wait_s_total += wait
+                    reason = "rate_limit_429"
+                    self.sleep(wait)
+                    continue
+                if not is_transient(e) or self.transient_retries <= 0:
+                    raise                                             # non-retryable, or the policy is off
+                if ntr >= self.transient_retries:
+                    self.transient_given_up += 1
                     raise
-                self.rate_limited += 1
-                backoff = self.rate_limit_wait_s * (2 ** attempt) * self.rng.uniform(0.8, 1.2)     # jitter
-                wait = min(e.retry_after_s if e.retry_after_s else backoff, 120.0)   # server hint wins
+                backoff = self.transient_backoff_s * (2 ** ntr) * self.rng.uniform(0.8, 1.2)
+                wait = min(e.retry_after_s if e.retry_after_s else backoff, self.transient_max_wait_s)
+                if (self.clock() - started) + wait > self.transient_max_elapsed_s:
+                    self.transient_given_up += 1
+                    raise                                             # elapsed-time limit for this call
+                ntr += 1
+                self.transient_retried += 1
                 self.wait_s += wait
+                self.transient_wait_s += wait
+                reason = "transient_" + (str(e.status) if e.status else "timeout")
                 self.sleep(wait)
 
-    def _attempt(self, skill, system, user):
+    def _attempt(self, skill, system, user, retry_reason=None, provider_attempt=1):
         if getattr(self, "stop_reason", None):
             raise BudgetExceeded(self.stop_reason)
         tin, tout, worst = self.worst_case(system, user)
@@ -356,7 +410,9 @@ class BudgetedPort:
                       "call_source": self.call_source, "input_tokens": tin, "output_tokens": tout,
                       "cost_usd": round(charge, 8), "charged_worst_case": charge > 0, "failed": type(e).__name__,
                       "http_status": status, "seconds": round(self.clock() - t0, 3),
-                      "billing_status": ("provisional_unbilled_429" if charge == 0 else "conservative_worst_case")}
+                      "billing_status": ("provisional_unbilled_429" if charge == 0 else "conservative_worst_case"),
+                      "provider_attempt": provider_attempt, "retry_reason": retry_reason,
+                      "transient": is_transient(e), "timeout": bool(getattr(e, "timeout", False))}
             self.records.append(record)
             self.ledger.append(record)
             raise
@@ -368,7 +424,8 @@ class BudgetedPort:
         self.spent_usd += cost
         record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                   "call_source": self.call_source, "input_tokens": i, "output_tokens": o, "cost_usd": round(cost, 8),
-                  "charged_worst_case": charged_worst, "failed": None, "seconds": round(self.clock() - t0, 3)}
+                  "charged_worst_case": charged_worst, "failed": None, "seconds": round(self.clock() - t0, 3),
+                  "provider_attempt": provider_attempt, "retry_reason": retry_reason}
         self.records.append(record)
         self.ledger.append(record)
         return response

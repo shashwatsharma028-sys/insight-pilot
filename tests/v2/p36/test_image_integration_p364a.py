@@ -569,6 +569,8 @@ APPROVED_P6 = {
     "tests/v2/p5/test_integration_p50.py", "tests/v2/p51/test_integration_controls_p51a.py",
     # P6 optimisation (approved): opt-in selective task recovery in the Supervisor, off by default
     "multi_agent/supervisor.py", "multi_agent/contracts.py", "tests/v2/p6/test_selective_recovery_p6.py",
+    # P6 optimisation 2 (approved): bounded transient-provider retries, off by default
+    "tests/v2/p6/test_provider_resilience_p6.py",
 }
 
 

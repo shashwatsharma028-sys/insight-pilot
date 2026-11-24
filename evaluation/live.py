@@ -345,7 +345,7 @@ def run_benchmark(datasets, reps, make_port, seed=20261124, clock=time.perf_coun
                    "grade": g, "run": {k: v for k, v in out.items() if k != "claims"},
                    "calls": port.calls, "llm_records": port.records, "spent_usd": port.spent_usd,
                    "rate_limited": getattr(port, "rate_limited", 0),
-                   "call_source": port.call_source}
+                   "call_source": port.call_source, **provider_counters(port)}
             results.append(rec)
             if incremental:
                 with open(incremental, "a", encoding="utf-8") as fh:
@@ -417,30 +417,56 @@ def summarize(results):
 # ── P6 optimisation experiment: selective task recovery vs a contemporaneous control ─────────────────────
 
 VARIANTS = ("selective_recovery", "control")
-RUN_RESERVE_USD = 0.010          # conservative reservation per multi-agent run when deciding whether to add a control
+RUN_RESERVE_USD = 0.010          # conservative reservation per run when deciding whether to add a control
+
+# Matched experiments: (optimised arm, control arm) -> what differs. Everything else is identical.
+EXPERIMENTS = {
+    # Optimisation 1 (done, 7764189e): selective task recovery, multi-agent only.
+    "selective_recovery": {"arms": ("selective_recovery", "control"),
+                           "run": {"selective_recovery": {"selective_recovery": True},
+                                   "control": {"selective_recovery": False}},
+                           "port": {"selective_recovery": {}, "control": {}}},
+    # Optimisation 2: bounded transient-provider retries; selective recovery stays ON in both arms.
+    "provider_resilience": {"arms": ("provider_retry", "control"),
+                            "run": {"provider_retry": {"selective_recovery": True},
+                                    "control": {"selective_recovery": True}},
+                            "port": {"provider_retry": {"transient": True}, "control": {"transient": False}}},
+}
 
 
 def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, log=print, incremental=None,
                             include_control=True, reserve_per_run=RUN_RESERVE_USD):
+    """Optimisation 1 as run on 7764189e: unchanged behaviour (make_port(label) -> BudgetedPort)."""
+    return run_matched_experiment(lambda label, port_cfg: make_port(label), "selective_recovery", seed=seed,
+                                  clock=clock, log=log, incremental=incremental, include_control=include_control,
+                                  reserve_per_run=reserve_per_run)
+
+
+def run_matched_experiment(make_port, experiment, arch="multi_agent", seed=20261124, clock=time.perf_counter,
+                           log=print, incremental=None, include_control=True, reserve_per_run=RUN_RESERVE_USD,
+                           slots=None):
     """
-    The baseline's 20 multi-agent (dataset, rep) slots in the baseline's seeded order. Each slot runs the optimised
-    variant (selective task recovery ON) and, budget permitting, a matched control (OFF: the baseline code path),
-    adjacent and in a seeded random order, so provider load affects both alike. A control runs only if the
-    remaining ledger budget still reserves `reserve_per_run` for every remaining optimised run.
+    The baseline's seeded (dataset, rep) slots for `arch` (default: its 20 multi-agent slots, in order). Each slot
+    runs the optimised arm and, budget permitting, the matched control, adjacent and in a seeded random order, so
+    provider load affects both alike. A control runs only if the remaining ledger budget still reserves
+    `reserve_per_run` for every remaining optimised run. make_port(label, port_cfg) -> BudgetedPort.
     """
-    slots = [(ds, rep) for arch, ds, rep in schedule(DATASETS, 5, seed) if arch == "multi_agent"]
+    spec = EXPERIMENTS[experiment]
+    opt_arm, ctl_arm = spec["arms"]
+    if slots is None:
+        slots = [(ds, rep) for a, ds, rep in schedule(DATASETS, 5, seed) if a == arch]
     rng = random.Random(seed + 1)
     results, stopped, skipped_controls, order = [], None, [], 0
     with v1_executor_tripwire() as trip:
         for si, (ds, rep) in enumerate(slots):
-            variants = list(VARIANTS) if include_control else ["selective_recovery"]
+            variants = [opt_arm, ctl_arm] if include_control else [opt_arm]
             rng.shuffle(variants)
             for variant in variants:
-                label = f"{variant}/{ds}/r{rep}"
-                port = make_port(label)
-                if variant == "control":
+                label = f"{variant}/{arch}/{ds}/r{rep}" if experiment != "selective_recovery" else f"{variant}/{ds}/r{rep}"
+                port = make_port(label, spec["port"][variant])
+                if variant == ctl_arm:
                     remaining = port.budget_usd - port.ledger.spent_usd()
-                    optimised_pending_here = "selective_recovery" in variants[variants.index(variant) + 1:]
+                    optimised_pending_here = opt_arm in variants[variants.index(variant) + 1:]
                     left = (len(slots) - si - 1) + (1 if optimised_pending_here else 0)
                     if remaining - reserve_per_run < left * reserve_per_run:
                         skipped_controls.append(label)
@@ -448,7 +474,8 @@ def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, l
                         continue
                 t0, error = clock(), None
                 try:
-                    out = run_multi_agent(ds, port, clock, selective_recovery=(variant == "selective_recovery"))
+                    out = (run_multi_agent(ds, port, clock, **spec["run"][variant]) if arch == "multi_agent"
+                           else run_single_agent(ds, port, clock))
                 except (live_llm.BudgetExceeded, live_llm.QuotaOrBillingStop) as e:
                     stopped = f"{label}: {e}"
                     log(f"stop: {stopped}")
@@ -462,29 +489,41 @@ def run_recovery_experiment(make_port, seed=20261124, clock=time.perf_counter, l
                     break
                 wait = getattr(port, "wait_s", 0.0)
                 g = grade(ds, out["claims"])
-                rec = {"order": order, "slot": si, "variant": variant, "arch": "multi_agent", "dataset": ds,
+                rec = {"order": order, "slot": si, "variant": variant, "arch": arch, "dataset": ds,
                        "rep": rep, "wall_s": wall, "error": error, "wait_s": wait,
                        "wall_excl_wait_s": max(0.0, wall - wait), "grade": g,
                        "run": {k: v for k, v in out.items() if k != "claims"}, "calls": port.calls,
                        "llm_records": port.records, "spent_usd": port.spent_usd,
-                       "rate_limited": getattr(port, "rate_limited", 0), "call_source": port.call_source}
+                       "rate_limited": getattr(port, "rate_limited", 0), "call_source": port.call_source,
+                       **provider_counters(port)}
                 order += 1
                 results.append(rec)
                 if incremental:
                     with open(incremental, "a", encoding="utf-8") as fh:
                         fh.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
                 pr = (out.get("plan_recovery") or {})
-                log(f"{rec['order']:3d} {label:36s} {str(out.get('status')):24s} {g['correct_hidden']}/{g['total_hidden']} "
+                log(f"{rec['order']:3d} {label:44s} {str(out.get('status')):24s} {g['correct_hidden']}/{g['total_hidden']} "
                     f"hidden, {port.calls} calls, ${port.spent_usd:.5f}, {wall:.1f}s"
+                    + (f", transient retries {rec['transient_retries']}" if rec["transient_retries"] else "")
                     + (f", recovered {pr.get('recovered_task_ids')}, abandoned "
                        f"{[a['id'] for a in pr.get('abandoned_tasks') or []]}" if pr else ""))
             if stopped:
                 break
         hits = trip["n"]
-    return {"harness_version": HARNESS_VERSION, "experiment": "selective_task_recovery", "seed": seed,
+    return {"harness_version": HARNESS_VERSION, "experiment": experiment if experiment != "selective_recovery"
+            else "selective_task_recovery", "arch": arch, "seed": seed,
             "slots": [list(x) for x in slots], "results": results, "stopped": stopped,
             "skipped_controls": skipped_controls, "v1_executor_tripwire_hits": hits,
-            "summary": summarize_variants(results)}
+            "summary": summarize_variants(results, (opt_arm, ctl_arm))}
+
+
+def provider_counters(port):
+    """Per-run provider-level counters, kept apart from agent-level retries and failures."""
+    return {"transient_retries": getattr(port, "transient_retried", 0),
+            "transient_given_up": getattr(port, "transient_given_up", 0),
+            "pacing_wait_s": round(getattr(port, "pacing_wait_s", 0.0), 3),
+            "rate_limit_wait_s": round(getattr(port, "rate_limit_wait_s_total", 0.0), 3),
+            "transient_wait_s": round(getattr(port, "transient_wait_s", 0.0), 3)}
 
 
 def _provider_problem(problems):
@@ -529,26 +568,54 @@ def variant_metrics(rs):
         "cost_usd_worst_case_failed_attempts": round(sum(x["cost_usd"] for x in failed), 6),
         "latency_s": metrics.latency_stats([r["wall_s"] for r in rs]),
         "latency_excl_wait_s": metrics.latency_stats([r["wall_excl_wait_s"] for r in rs]),
+        # provider level (kept apart from agent retries / validation failures above)
+        "provider_attempts": len(recs),
+        "provider_retries_transient": sum(r.get("transient_retries", 0) for r in rs),
+        "provider_retries_429": sum(r.get("rate_limited", 0) for r in rs),
+        "provider_calls_given_up": sum(r.get("transient_given_up", 0) for r in rs),
+        "wait_s_pacing": round(sum(r.get("pacing_wait_s", 0.0) for r in rs), 2),
+        "wait_s_rate_limit": round(sum(r.get("rate_limit_wait_s", 0.0) for r in rs), 2),
+        "wait_s_transient": round(sum(r.get("transient_wait_s", 0.0) for r in rs), 2),
+        "cost_usd_per_correct_hidden_provider_reported": (round(sum(x["cost_usd"] for x in ok) / ch, 6) if ch else None),
+        "provider_tokens_per_correct_hidden": (round(sum(x["input_tokens"] + x["output_tokens"] for x in ok) / ch, 1)
+                                               if ch else None),
         "call_source": sorted({r["call_source"] for r in rs}),
     }
 
 
-def summarize_variants(results):
-    out = {v: variant_metrics([r for r in results if r.get("variant") == v]) for v in VARIANTS}
+def summarize_variants(results, arms=VARIANTS):
+    opt, ctl = arms
+    out = {v: variant_metrics([r for r in results if r.get("variant") == v]) for v in arms}
     by = {}
     for r in results:
         by.setdefault(r["slot"], {})[r["variant"]] = r
-    both = [p for p in by.values() if set(p) == set(VARIANTS) and not any(x["error"] for x in p.values())]
+    both = [p for p in by.values() if set(p) == set(arms) and not any(x["error"] for x in p.values())]
     out["matched_pairs"] = len(both)
-    out["paired_latency_control_vs_selective"] = paired.paired_latency(
-        [(p["control"]["wall_s"], p["selective_recovery"]["wall_s"]) for p in both])
-    out["paired_latency_excl_wait_control_vs_selective"] = paired.paired_latency(
-        [(p["control"]["wall_excl_wait_s"], p["selective_recovery"]["wall_excl_wait_s"]) for p in both])
-    out["paired_hidden_correct"] = {"control": sum(p["control"]["grade"]["correct_hidden"] for p in both),
-                                    "selective_recovery": sum(p["selective_recovery"]["grade"]["correct_hidden"]
-                                                              for p in both),
-                                    "of": sum(p["control"]["grade"]["total_hidden"] for p in both)}
+    lat = paired.paired_latency([(p[ctl]["wall_s"], p[opt]["wall_s"]) for p in both])
+    lat_x = paired.paired_latency([(p[ctl]["wall_excl_wait_s"], p[opt]["wall_excl_wait_s"]) for p in both])
+    out[f"paired_latency_{ctl}_vs_{opt}"], out[f"paired_latency_excl_wait_{ctl}_vs_{opt}"] = lat, lat_x
+    if arms == VARIANTS:                                   # names used by the optimisation 1 record
+        out["paired_latency_control_vs_selective"], out["paired_latency_excl_wait_control_vs_selective"] = lat, lat_x
+    out["paired_hidden_correct"] = {ctl: sum(p[ctl]["grade"]["correct_hidden"] for p in both),
+                                    opt: sum(p[opt]["grade"]["correct_hidden"] for p in both),
+                                    "of": sum(p[ctl]["grade"]["total_hidden"] for p in both)}
+    out["paired_hidden_effect"] = paired_effect([p[opt]["grade"]["correct_hidden"] - p[ctl]["grade"]["correct_hidden"]
+                                                 for p in both])
     return out
+
+
+def paired_effect(diffs, seed=1, n_boot=20000):
+    """Mean paired difference with a 95% bootstrap CI, and a two-sided sign test (ties dropped)."""
+    from math import comb
+    if not diffs:
+        return {"n": 0}
+    rng = random.Random(seed)
+    boots = sorted(sum(rng.choice(diffs) for _ in diffs) / len(diffs) for _ in range(n_boot))
+    n, k = sum(d != 0 for d in diffs), sum(d > 0 for d in diffs)
+    p = min(1.0, 2 * sum(comb(n, i) for i in range(0, min(k, n - k) + 1)) / 2 ** n) if n else 1.0
+    return {"n": len(diffs), "mean_diff": round(sum(diffs) / len(diffs), 4),
+            "ci95": [round(boots[int(0.025 * n_boot)], 4), round(boots[int(0.975 * n_boot) - 1], 4)],
+            "wins": k, "losses": n - k, "ties": len(diffs) - n, "sign_test_p": round(p, 5)}
 
 
 def markdown(bench) -> str:
@@ -623,9 +690,16 @@ def main(argv=None):
     ap.add_argument("--prices-confirmed", action="store_true")
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--experiment", choices=("none", "selective_recovery"), default="none",
-                    help="selective_recovery: the 20 baseline multi-agent slots with recovery ON, each paired with a "
-                         "contemporaneous control (OFF) when the budget allows")
+    ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience"), default="none",
+                    help="selective_recovery: the 20 baseline multi-agent slots with recovery ON vs OFF; "
+                         "provider_resilience: transient-provider retries ON vs OFF (selective recovery ON in both); "
+                         "each optimised run is paired with an adjacent control when the budget allows")
+    ap.add_argument("--arch", choices=ARCHS, default="multi_agent", help="architecture for --experiment")
+    ap.add_argument("--transient-retries", type=int, default=0,
+                    help="bounded provider retries of HTTP 500/502/503/504 and timeouts (0 = off)")
+    ap.add_argument("--transient-backoff-s", type=float, default=2.0)
+    ap.add_argument("--transient-max-wait-s", type=float, default=30.0)
+    ap.add_argument("--transient-max-elapsed-s", type=float, default=120.0)
     ap.add_argument("--no-control", action="store_true", help="with --experiment: run the optimised variant only")
     a = ap.parse_args(argv)
     if a.budget_usd > 5.0:
@@ -656,23 +730,40 @@ def main(argv=None):
         except (live_llm.ProviderError, live_llm.QuotaOrBillingStop) as e:
             raise SystemExit(f"model {a.model!r} cannot generate for this key: {e}")
         print(f"model {a.model} generated a reply (preflight probe ${probe.spent_usd:.6f})")
-        make = lambda label: live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,  # noqa: E731
-                                                   max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
-                                                   max_output_tokens=a.max_output_tokens, run_label=label,
-                                                   rate_limit_retries=a.rate_limit_retries, charge_429=a.charge_429,
-                                                   pacer=pacer)
+        def make(label, port_cfg=None):
+            # The transient policy is identical for every port of a run (both architectures); an experiment's
+            # control arm turns it off (port_cfg {"transient": False}).
+            on = (port_cfg or {}).get("transient", True)
+            return live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,
+                                         max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
+                                         max_output_tokens=a.max_output_tokens, run_label=label,
+                                         rate_limit_retries=a.rate_limit_retries, charge_429=a.charge_429,
+                                         pacer=pacer, transient_retries=a.transient_retries if on else 0,
+                                         transient_backoff_s=a.transient_backoff_s,
+                                         transient_max_wait_s=a.transient_max_wait_s,
+                                         transient_max_elapsed_s=a.transient_max_elapsed_s)
     else:
         ledger = live_llm.Ledger(os.path.join(a.out, "dry_run_ledger.jsonl"))       # never the live ledger
-        make = lambda label: live_llm.BudgetedPort(  # noqa: E731
-            live_llm.FakeProvider(oracle_answer(label.split("/")[1])), model=a.model, budget_usd=a.budget_usd,
-            ledger=ledger, max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
-            max_output_tokens=a.max_output_tokens, run_label=label)
-    if a.experiment == "selective_recovery":
-        exp = run_recovery_experiment(make, seed=a.seed, incremental=os.path.join(a.out, "runs.jsonl"),
-                                      include_control=not a.no_control)
+        def make(label, port_cfg=None):
+            ds = next(p for p in label.split("/") if p in DATASETS)
+            on = (port_cfg or {}).get("transient", True)
+            return live_llm.BudgetedPort(
+                live_llm.FakeProvider(oracle_answer(ds)), model=a.model, budget_usd=a.budget_usd,
+                ledger=ledger, max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
+                max_output_tokens=a.max_output_tokens, run_label=label,
+                transient_retries=a.transient_retries if on else 0)
+    if a.experiment != "none":
+        if a.experiment == "provider_resilience" and a.transient_retries <= 0:
+            raise SystemExit("provider_resilience needs --transient-retries >= 1 for the optimised arm")
+        exp = (run_recovery_experiment(make, seed=a.seed, incremental=os.path.join(a.out, "runs.jsonl"),
+                                       include_control=not a.no_control) if a.experiment == "selective_recovery"
+               else run_matched_experiment(make, a.experiment, arch=a.arch, seed=a.seed,
+                                           incremental=os.path.join(a.out, "runs.jsonl"),
+                                           include_control=not a.no_control))
         exp.update(provider=a.provider, model=a.model, budget_usd=a.budget_usd,
                    prices_usd_per_mtok=list(live_llm.PRICES_USD_PER_MTOK[a.model]))
-        with open(os.path.join(a.out, "recovery_experiment.json"), "w", encoding="utf-8") as f:
+        name = "recovery_experiment.json" if a.experiment == "selective_recovery" else f"{a.experiment}_experiment.json"
+        with open(os.path.join(a.out, name), "w", encoding="utf-8") as f:
             json.dump(exp, f, indent=1, sort_keys=True, default=str)
         print(json.dumps(exp["summary"], indent=1, sort_keys=True, default=str))
         print(f"stopped early: {exp['stopped']}; skipped controls: {len(exp['skipped_controls'])}; "
