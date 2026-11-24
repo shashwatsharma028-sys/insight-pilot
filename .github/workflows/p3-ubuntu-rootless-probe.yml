@@ -24,6 +24,8 @@
 # - Run 7 (45125846903): DNS conflict gone; refused on tmpfs nr_inodes. D3 (approved) removed nr_inodes
 #   (inode-count limits no longer enforced); a create-only argument-compatibility diagnostic was added.
 #   The push that adds this line is the single authorized D3 validation attempt (code digest of 4b7f7244).
+# - Run 8 (45341414519): the container started; attestation refused only on writable_mounts. D2 (approved,
+#   Option A): exact rootless set. The push that adds this line is the single authorized D2 attempt (b1723129).
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
