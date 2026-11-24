@@ -575,6 +575,9 @@ APPROVED_P6 = {
     "multi_agent/claims.py", "multi_agent/prompts.py", "tests/v2/p6/test_schema_aware_planner_p6.py",
     # P6 optimisation 4 (approved, isolated branch): semantic planner guidance + evaluation-only diagnostics
     "tests/v2/p6/test_semantic_accuracy_p6.py",
+    # UI-1 (approved, isolated branch): UI-agnostic V2 application service, not wired to any entry point
+    "v2/app_service.py", "tests/v2/ui1/__init__.py", "tests/v2/ui1/test_app_service_ui1.py",
+    "tests/v2/p3/test_contract_purity.py",  # UI-1: registers v2/app_service.py as a reviewed module
 }
 
 
