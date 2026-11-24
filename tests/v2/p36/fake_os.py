@@ -33,7 +33,16 @@ GOOD_MOUNTINFO = """22 1 0:21 / / ro,relatime - overlay overlay ro
 25 22 0:24 / /out rw,nosuid,nodev,noexec - tmpfs tmpfs rw,size=32768k
 26 22 0:25 / /in ro,relatime - ext4 /dev/sda1 ro
 27 22 0:26 / /sys ro,nosuid - sysfs sysfs ro
-"""
+28 22 0:27 / /dev ro,nosuid - tmpfs tmpfs rw,size=65536k,mode=755
+29 28 0:5 /null /dev/null rw,nosuid,noexec,relatime - devtmpfs udev rw
+30 28 0:5 /zero /dev/zero rw,nosuid,noexec,relatime - devtmpfs udev rw
+31 28 0:5 /full /dev/full rw,nosuid,noexec,relatime - devtmpfs udev rw
+32 28 0:5 /random /dev/random rw,nosuid,noexec,relatime - devtmpfs udev rw
+33 28 0:5 /urandom /dev/urandom rw,nosuid,noexec,relatime - devtmpfs udev rw
+34 28 0:5 /tty /dev/tty rw,nosuid,noexec,relatime - devtmpfs udev rw
+35 28 0:28 / /dev/pts rw,nosuid,noexec,relatime - devpts devpts rw,gid=5,mode=620,ptmxmode=666
+36 28 0:29 / /dev/mqueue rw,nosuid,nodev,noexec,relatime - mqueue mqueue rw
+"""                    # /dev lines as rootless Podman 4.9.3 mounts them (CI run 4 and run 45341414519)
 
 
 def literal_output(code):

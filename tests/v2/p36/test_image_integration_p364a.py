@@ -554,6 +554,9 @@ APPROVED_364B = {
     # D3 (approved): nr_inodes removed; RealOS real-time-signal fix; argument-compatibility diagnostic
     "tests/v2/p36/test_podman_tmpfs_d3_p364b.py", "tests/v2/p36/test_realos_smoke_p364b.py",
     "v2/execution/image/runtime/supervisor.py", "scripts/p3/argv_compat.py",
+    # D2 (approved, Option A): exact writable-mount set; fake mount tables mirror rootless Podman 4.9.3
+    "v2/execution/frame.py", "tests/v2/p36/fake_os.py", "tests/v2/p3/test_supervisor_helpers_p34.py",
+    "tests/v2/p36/test_attestation_d2_p364b.py",
 }
 
 
@@ -564,22 +567,42 @@ def test_only_approved_p364a_files_changed_outside_new_documentation():
     assert code_changes <= approved, sorted(code_changes - approved)
 
 
-# P3.6-4B: the ONLY approved runtime change since P3.6-3 (real-time signal names resolved by number; found by
-# tests/v2/p36/test_realos_smoke_p364b.py before any CI run). Any other change to the installed files fails.
-APPROVED_RUNTIME_DIFF = [
-    "-            num = getattr(sig, name)",
-    "+            # P3.6-4B: unnamed real-time signals are planned as \"SIGRT<number>\" (supervisor_helpers.signal_plan);",
-    "+            # the signal module has no such attribute, so resolve them by number (host smoke test, 2026-11-24).",
-    "+            num = int(name[5:]) if name.startswith(\"SIGRT\") and name[5:].isdigit() else getattr(sig, name)",
-]
+# P3.6-4B: the ONLY approved runtime changes since P3.6-3. Any other change to an installed file fails.
+#   supervisor.py: real-time signal names resolved by number (found by tests/v2/p36/test_realos_smoke_p364b.py);
+#   frame.py: D2 (approved) exact writable-mount set for rootless Podman 4.9.3.
+APPROVED_RUNTIME_DIFF = {
+    "v2/execution/image/runtime/supervisor.py": [
+        "-            num = getattr(sig, name)",
+        "+            # P3.6-4B: unnamed real-time signals are planned as \"SIGRT<number>\" (supervisor_helpers.signal_plan);",
+        "+            # the signal module has no such attribute, so resolve them by number (host smoke test, 2026-11-24).",
+        "+            num = int(name[5:]) if name.startswith(\"SIGRT\") and name[5:].isdigit() else getattr(sig, name)",
+    ],
+    "v2/execution/frame.py": [
+        '+# P3.6-4B D2 (approved, Option A): rootless Podman 4.9.3 cannot create device nodes, so it bind-mounts the six',
+        '+# standard host character devices into the read-only /dev, and it mounts a container-private devpts and the',
+        "+# mqueue filesystem of the container's private IPC namespace. Each appears as an rw mount (CI run 45341414519).",
+        '+# The set is EXACT: any additional or missing writable mount still fails closed. Residual risk (carried into',
+        '+# P3.7): this runtime check matches mount-point PATHS only, not filesystem types or device numbers; types and',
+        '+# device identities are verified by the real-container validation suite, not at run time.',
+        '+STORAGE_WRITABLE_MOUNTS = ("/out", "/tmp")',
+        '+ROOTLESS_DEV_WRITABLE_MOUNTS = ("/dev/full", "/dev/mqueue", "/dev/null", "/dev/pts", "/dev/random", "/dev/tty",',
+        '+                                "/dev/urandom", "/dev/zero")',
+        '+',
+        '+',
+        '-        "net_interfaces": ["lo"], "writable_mounts": ["/out", "/tmp"], "dev_writable": False,',
+        '+        "net_interfaces": ["lo"], "dev_writable": False,',
+        '+        "writable_mounts": sorted(STORAGE_WRITABLE_MOUNTS + ROOTLESS_DEV_WRITABLE_MOUNTS),',
+    ],
+}
 
 
 def test_the_installed_runtime_is_byte_identical_to_the_reviewed_p36_3_sources():
     srcs = [src for _, src in layout.RUNTIME_FILES]
-    assert _git("diff", "--name-only", P36_BASE, "--", *srcs).split() == ["v2/execution/image/runtime/supervisor.py"]
-    diff = _git("diff", "-U0", P36_BASE, "--", "v2/execution/image/runtime/supervisor.py")
-    body = [ln for ln in diff.splitlines() if ln[:1] in "+-" and not ln.startswith(("+++", "---"))]
-    assert body == APPROVED_RUNTIME_DIFF, body
+    assert sorted(_git("diff", "--name-only", P36_BASE, "--", *srcs).split()) == sorted(APPROVED_RUNTIME_DIFF)
+    for path, approved in APPROVED_RUNTIME_DIFF.items():
+        diff = _git("diff", "-U0", P36_BASE, "--", path)
+        body = [ln for ln in diff.splitlines() if ln[:1] in "+-" and not ln.startswith(("+++", "---"))]
+        assert body == approved, (path, body)
 
 
 def test_v1_application_and_p4_evidence_are_unchanged():

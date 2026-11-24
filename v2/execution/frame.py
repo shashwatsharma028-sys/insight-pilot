@@ -380,13 +380,25 @@ CPU_PERIOD_US = 100_000
 CONTAINER_UID = CONTAINER_GID = 10001
 
 
+# P3.6-4B D2 (approved, Option A): rootless Podman 4.9.3 cannot create device nodes, so it bind-mounts the six
+# standard host character devices into the read-only /dev, and it mounts a container-private devpts and the
+# mqueue filesystem of the container's private IPC namespace. Each appears as an rw mount (CI run 45341414519).
+# The set is EXACT: any additional or missing writable mount still fails closed. Residual risk (carried into
+# P3.7): this runtime check matches mount-point PATHS only, not filesystem types or device numbers; types and
+# device identities are verified by the real-container validation suite, not at run time.
+STORAGE_WRITABLE_MOUNTS = ("/out", "/tmp")
+ROOTLESS_DEV_WRITABLE_MOUNTS = ("/dev/full", "/dev/mqueue", "/dev/null", "/dev/pts", "/dev/random", "/dev/tty",
+                                "/dev/urandom", "/dev/zero")
+
+
 def expected_attestation(limits: Limits = DEFAULT_LIMITS) -> dict:
     """The isolation every run must report (design §8.6)."""
     return {
         "uid": CONTAINER_UID, "gid": CONTAINER_GID,
         "cap_eff": "0" * 16, "cap_prm": "0" * 16, "cap_bnd": "0" * 16,
         "no_new_privs": 1, "seccomp": 2,
-        "net_interfaces": ["lo"], "writable_mounts": ["/out", "/tmp"], "dev_writable": False,
+        "net_interfaces": ["lo"], "dev_writable": False,
+        "writable_mounts": sorted(STORAGE_WRITABLE_MOUNTS + ROOTLESS_DEV_WRITABLE_MOUNTS),
         "memory_max": limits.memory_bytes, "memory_swap_max": 0, "pids_max": limits.pids,
         "cpu_max": f"{int(round(limits.cpus * CPU_PERIOD_US))} {CPU_PERIOD_US}",
     }

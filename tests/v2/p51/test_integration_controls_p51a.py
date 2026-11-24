@@ -248,6 +248,8 @@ P36_P3_FILES = {
     "scripts/p3/image_inspect.py",
     # P3.6-4B (approved): CI revision and report; D3 argument-compatibility diagnostic
     "scripts/p3/ci_report.py", "scripts/p3/argv_compat.py",
+    # P3.6-4B D2 (approved): exact writable-mount set
+    "v2/execution/frame.py",
 }
 
 

@@ -272,6 +272,42 @@ def test_05_isolation_observed_from_inside_the_container(hardened, rt, parts):
     assert fs["/out"]["f_blocks"] * fs["/out"]["f_frsize"] == rt.limits.out_bytes
     tmpfs = {m[0]: m[1].split(",") for m in obs["mounts"] if m[0] in ("/tmp", "/out")}
     assert all({"rw", "nosuid", "nodev", "noexec"} <= set(o) for o in tmpfs.values()) and set(tmpfs) == {"/tmp", "/out"}
+    _assert_d2_dev_entries(obs)
+
+
+# D2 (approved): standard Linux character-device numbers of the six permitted /dev binds
+CHAR_DEVICES = {"null": (1, 3), "zero": (1, 5), "full": (1, 7), "random": (1, 8), "urandom": (1, 9), "tty": (5, 0)}
+PSEUDO_FS = {"/dev/pts": "devpts", "/dev/mqueue": "mqueue"}
+
+
+def _assert_d2_dev_entries(obs):
+    """Types and identities of every permitted writable /dev entry; namespace privacy; storage only /tmp and /out."""
+    mounts = {m[0]: {"options": m[1].split(","), "fstype": m[2], "majmin": m[3], "root": m[4]} for m in obs["mounts"]}
+    rw = {mp: m for mp, m in mounts.items() if "rw" in m["options"]}
+    host_ns = {n: os.readlink(f"/proc/self/ns/{n}") for n in obs["namespaces"]}
+    host_pts = os.stat("/dev/pts").st_dev
+    EVIDENCE["observations"]["d2"] = {
+        "devices": obs["devices"], "dev_mounts": {mp: m for mp, m in mounts.items() if mp.startswith("/dev")},
+        "namespaces_differ_from_host": {n: obs["namespaces"][n] != host_ns[n] for n in obs["namespaces"]},
+        "dev_pts_st_dev": obs["st_dev"]["/dev/pts"], "host_dev_pts_st_dev": [os.major(host_pts), os.minor(host_pts)],
+        "dev_pts_entries": obs["dev_pts_entries"]}
+    _save()
+    for name, (major, minor) in CHAR_DEVICES.items():                    # identity of each device bind
+        d = obs["devices"][name]
+        assert d == {"chr": True, "major": major, "minor": minor}, (name, d)
+        m = mounts[f"/dev/{name}"]
+        assert m["fstype"] == "devtmpfs" and m["root"] == f"/{name}", (name, m)
+        assert {"nosuid", "noexec"} <= set(m["options"]), (name, m)
+    for mp, fstype in PSEUDO_FS.items():
+        assert mounts[mp]["fstype"] == fstype, (mp, mounts[mp])
+    for n in ("ipc", "mnt", "pid", "net", "uts", "cgroup", "user"):     # private namespaces (mqueue is per IPC ns)
+        assert obs["namespaces"][n] != host_ns[n], n
+    assert obs["st_dev"]["/dev/pts"] != [os.major(host_pts), os.minor(host_pts)]   # a separate devpts instance
+    assert set(obs["dev_pts_entries"]) <= {"ptmx"}, obs["dev_pts_entries"]          # no host terminals visible
+    assert mounts["/dev"]["fstype"] == "tmpfs" and "ro" in mounts["/dev"]["options"]
+    storage = sorted(mp for mp, m in rw.items() if m["fstype"] not in ("proc", "devtmpfs", "devpts", "mqueue"))
+    assert storage == ["/out", "/tmp"], storage                          # the only writable ordinary storage
+    assert sorted(mp for mp, m in rw.items() if m["fstype"] == "devtmpfs") == sorted(f"/dev/{n}" for n in CHAR_DEVICES)
     w = obs["writes"]
     assert w["/tmp/p364b"] == "writable" and w["/out/p364b"] == "writable"
     assert all(w[p] != "writable" for p in w if p not in ("/tmp/p364b", "/out/p364b")), w

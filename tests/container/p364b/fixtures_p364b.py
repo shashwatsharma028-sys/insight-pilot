@@ -14,7 +14,7 @@ tests/v2/p36/test_container_suite_static_p364b.py checks the pins offline.
 import hashlib
 
 OBSERVE = r'''
-import hashlib, json, os, socket
+import hashlib, json, os, socket, stat
 def _try_write(path):
     try:
         with open(path, "x") as f:
@@ -60,7 +60,20 @@ def _lookup(name):
 with open("/proc/self/status") as f:
     status = {k: v.strip() for k, v in (line.split(":", 1) for line in f if ":" in line)}
 with open("/proc/self/mountinfo") as f:
-    mounts = [line.split(" - ")[0].split()[4:6] + line.split(" - ")[1].split()[:1] for line in f]
+    mounts = [line.split(" - ")[0].split()[4:6] + line.split(" - ")[1].split()[:1]
+              + [line.split()[2], line.split()[3]] for line in f]
+def _devices():
+    out = {}
+    for n in ("null", "zero", "full", "random", "urandom", "tty"):
+        st = os.stat("/dev/" + n)
+        out[n] = {"chr": stat.S_ISCHR(st.st_mode), "major": os.major(st.st_rdev), "minor": os.minor(st.st_rdev)}
+    return out
+def _st_dev(path):
+    try:
+        st = os.stat(path)
+        return [os.major(st.st_dev), os.minor(st.st_dev)]
+    except OSError:
+        return None
 with open("/in/dataset.csv", "rb") as f:
     dataset_sha = hashlib.sha256(f.read()).hexdigest()
 print("P364B_OBSERVE " + json.dumps({
@@ -72,6 +85,10 @@ print("P364B_OBSERVE " + json.dumps({
     "net_interfaces": sorted(os.listdir("/sys/class/net")),
     "proc_net_dev": sorted(l.split(":")[0].strip() for l in (_text("/proc/net/dev") or "").splitlines()[2:] if ":" in l),
     "routes": _routes(), "dns_files": _dns_files(), "getaddrinfo_example_com": _lookup("example.com"),
+    "devices": _devices(),
+    "namespaces": {n: os.readlink("/proc/self/ns/" + n) for n in ("ipc", "mnt", "pid", "net", "uts", "cgroup", "user")},
+    "st_dev": {p: _st_dev(p) for p in ("/dev/pts", "/dev/mqueue")},
+    "dev_pts_entries": sorted(os.listdir("/dev/pts")),
     "filesystems": {p: {k: getattr(os.statvfs(p), k) for k in ("f_frsize", "f_blocks", "f_bfree", "f_files", "f_ffree")}
                     for p in ("/tmp", "/out")},
     "connect_tcp_192_0_2_1_80": _connect(("192.0.2.1", 80)),
@@ -91,7 +108,7 @@ CHART_NOT_PNG = 'with open("/out/chart.png", "wb") as f:\n    f.write(b"not a pn
 FIXTURES = {"observe": OBSERVE, "code_error": CODE_ERROR, "sleep_past_wall": SLEEP_PAST_WALL,
             "allocate_2_gib": ALLOCATE_2_GIB, "chart_symlink": CHART_SYMLINK, "chart_not_png": CHART_NOT_PNG}
 SHA256 = {
-    "observe": "aa5a2cbdac5a9c7290ad3e4df20091dd8b591a4c068030c1b5d8f9d6db27445e",
+    "observe": "b4727efe5085fb927dbb6c9d0afed5cd69af04d91a86c8429570fcd8913621d4",
     "code_error": "04f316a138368ea0380e0750443b8950a1a152a8db6ab453b8ca9aa028970569",
     "sleep_past_wall": "7eaecb82187b5f0c525f8175cdc2484728c0d096371bd69fe329bfe905c1725a",
     "allocate_2_gib": "a705e22cdd85d9e89bbc961aa5e513b7b2ebcd0606a2714acee713c60a7ad24f",

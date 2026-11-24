@@ -16,7 +16,7 @@ SUITE_DIR = os.path.join(ROOT, "tests", "container", "p364b")
 SUITE = os.path.join(SUITE_DIR, "container_p364b.py")
 FIXTURES = os.path.join(SUITE_DIR, "fixtures_p364b.py")
 WORKFLOW = os.path.join(ROOT, ".github", "workflows", "p3-ubuntu-rootless-probe.yml")
-FIXTURE_IMPORTS = {"hashlib", "json", "os", "socket", "time"}
+FIXTURE_IMPORTS = {"hashlib", "json", "os", "socket", "stat", "time"}
 
 
 def _read(path):
