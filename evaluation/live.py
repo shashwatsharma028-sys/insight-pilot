@@ -699,7 +699,9 @@ def main(argv=None):
                     help="bounded provider retries of HTTP 500/502/503/504 and timeouts (0 = off)")
     ap.add_argument("--transient-backoff-s", type=float, default=2.0)
     ap.add_argument("--transient-max-wait-s", type=float, default=30.0)
-    ap.add_argument("--transient-max-elapsed-s", type=float, default=120.0)
+    ap.add_argument("--transient-max-elapsed-s", type=float, default=120.0,
+                    help="retry-scheduling window per call (not a hard deadline): no retry is scheduled past it; "
+                         "a call can still last up to window + one pacing interval + one request")
     ap.add_argument("--no-control", action="store_true", help="with --experiment: run the optimised variant only")
     a = ap.parse_args(argv)
     if a.budget_usd > 5.0:

@@ -245,3 +245,32 @@ def test_the_experiment_refuses_to_run_without_a_retry_policy(tmp_path):
     with pytest.raises(SystemExit):
         live.main(["--provider", "fake", "--mode", "full", "--experiment", "provider_resilience",
                    "--out", str(tmp_path)])
+
+
+# ── review: the elapsed limit is a retry-scheduling window, with a documented bound ──────────────────────
+
+def test_the_elapsed_limit_is_a_scheduling_window_with_a_known_bound(tmp_path):
+    """No retry is SCHEDULED past the window, but the pacing wait and the request after a scheduled retry are
+    not cut short: one call lasts at most window + one pacing interval + one request."""
+    clock, slept = Clock(), []
+
+    def sleep(s):
+        slept.append(s)
+        clock.t += s
+
+    class Slow(Flaky):
+        def complete(self, skill, system, user):
+            clock.t += 50.0                                                     # every request takes 50 s
+            return super().complete(skill, system, user)
+    inner = Slow([_err(503)] * 10)
+    pacer = live_llm.Pacer(7.0, clock=clock, sleep=sleep)
+    port, _ = _port(tmp_path, inner, clock=clock, slept=slept, pacer=pacer, transient_retries=10,
+                    transient_backoff_s=2.0, transient_max_wait_s=30.0, transient_max_elapsed_s=60.0)
+    with pytest.raises(live_llm.ProviderError):
+        port.complete("planner", "sys", "user")
+    elapsed = clock.t
+    # attempt 1 ends at 50 s; 50 + ~2 s backoff <= 60, so ONE retry is scheduled; after it (pacing + 50 s) the
+    # window is exceeded and nothing more is scheduled.
+    assert len(inner.attempts) == 2 and port.transient_retried == 1 and port.transient_given_up == 1
+    assert elapsed > 60.0                                                       # NOT a hard deadline
+    assert elapsed <= 60.0 + 7.0 + 50.0                                         # window + pacing + one request

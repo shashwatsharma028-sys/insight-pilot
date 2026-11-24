@@ -317,6 +317,10 @@ class BudgetedPort:
         # P6 provider resilience (opt-in; 0 = previous behaviour): bounded retries of transient provider failures
         # (is_transient) BELOW the agents, so they never consume an agent's planning/claims attempts. Each retry is
         # budget-checked by _attempt and every failed attempt is still charged the conservative worst case.
+        # transient_max_elapsed_s is a RETRY-SCHEDULING WINDOW, not a hard execution deadline: no further retry is
+        # scheduled once (time since the call started + the next backoff) would exceed it. The pacing wait and the
+        # request that follow a scheduled retry are not cut short, so one call can last at most
+        # window + one pacing interval + one request (bounded by the provider client's own timeout, 90 s).
         self.transient_retries, self.transient_backoff_s = int(transient_retries), float(transient_backoff_s)
         self.transient_max_wait_s, self.transient_max_elapsed_s = float(transient_max_wait_s), float(transient_max_elapsed_s)
         self.transient_retried = 0                # provider-level retries of HTTP 5xx / timeouts
@@ -374,7 +378,7 @@ class BudgetedPort:
                 wait = min(e.retry_after_s if e.retry_after_s else backoff, self.transient_max_wait_s)
                 if (self.clock() - started) + wait > self.transient_max_elapsed_s:
                     self.transient_given_up += 1
-                    raise                                             # elapsed-time limit for this call
+                    raise                                             # retry-scheduling window for this call
                 ntr += 1
                 self.transient_retried += 1
                 self.wait_s += wait

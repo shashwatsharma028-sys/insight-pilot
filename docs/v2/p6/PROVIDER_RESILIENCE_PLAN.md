@@ -20,7 +20,11 @@ In the selective-recovery experiment (`SELECTIVE_RECOVERY.md`):
   - at most `--transient-retries` retries per call;
   - exponential backoff × U(0.8, 1.2) jitter, honouring Retry-After but capping every wait at
     `--transient-max-wait-s`;
-  - a per-call elapsed limit, `--transient-max-elapsed-s`;
+  - a per-call **retry-scheduling window**, `--transient-max-elapsed-s`. This is not a hard deadline: no retry is
+    scheduled once the time since the call started plus the next backoff would pass it, but the pacing wait and the
+    request after a scheduled retry are not cut short. One call therefore lasts at most window + one pacing interval
+    + one request, and a request is bounded by the 90 s client timeout (tested). A hard deadline would need a
+    per-request timeout in the provider interface, which is out of scope;
   - every retry passes the existing pre-call budget check.
 - **Never retried:** 429 (it keeps its own unchanged policy), the daily-quota or billing stop, 501/505, other 4xx,
   and non-timeout network errors.
