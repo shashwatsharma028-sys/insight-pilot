@@ -313,3 +313,57 @@ def test_an_offline_run_is_labelled_as_not_live(tmp_path):
     bench = json.load(open(tmp_path / "live_benchmark.json"))
     assert bench["summary"]["multi_agent"]["call_source"] == ["mock_scripted"]
     assert not os.path.exists(live_llm.DEFAULT_LEDGER) or "dry_run" not in live_llm.DEFAULT_LEDGER
+
+
+# ── OpenAI-compatible transport (Bearer key injected by the session proxy) ────
+
+class _Resp:
+    def __init__(self, body):
+        self.body = json.dumps(body).encode()
+
+    def read(self):
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_openai_compat_port_one_attempt_usage_and_request_shape():
+    sent = []
+
+    def urlopen(req, timeout):
+        sent.append(req)
+        return _Resp({"choices": [{"message": {"content": "{\"ok\": 1}"}}],
+                      "usage": {"prompt_tokens": 120, "completion_tokens": 30, "total_tokens": 150}})
+    p = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": "placeholder"}, urlopen=urlopen)
+    r = p.complete("planner", "SYS", "USER")
+    assert r.content == '{"ok": 1}' and r.usage_metadata == {"input_tokens": 120, "output_tokens": 30, "total_tokens": 150}
+    assert len(sent) == 1 and sent[0].full_url.endswith("/v1beta/openai/chat/completions")
+    body = json.loads(sent[0].data)
+    assert body["model"] == "gemini-2.5-flash-lite" and body["temperature"] == 0 and body["max_tokens"] == 2048
+    assert sent[0].get_header("Authorization") == "Bearer placeholder"
+
+
+def test_openai_compat_errors_are_redacted_and_not_retried():
+    import io
+    import urllib.error
+    calls = []
+
+    def urlopen(req, timeout):
+        calls.append(1)
+        raise urllib.error.HTTPError(req.full_url, 400, "bad", {}, io.BytesIO(f"invalid key {KEY}".encode()))
+    p = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": KEY}, urlopen=urlopen)
+    with pytest.raises(live_llm.ProviderError) as info:
+        p.complete("s", "a", "b")
+    assert len(calls) == 1 and KEY not in str(info.value) and "HTTP 400" in str(info.value)
+
+
+def test_openai_compat_model_listing_and_unconfirmed_models_refused():
+    p = live_llm.GeminiOpenAICompatPort(env={"GOOGLE_API_KEY": "x"}, urlopen=lambda req, timeout: _Resp(
+        {"data": [{"id": "models/gemini-2.5-flash-lite"}, {"id": "models/gemini-2.5-pro"}]}))
+    assert p.list_models() == ["models/gemini-2.5-flash-lite", "models/gemini-2.5-pro"]
+    with pytest.raises(ValueError, match="no confirmed price"):
+        live_llm.GeminiOpenAICompatPort(model="gemini-2.5-flash", env={"GOOGLE_API_KEY": "x"})

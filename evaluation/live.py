@@ -408,6 +408,8 @@ def main(argv=None):
     ap.add_argument("--max-total-tokens", type=int, default=3_000_000)
     ap.add_argument("--max-output-tokens", type=int, default=live_llm.DEFAULT_MAX_OUTPUT_TOKENS)
     ap.add_argument("--ledger", default=live_llm.DEFAULT_LEDGER)
+    ap.add_argument("--transport", choices=("openai_compat", "native"), default="openai_compat",
+                    help="openai_compat: Bearer key injected by the session proxy; native: x-goog-api-key SDK")
     ap.add_argument("--prices-confirmed", action="store_true")
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
@@ -423,7 +425,13 @@ def main(argv=None):
         ledger = live_llm.Ledger(a.ledger)
         if ledger.spent_usd() >= a.budget_usd:
             raise SystemExit(f"ledger already records ${ledger.spent_usd():.4f} of the ${a.budget_usd:.2f} budget")
-        inner = live_llm.GeminiPort(a.model, a.max_output_tokens)
+        inner = (live_llm.GeminiOpenAICompatPort(a.model, a.max_output_tokens) if a.transport == "openai_compat"
+                 else live_llm.GeminiPort(a.model, a.max_output_tokens))
+        if a.transport == "openai_compat":
+            available = inner.list_models()
+            if not any(m.split("/")[-1] == a.model for m in available):
+                raise SystemExit(f"model {a.model!r} is not available to this key; available: {available[:40]}")
+            print(f"model {a.model} is available to this key ({len(available)} models listed)")
         make = lambda label: live_llm.BudgetedPort(inner, model=a.model, budget_usd=a.budget_usd, ledger=ledger,  # noqa: E731
                                                    max_calls=a.max_calls, max_total_tokens=a.max_total_tokens,
                                                    max_output_tokens=a.max_output_tokens, run_label=label)

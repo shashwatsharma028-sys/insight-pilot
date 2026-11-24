@@ -27,10 +27,11 @@ from types import SimpleNamespace
 from multi_agent.execution import CodeTrust
 from multi_agent.llm import MOCK, PROVIDER
 
-# USD per 1M tokens (input, output). Confirm against https://ai.google.dev/gemini-api/docs/pricing before use.
+# USD per 1M tokens (input, output), Standard paid tier, text; output includes thinking tokens.
+# gemini-2.5-flash-lite: confirmed by the project owner from https://ai.google.dev/gemini-api/docs/pricing on
+# 2026-11-24 (this session's network could not reach the page). Only confirmed models are usable.
 PRICES_USD_PER_MTOK = {
     "gemini-2.5-flash-lite": (0.10, 0.40),
-    "gemini-2.5-flash": (0.30, 2.50),
 }
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
@@ -122,6 +123,70 @@ class GeminiPort:
         except Exception as e:                                   # never let the key reach a log or report
             raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:500]}") from None
         return SimpleNamespace(content=text_of(r.content), usage_metadata=getattr(r, "usage_metadata", None))
+
+
+OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+
+class GeminiOpenAICompatPort:
+    """
+    Gemini through Google's official OpenAI-compatible endpoint (same host, same model, Bearer authentication).
+
+    Used when the key is injected by the session's network proxy as `Authorization: Bearer` (the platform's secure
+    credential form): this process then only holds the placeholder in GOOGLE_API_KEY, which the proxy replaces.
+    Standard library only; exactly ONE HTTP attempt per call (no retries); provider-reported usage is mapped to
+    {input_tokens, output_tokens, total_tokens}. Error text is redacted.
+    """
+    call_source = PROVIDER
+    code_trust = CodeTrust.UNTRUSTED
+
+    def __init__(self, model=DEFAULT_MODEL, max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS, timeout_s=90, env=None,
+                 urlopen=None):
+        env = os.environ if env is None else env
+        key = env.get("GOOGLE_API_KEY")
+        if not key:
+            raise ValueError("GOOGLE_API_KEY is not set in the environment (a placeholder when the proxy injects it)")
+        if model not in PRICES_USD_PER_MTOK:
+            raise ValueError(f"no confirmed price for model {model!r}")
+        import urllib.request
+        self.model, self.max_output_tokens, self.timeout_s = model, max_output_tokens, timeout_s
+        self._secret = key
+        self._urlopen = urlopen or urllib.request.urlopen
+
+    def _request(self, method, path, body=None):
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(f"{OPENAI_COMPAT_BASE}/{path}", method=method,
+                                     data=None if body is None else json.dumps(body).encode(),
+                                     headers={"Authorization": f"Bearer {self._secret}",
+                                              "Content-Type": "application/json"})
+        try:
+            with self._urlopen(req, timeout=self.timeout_s) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:400] if hasattr(e, "read") else ""
+            raise ProviderError(f"HTTP {e.code}: {redact(detail, self._secret)}") from None
+        except Exception as e:
+            raise ProviderError(f"{type(e).__name__}: {redact(e, self._secret)[:400]}") from None
+
+    def list_models(self):
+        """Model ids available to this key (free; no generation)."""
+        return sorted(m.get("id", "") for m in self._request("GET", "models").get("data", []))
+
+    def complete(self, skill, system, user):
+        r = self._request("POST", "chat/completions", {
+            "model": self.model, "temperature": 0, "max_tokens": self.max_output_tokens,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
+        try:
+            text = r["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError):
+            raise ProviderError("unexpected response shape (no choices[0].message.content)") from None
+        u = r.get("usage") or {}
+        usage = None
+        if type(u.get("prompt_tokens")) is int and type(u.get("completion_tokens")) is int:
+            usage = {"input_tokens": u["prompt_tokens"], "output_tokens": u["completion_tokens"],
+                     "total_tokens": u.get("total_tokens")}
+        return SimpleNamespace(content=text_of(text), usage_metadata=usage)
 
 
 class BudgetedPort:
