@@ -26,6 +26,8 @@
 #   The push that adds this line is the single authorized D3 validation attempt (code digest of 4b7f7244).
 # - Run 8 (45341414519): the container started; attestation refused only on writable_mounts. D2 (approved,
 #   Option A): exact rootless set. The push that adds this line is the single authorized D2 attempt (b1723129).
+# - Run 9 (45344790686): preflight and attestation passed; 16/17 real-runtime tests passed; one test-code defect
+#   (helper used fixture functions) fixed. The push that adds this line is the authorized re-run (65fd6726).
 # This revision (approved) adds, each step only after the previous one passed:
 # - Phase C: verified wheels, offline rootless build, full image verification;
 # - Phase D: a clean second build and an image/layer comparison;
