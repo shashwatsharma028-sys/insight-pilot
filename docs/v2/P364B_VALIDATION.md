@@ -1,6 +1,7 @@
-# InsightPilot V2 P3.6-4B: real container build and functional validation
-
-**Status (after the D1 attempt, run #7): STOPPED again at a mandatory gate, on decision D3.**
+**Status (after the D3 attempt, run #8): STOPPED at decision D2.** D1 and D3 are implemented and confirmed on the
+real runtime. The container now starts: the trusted supervisor runs as PID 1 and returns valid frames, and the
+memory and pids self-tests pass. The attestation differs from the required isolation in exactly one field,
+`writable_mounts`. See §9.
 D1 was approved and implemented (`d7a5dea2`) and is confirmed on the real runtime: the DNS conflict is gone.
 Podman 4.9.3 now refuses the reviewed tmpfs inode bound (`nr_inodes`) before any container starts. Fixing that
 changes a resource-limit setting, which is explicitly not approved. See §8.
@@ -145,3 +146,81 @@ so further incompatibilities may follow.
 
 **D2** (`/dev/pts`, `/dev/mqueue` mounted read-write, against the attestation that allows only `/out` and `/tmp`) is still
 anticipated and still not approved. It can only be observed once a container starts.
+
+## 9. D3 attempt: run #8 (`45341414519`, commit `5868f463`, code digest of `4b7f7244`)
+
+**Fixed before CI, found offline:**
+- **Supervisor crash:** `RealOS.install_signal_plan` called `getattr(signal, "SIGRT35")` and would have crashed PID 1.
+  The new host smoke test of the safe RealOS methods found it (it never calls `kill(-1)`). Real-time signals are now
+  resolved by number; the plan is unchanged.
+- **Argument compatibility:** `scripts/p3/argv_compat.py` checks the whole reviewed argv in one pass with Podman
+  `create`; nothing is started. Locally it reproduced both earlier CI failures with identical messages.
+
+**D3, as implemented:** `nr_inodes` is removed from `/tmp` and `/out`. **The explicit inode-count limits are no longer
+enforced; this is not equivalent protection.** Byte sizes, `mode=1777`, `noexec`, `nosuid`, `nodev`, `--read-only` and
+1 GiB of memory are unchanged. `frame.py` still refuses more than `Limits.out_inodes` other `/out` entries (fail closed).
+Mutation: 7/7 detected. Offline regression at `908f979a`: 1869 passed, 13 xfailed, 0 failed, 0 skipped.
+
+**Run #8 results:**
+
+| Stage | Result |
+|---|---|
+| Stage 1 | PASS. New image ID `bb92b2ddb0d2933a4f28d8fb69783565ddc590036b1e2e35bd6a0b3724224ed9`, digest `sha256:cfa84a4d356519f49c5bd2dff3bf4ce2b3c764ddd00e6e60f298fc2f887298d1` (new runtime digest); both builds identical; 28/28 numbers and 12/12 hermetic charts in the image; start-up warm 128.0 ms, cold 125.4 ms (median) |
+| Argument compatibility (rootless, create only) | PASS. The full reviewed argv is accepted in all 4 modes; no option rejected alone or in combination; `--passwd` present on `run` |
+| Real runtime | **1 failed, 4 passed, 12 errors, 2 deselected** (P5, NOT RUN) |
+| passed | host and image preconditions; **memory self-test** (child SIGKILLed, `oom_killed` true, 597 ms); **pids self-test** (child exit 4 at the limit, 189 ms); no leftovers |
+| failed | `test_02` attestation (attest-only 182 ms): differs only in `writable_mounts` |
+| errors | the 12 tests that need hardened mode: preflight refused (`sandbox attestation does not match the required isolation: writable_mounts`), and there was no fallback |
+
+**Observed attestation** (every field except `writable_mounts` equals the requirement):
+uid/gid 10001; CapEff/CapPrm/CapBnd all zero; NoNewPrivs 1; seccomp mode 2; net interfaces `["lo"]`; `/dev` not writable;
+memory.max 1073741824; memory.swap.max 0; pids.max 64; cpu.max `100000 100000`.
+
+```
+writable_mounts observed: /dev/full /dev/mqueue /dev/null /dev/pts /dev/random /dev/tty /dev/urandom /dev/zero /out /tmp
+writable_mounts required: /out /tmp
+```
+
+**No other blocker is visible in the log:** no Podman warnings, and no errors apart from this refusal.
+
+### D2 (decision needed): writable `/dev` mount points
+
+**Why they exist:**
+- **Device nodes:** a rootless container cannot create device nodes, so Podman/crun **bind-mounts the six standard host
+  character devices** (`null`, `zero`, `full`, `random`, `urandom`, `tty`) into the read-only `/dev` tmpfs. Each bind is
+  its own mount entry, flagged `rw`.
+- **Pseudo-filesystems:** `/dev/pts` (a container-private devpts instance) and `/dev/mqueue` (the mqueue filesystem of the
+  container's private IPC namespace) are Podman defaults.
+- **The attestation metric:** it lists every `rw` mount point except `/proc` and `/sys`, so it counts device nodes as if they were storage.
+
+**What each one allows:**
+
+| Mount | Storage? | What generated code can do | Needed? |
+|---|---|---|---|
+| `/dev/null`, `/dev/zero`, `/dev/full` | no | discard writes / read zeros / get ENOSPC | **yes**: the supervisor opens `/dev/null` for the child's stdin |
+| `/dev/random`, `/dev/urandom` | no | read randomness; writes are mixed into the host entropy pool without crediting entropy, as any unprivileged host user can | **yes**: Python and NumPy fall back to it |
+| `/dev/tty` | no | open fails (ENXIO): no controlling terminal (`podman run` without `-t`, child in a new session) | no |
+| `/dev/pts` | no files persist | allocate pseudo-terminals in the container's private devpts instance; no host terminals are visible | no |
+| `/dev/mqueue` | small, ephemeral | POSIX message queues in the private IPC namespace, bounded by RLIMIT_MSGQUEUE (default 800 KiB) and kernel limits, destroyed with the namespace; no host or other-container reach | no |
+
+**Options:**
+- **Option A (recommended, smallest):** change the required `writable_mounts` from `["/out", "/tmp"]` to the exact sorted
+  set observed above (10 entries).
+  - Exact equality is kept, so any additional writable mount still fails closed, and so does a missing one.
+  - No Podman flag changes.
+  - The real-container suite would additionally require, from inside, that these `/dev` entries have the expected filesystem
+    types (`devtmpfs` binds, `devpts`, `mqueue`) and that `/out` and `/tmp` are the only writable tmpfs.
+  - **Residual risk:** the attestation checks mount-point names, not types, so the runtime check itself cannot tell what is mounted there.
+    `/dev/pts` and `/dev/mqueue` remain available to generated code, both private to the container.
+- **Option B:** Option A for the six character devices, plus `--security-opt=mask=/dev/pts:/dev/mqueue`. Podman 4.9.3 accepts
+  this flag (local create-only check). However, masking stacks a read-only tmpfs over the mount, and `/proc/self/mountinfo`
+  still lists the covered `rw` devpts and mqueue entries. The current attestation would most likely still refuse, unless the
+  supervisor's mount parsing (trusted image code) changes to consider only the top-most mount. That is more change, and at
+  least one more CI cycle to confirm. Recommended for P3.7 instead.
+- **Option C (not viable):** masking all devices. `/dev/null` is required by the supervisor itself, and masking a file
+  bind-mounts `/dev/null` over it, which still appears as an `rw` mount.
+
+**Expected after Option A:** preflight passes (every other attestation field already matches), then Stages 2–4 run.
+P5 needs 78 container executions per strategy, which fits the 20-minute steps. Run-mode-only behaviour (`/in` reads by the
+mapped uid, charts) has not been observed yet. It is covered by the existing workspace modes (0755/0644), but it is the
+remaining unknown.

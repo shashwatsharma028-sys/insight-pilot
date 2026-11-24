@@ -8,12 +8,16 @@ The logs were retrieved through the GitHub API (MCP `get_job_logs`).
 |---|---|---|---|---|
 | #5 | 45121353914 | 137515602649 | `7d63b0f78fb88b9cea39b7a8c7644f5647c92d79` | Stage 1 passed; Phase F runtime refused at preflight |
 | #6 | 45122041350 | 137517791540 | `15a2a5b6572bac270de60301ce63683c77e0e0ed` | the same, with diagnostics recorded (root cause) |
+| #8 | 45341414519 | 138265701550 | `5868f46360c0947b3171e4d12032caccd9c1405b` | D3 attempt: Stage 1 and the argument-compatibility check passed; the container started; the attestation was refused only on `writable_mounts` (D2) |
 | #7 | 45125846903 | 137529873779 | `d1e208cbccbe8c67e4c540f166b03d50f103b0ca` | D1 attempt: Stage 1 passed; the DNS conflict is gone; the runtime was refused on the tmpfs option `nr_inodes` (D3) |
 
 | File | SHA-256 |
 |---|---|
 | raw log #5, as retrieved (NOT committed) | `6ca18fc9b8d4ce6ca7ab5546d2a9f741fa374e78767a29bb2bc94366aee125bd` |
 | raw log #6, as retrieved (NOT committed) | `81a830f8bf8e5da8bda46cc1562ed05eb76f446876fd3d4da06337226da1b299` |
+| raw log #8, as retrieved (NOT committed) | `9e2deafd673cf53f240c09231e25cf967409303171a4c4bfa288aea8ddde9343` |
+| `run8_job_138265701550.sanitized.log` | `b22bba2592185f90768edca7a9c03320529642274312be472985313fd557bd02` |
+| `run8_report.md` | `18eb74b41b5b6883ea57af4713a8dd14086d315c1b65b3140ad236644e220cf6` |
 | raw log #7, as retrieved (NOT committed) | `5c7695ff138b7729c6cea368f98e98dc288d0758e17a5ab3ecb702400340109a` |
 | `run5_job_137515602649.sanitized.log` | `6ecb67ed8f0348eed4eb7813480581c11a78834e453072177e270f64538a3260` |
 | `run6_job_137517791540.sanitized.log` | `e6af19e8fd258b9bfe4e19137f1831b1fe8eb9b8aeed236b30853e106f49e500` |
