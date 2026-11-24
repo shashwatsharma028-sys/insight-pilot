@@ -331,3 +331,28 @@ def test_controls_are_skipped_before_the_optimised_runs_lose_their_budget(tmp_pa
     ctl = [r for r in exp["results"] if r["variant"] == "control"]
     assert exp["stopped"] is None and len(opt) == 20                          # the optimised arm always completes
     assert len(ctl) + len(exp["skipped_controls"]) == 20 and bool(exp["skipped_controls"]) is skips
+
+
+# ── review fix: a repair must keep the original task's required claim keys ─────────────────────────────────
+
+def test_a_repair_that_drops_a_required_question_is_not_treated_as_complete(tmp_path):
+    ds = "student"
+    plan = _oracle_plan(ds)
+    bad = _defect("student_pass_rate_bool", plan)
+    dropped = copy.deepcopy(next(t for t in plan["tasks"] if t["id"] == "stu_t1"))
+    dropped["claims"] = [cl for cl in dropped["claims"] if cl["key"] != "pass_rate"]   # valid, but loses a question
+    prof = scripted_profile(ds)
+    kept = [t for t in plan["tasks"] if t["id"] != "stu_t1"]
+    _, acc, rej = c.triage_plan({"tasks": [dropped]}, prof, kept=kept, allowed_ids={"stu_t1"},
+                                required_keys={"stu_t1": ["row_count", "pass_rate", "mean_score", "grade_letter_counts"]})
+    assert acc == [] and rej[0][2] == ["task 0: repair must keep the original claim keys; missing ['pass_rate']"]
+    out, g, _ = _run(tmp_path, ds, [bad, {"tasks": [dropped]}], selective=True)
+    assert out["status"] == "completed_with_failures" and out["plan_recovery"]["recovered_task_ids"] == []
+    ab = out["plan_recovery"]["abandoned_tasks"]
+    assert [a["id"] for a in ab] == ["stu_t1"] and "pass_rate" in ab[0]["claim_keys"]
+    assert any("missing ['pass_rate']" in p for p in ab[0]["problems"])
+    assert "stu_t1" not in out["tasks"] and g["per_key"]["pass_rate"] == "missing"
+    assert live.required_task_completion(ds, g["per_key"]) == (2, 3)
+    # a complete repair (all original keys, value fixed) is still accepted
+    ok, g2, _ = _run(tmp_path, ds, [bad, _repaired_tasks(ds, bad)], selective=True)
+    assert ok["status"] == "completed" and ok["plan_recovery"]["recovered_task_ids"] == ["stu_t1"]

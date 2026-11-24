@@ -135,7 +135,7 @@ def validate_plan(payload, profile):
     return problems
 
 
-def triage_plan(payload, profile, kept=(), allowed_ids=None):
+def triage_plan(payload, profile, kept=(), allowed_ids=None, required_keys=None):
     """
     P6 selective task recovery (opt-in): split a plan into tasks that are valid and tasks that are not.
 
@@ -146,6 +146,8 @@ def triage_plan(payload, profile, kept=(), allowed_ids=None):
       run on kept + accepted + [task], so duplicate ids, duplicate claim keys and the task limit still apply to the
       merged plan. The first valid occurrence wins; a later conflicting task is rejected with the exact problems.
     - allowed_ids (repair replies): a task whose id is not one of the tasks being repaired is rejected.
+    - required_keys (repair replies): {task id: claim keys of the original task}. A repaired task must keep every
+      one of them, so a repair can never silently drop a required question and still count as complete.
     Nothing is repaired here; problems are reported exactly as validate_plan words them.
     """
     problems = []
@@ -162,6 +164,11 @@ def triage_plan(payload, profile, kept=(), allowed_ids=None):
                                     f"the tasks to repair {sorted(allowed_ids)}"]))
             continue
         own = [p.replace("task 0", f"task {i}", 1) for p in validate_plan({"tasks": [t]}, profile)]
+        if not own and required_keys is not None:
+            have = {cl.get("key") for cl in t["claims"] if isinstance(cl, dict)}
+            lost = sorted(set(required_keys.get(t["id"], ())) - have)
+            if lost:
+                own = [f"task {i}: repair must keep the original claim keys; missing {lost}"]
         if not own:
             own = [f"task {i} conflicts with the accepted tasks: {p}"
                    for p in validate_plan({"tasks": list(kept) + accepted + [t]}, profile)]

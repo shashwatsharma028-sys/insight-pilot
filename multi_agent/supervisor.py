@@ -386,7 +386,9 @@ class Supervisor:
         repairing = rec is not None and bool(rec["slots"])
         kept = rec["kept"] if repairing else []
         allowed = {sl["id"] for sl in rec["slots"]} if repairing else None
-        structural, accepted, rejected = c.triage_plan(payload, s["profile"], kept=kept, allowed_ids=allowed)
+        required = {sl["id"]: self._claim_keys(sl["original"]) for sl in rec["slots"]} if repairing else None
+        structural, accepted, rejected = c.triage_plan(payload, s["profile"], kept=kept, allowed_ids=allowed,
+                                                       required_keys=required)
         if structural:                                   # the reply as a whole is unusable: original handling
             events.append({"type": "handoff_rejected", "seq": env["seq"], "kind": "plan", "problems": structural})
             self._step_failed(s, {"kind": "plan_request", "attempt": env["attempt"]},
@@ -434,6 +436,12 @@ class Supervisor:
             self._settle_recovery(s, lim)
         else:
             s["plan_feedback"] = self._repair_feedback(rec, lim)
+
+    @staticmethod
+    def _claim_keys(task):
+        """String claim keys of a (possibly invalid) original task: the questions its repair must keep."""
+        cl = task.get("claims") if isinstance(task, dict) else None
+        return [x["key"] for x in cl if isinstance(x, dict) and isinstance(x.get("key"), str)] if isinstance(cl, list) else []
 
     @staticmethod
     def _repair_feedback(rec, lim):
