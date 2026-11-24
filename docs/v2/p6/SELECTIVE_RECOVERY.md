@@ -95,6 +95,26 @@ Required-task completion uses the **corrected denominator**: every required task
 - **Why the control is worse than the original baseline:** provider load was higher on this date. The comparison
   against the earlier-date baseline (66.3% → 74.0%) is weaker evidence and only shown for context.
 
+### Ledger reconciliation (experiment ledger `live_llm_ledger_p6_recovery.jsonl`: 143 rows, $0.212541 estimated)
+
+| Item | Estimate |
+|---|---|
+| 37 completed run records (sum of `spent_usd`) | $0.199636 |
+| Preflight probe | $0.000008 |
+| Interrupted run `selective_recovery/student/r4` (excluded from results), 3 ledger rows: | **$0.012897** |
+| — planner HTTP 503, worst-case charge | $0.005938 |
+| — planner success, provider-reported | $0.001638 |
+| — insight call refused by the daily-quota 429, worst-case charge | $0.005321 |
+| **Total = ledger** | **$0.212541** |
+
+Of the total, $0.102465 is provider-reported usage of successful calls. $0.110076 is conservative worst-case charges
+for 19 failed attempts: 17 HTTP 503s, 1 timeout and 1 daily-quota refusal. The daily-quota refusal was most likely
+rejected before any generation, so it is probably unbilled, but it stays charged conservatively. All of these are
+estimates; the key is on the free tier.
+
+**Review fix after the experiment (`d2c089bc`):** a repaired task must now keep the original task's claim keys. All
+11 tasks recovered in this experiment kept every required key, so the results above are unaffected.
+
 ## 6. Trade-offs and limitations
 
 - **More answered also means more wrong answers exposed.** 9 incorrect claims vs 3; precision 0.914 vs 0.951. Recovered
