@@ -30,8 +30,11 @@ from multi_agent.llm import MOCK, PROVIDER
 # USD per 1M tokens (input, output), Standard paid tier, text; output includes thinking tokens.
 # gemini-2.5-flash-lite: confirmed by the project owner from https://ai.google.dev/gemini-api/docs/pricing on
 # 2026-11-24 (this session's network could not reach the page). Only confirmed models are usable.
+# gemini-2.5-flash-lite is listed but refuses generation for this project ("no longer available to new users").
+# gemini-3.5-flash-lite: confirmed by the project owner from the same page on 2026-11-24.
 PRICES_USD_PER_MTOK = {
     "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-3.5-flash-lite": (0.30, 2.50),
 }
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
