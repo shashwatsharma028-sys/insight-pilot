@@ -32,6 +32,19 @@ def _bullets(items):
     return "\n".join(f"- {x}" for x in items) if items else "- none"
 
 
+def _u(text) -> str:
+    """SEC structural encoding of UNTRUSTED text (goal, model-written titles/descriptions, feedback): text with any
+    line-break character is JSON-encoded, so it can never start a line that looks like a prompt section. Single-line
+    text is unchanged (prompts for ordinary inputs are byte-identical to before)."""
+    from multi_agent.security.detect import has_line_break
+    s = str(text)
+    return json.dumps(s) if has_line_break(s) else s
+
+
+def _untrusted_bullets(items):
+    return _bullets([_u(x) for x in items] if items else items)
+
+
 def op_schema_section() -> str:
     """P6 schema-aware planner (opt-in): how each claim argument must be written. Generated from the validator's
     own op table; states JSON representation only and contains no dataset, column or cell value."""
@@ -49,31 +62,31 @@ def op_semantics_section() -> str:
 
 def planning(req: dict) -> str:
     return (f"PLANNING ATTEMPT: {req['attempt']}\n"
-            f"USER GOAL: {req['goal']}\n"
+            f"USER GOAL: {_u(req['goal'])}\n"
             f"DATASET PROFILE JSON:\n{json.dumps(req['profile'], sort_keys=True)}\n"
             f"CLAIM OPS JSON:\n{json.dumps(describe_ops(), sort_keys=True)}\n"
             + (op_schema_section() if req.get("op_schema") else "")
             + (op_semantics_section() if req.get("op_semantics") else "") +
             f"MAX TASKS: {req['max_tasks']}\n"
-            f"PREVIOUS PROBLEMS:\n{_bullets(req['feedback'])}\n")
+            f"PREVIOUS PROBLEMS:\n{_untrusted_bullets(req['feedback'])}\n")
 
 
 def analysis(req: dict) -> str:
     t = req["task"]
     columns = [{"name": c["name"], "kind": c["kind"]} for c in req["profile"]["columns"]]
     return (f"TASK ID: {t['id']}\n"
-            f"TASK: {t['title']}\n"
-            f"DESCRIPTION: {t['description']}\n"
+            f"TASK: {_u(t['title'])}\n"
+            f"DESCRIPTION: {_u(t['description'])}\n"
             f"ATTEMPT: {req['attempt']}\n"
             f"COLUMNS JSON: {json.dumps(columns)}\n"
             f"CLAIMS JSON: {json.dumps(t['claims'], sort_keys=True)}\n"
-            f"FEEDBACK FROM PREVIOUS ATTEMPTS:\n{_bullets(req['feedback'])}\n")
+            f"FEEDBACK FROM PREVIOUS ATTEMPTS:\n{_untrusted_bullets(req['feedback'])}\n")
 
 
 def insight(req: dict) -> str:
     return (f"TASK ID: {req['task_id']}\n"
-            f"TASK: {req['title']}\n"
-            f"DESCRIPTION: {req['description']}\n"
+            f"TASK: {_u(req['title'])}\n"
+            f"DESCRIPTION: {_u(req['description'])}\n"
             f"ATTEMPT: {req['attempt']}\n"
             f"VERIFIED CLAIMS JSON: {json.dumps(req['verified_claims'], sort_keys=True)}\n"
-            f"FEEDBACK FROM PREVIOUS ATTEMPTS:\n{_bullets(req['feedback'])}\n")
+            f"FEEDBACK FROM PREVIOUS ATTEMPTS:\n{_untrusted_bullets(req['feedback'])}\n")

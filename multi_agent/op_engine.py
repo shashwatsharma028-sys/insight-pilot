@@ -14,6 +14,7 @@ TrustedOpsAnalyst is a drop-in Data Analyst Agent: same request and reply contra
 (analysis_request -> analysis_result), no LLM, no execution port.
 """
 
+import io
 import time
 
 import pandas as pd
@@ -24,6 +25,7 @@ from multi_agent.agents import SPECS, AgentSpec
 
 BACKEND = "trusted_ops"
 ISOLATION = "none_required_no_generated_code"
+MAX_GROUPS = 1000          # SEC: a grouped or counted result with more entries is refused (bounded results)
 
 
 class OpError(ValueError):
@@ -34,8 +36,10 @@ class Frame:
     """The dataset as pandas sees it (`parsed`) and as raw CSV text (`raw`, for equality tests and group keys)."""
 
     def __init__(self, path):
-        self.parsed = pd.read_csv(path)
-        self.raw = pd.read_csv(path, dtype=str, keep_default_na=False)
+        """`path` is a file path or the dataset's bytes (SEC: the bytes whose SHA-256 was authorized)."""
+        src = (lambda: io.BytesIO(path)) if isinstance(path, (bytes, bytearray)) else (lambda: path)
+        self.parsed = pd.read_csv(src())
+        self.raw = pd.read_csv(src(), dtype=str, keep_default_na=False)
 
     def num(self, col):
         s = self.parsed[col]
@@ -121,7 +125,10 @@ def compute_claims(claims: list, path: str, profile: dict) -> tuple:
             errors[str(key)[:64]] = "; ".join(problems)[:500]
             continue
         try:
-            values[key] = compute(cl, fr)
+            value = compute(cl, fr)
+            if isinstance(value, dict) and len(value) > MAX_GROUPS:          # SEC: bounded result size
+                raise OpError(f"result has more than {MAX_GROUPS} entries")
+            values[key] = value
         except (OpError, KeyError, ValueError, TypeError) as e:
             errors[key] = f"{type(e).__name__}: {e}"[:500]
     return values, errors
@@ -134,13 +141,24 @@ class TrustedOpsAnalyst:
                      SPECS[c.ANALYST].sees, SPECS[c.ANALYST].never_sees)
     hardened = False
 
-    def __init__(self, clock=time.perf_counter):
+    def __init__(self, clock=time.perf_counter, authority=None):
         self.clock = clock
+        self.authority = authority
+
+    def bind_authority(self, authority):
+        """Set by team.build_team: the runtime authority whose operation tokens this analyst accepts."""
+        self.authority = authority
 
     def run(self, req: dict) -> dict:
+        """SEC: computes only a task the runtime authorized for exactly this dataset (deny by default)."""
+        from multi_agent.security.policy import PolicyRefused, file_sha256
         task = req["task"]
         t0 = self.clock()
-        values, errors = compute_claims(task["claims"], req["dataset_path"], req["profile"])
+        if self.authority is None:
+            raise PolicyRefused("no_authority", "trusted operations run only inside an authorized team")
+        data, sha = file_sha256(req["dataset_path"])        # one read: the hashed bytes are the computed bytes
+        self.authority.verify_token(req.get("authorization"), task, sha)
+        values, errors = compute_claims(task["claims"], data, req["profile"])
         planned = {cl["key"] for cl in task["claims"]}
         execution = {"ok": True, "stdout": "", "error": "", "error_type": None, "chart_path": None,
                      "backend": BACKEND, "isolation": ISOLATION, "seconds": self.clock() - t0,

@@ -72,7 +72,10 @@ def test_diagnostics_are_sanitised_but_analytical_values_are_exact(tmp_path):
     a = svc.start(GOAL)
     r = svc.decide(a.run_id, a.plan_id, "approve")
     text = _views_json(svc)
-    assert "sk-ABCDEFGH12345678" not in text and "[redacted]" in text          # model prose: secrets redacted
+    assert "sk-ABCDEFGH12345678" not in text                                  # model prose: secret never shown
+    # SEC (intended change): an insight containing a credential-like string is no longer accepted in redacted form;
+    # the output policy refuses it outright (recorded as unsafe_output), so it never becomes a finding.
+    assert not any("leaked" in i.text for i in r.insights) and dict(r.security.refusals).get("unsafe_output", 0) >= 1
     assert {c.key: c.value for c in r.verified_claims}["top_depot"] == "N"     # analytical value: exact
 
 

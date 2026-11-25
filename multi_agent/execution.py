@@ -74,7 +74,8 @@ EXECUTION_REFUSED = "execution_refused"
 INFRASTRUCTURE_CLASSES = ("SandboxUnavailableError", "SandboxProtocolError", "V1ExecutorReached",
                           "IsolationUnavailable", "ExecutionInfrastructureError", "InsecureConfigurationError")
 POLICY_CLASSES = ("DatasetNotAuthorizedError", "ArtifactRejectedError", "SandboxPolicyError",
-                  "UntrustedCodeRefused")
+                  "UntrustedCodeRefused",
+                  "PolicyRefused")              # SEC: the operation was not authorized by the approval grant
 
 
 def classify_execution_failure(exc):

@@ -232,6 +232,11 @@ def _plan_section(svc):
                            "Arguments (exact)": json.dumps(c.args, sort_keys=True, ensure_ascii=False),
                            "Returns": OP_RESULTS.get(c.op, "")} for c in t.claims],
                          hide_index=True, width="stretch")
+    if getattr(a, "security_signals", ()):
+        st.warning("Security signals were recorded for this request (detection only: review the plan carefully; "
+                   "the deterministic policies still apply whatever you decide):")
+        st.dataframe([{"Where": x.location, "Signals": ", ".join(x.signals)} for x in a.security_signals],
+                     hide_index=True, width="stretch")
     if a.abandoned_tasks:
         st.warning("These tasks could not be repaired and will not run:")
         st.dataframe([{"Task": x.task_id, "Title": x.title or "", "Claims": ", ".join(x.claim_keys),
@@ -284,7 +289,7 @@ def _results_section(svc):
     banner = {"completed": st.success, "completed_with_failures": st.warning, "rejected": st.info}.get(r.phase, st.error)
     banner(md(r.message) + (md(f" (code: {r.error_code})") if r.error_code else ""))
     st.caption(md(r.verification_scope or VERIFICATION_SCOPE))
-    tabs = st.tabs(["Findings", "Tasks", "Activity", "Usage"])
+    tabs = st.tabs(["Findings", "Tasks", "Activity", "Usage", "Security"])
     with tabs[0]:
         if r.verified_claims:
             st.markdown("**Verified results**")
@@ -342,6 +347,30 @@ def _results_section(svc):
         if u.calls_by_skill:
             st.dataframe([{"Skill": k, "Attempts": v} for k, v in sorted(u.calls_by_skill.items())],
                          hide_index=True, width="stretch")
+    with tabs[4]:
+        _security_block(getattr(r, "security", None))
+
+
+def _security_block(sv):
+    """Measured security events of this analysis (counts and reason codes; no score, no payloads)."""
+    if sv is None:
+        st.caption("No security events were recorded.")
+        return
+    st.caption(md(f"Policy version {sv.policy_version}. Counts of recorded policy decisions for this analysis; "
+                  "signals are detection only and never allow or block anything by themselves."))
+    c = st.columns(4)
+    c[0].metric("Policy decisions allowed", f"{sv.allowed:,}")
+    c[1].metric("Refused", f"{sv.denied:,}")
+    c[2].metric("Withheld from the provider", f"{sv.redacted:,}")
+    c[3].metric("Detection signals", f"{sv.signals:,}")
+    if sv.refusals:
+        st.markdown("**Policy refusals**")
+        st.dataframe([{"Reason": k, "Count": v} for k, v in sv.refusals], hide_index=True, width="stretch")
+    if sv.signal_locations:
+        st.markdown("**Detection signals by input**")
+        st.dataframe([{"Where": k, "Count": v} for k, v in sv.signal_locations], hide_index=True, width="stretch")
+    if sv.median_check_ms is not None:
+        st.caption(md(f"Median policy-check time: {sv.median_check_ms:.3f} ms."))
 
 
 # ── entry ────────────────────────────────────────────────────────────────────────────────────────────────

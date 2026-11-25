@@ -583,6 +583,20 @@ APPROVED_P6 = {
     "tests/v2/ui2/test_service_corrections_ui2.py", "tests/v2/ui2/test_v2_page_ui2.py",
 }
 
+# SEC (isolated branch feature/v2-ai-security): deterministic AI-security controls, the offline adversarial
+# benchmark and its machine-readable evidence (synthetic data only).
+APPROVED_SEC = {
+    "multi_agent/security/__init__.py", "multi_agent/security/audit.py", "multi_agent/security/detect.py",
+    "multi_agent/security/outbound.py", "multi_agent/security/policy.py", "multi_agent/llm.py",
+    "multi_agent/execution.py", "tests/v2/sec/__init__.py", "tests/v2/sec/test_ai_security.py",
+    "tests/v2/p36/test_image_integration_p364a.py",
+    "security_bench/__init__.py", "security_bench/core.py", "security_bench/registry.py", "security_bench/families.py",
+    "security_bench/attacks_a.py", "security_bench/attacks_b.py", "security_bench/benign.py",
+    "security_bench/runner.py", "security_bench/compare.py", "security_bench/overhead.py",
+    "docs/security/v2/results/baseline_all.jsonl", "docs/security/v2/results/secured_all.jsonl",
+    "docs/security/v2/results/summary.json", "docs/security/v2/results/overhead.json",
+}
+
 
 def test_only_approved_p364a_files_changed_outside_new_documentation():
     changed = set(_git("diff", "--name-only", P36_BASE).split())
@@ -591,7 +605,7 @@ def test_only_approved_p364a_files_changed_outside_new_documentation():
     evidence = {c for c in code_changes if c.startswith("docs/v2/p6/") and c.count("/") == 4
                 and c.rsplit("/", 1)[1] in ("live_benchmark.json", "runs.jsonl")}
     code_changes -= evidence
-    approved = APPROVED_364A | APPROVED_364B | APPROVED_P6
+    approved = APPROVED_364A | APPROVED_364B | APPROVED_P6 | APPROVED_SEC
     assert code_changes <= approved, sorted(code_changes - approved)
 
 

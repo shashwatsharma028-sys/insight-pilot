@@ -67,6 +67,7 @@ import copy
 import json
 import operator
 import time
+import uuid
 from typing import Annotated, Optional, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -80,6 +81,10 @@ except ImportError as exc:  # pragma: no cover - depends on the installed LangGr
 from multi_agent import contracts as c
 from multi_agent import dataset as dsmod
 from multi_agent.execution import EXECUTION_REFUSED, ISOLATION_UNAVAILABLE, classify_execution_failure
+from multi_agent.security import outbound as sec_out
+from multi_agent.security import policy as sec
+from multi_agent.security.audit import POLICY_VERSION
+from multi_agent.verification import values_match
 
 DEFAULT_GOAL = "Analyse this dataset and report the most important verified findings."
 DEFAULT_LIMITS = {"max_retries": 2, "max_plan_attempts": 2, "max_insight_attempts": 2, "max_steps": 200,
@@ -87,7 +92,8 @@ DEFAULT_LIMITS = {"max_retries": 2, "max_plan_attempts": 2, "max_insight_attempt
 COMPLETE_STATUSES = ("completed", "completed_with_failures")
 TERMINAL_STATUSES = COMPLETE_STATUSES + ("rejected_by_human", "plan_invalid", "approval_failed",
                                          "budget_exhausted", "profile_failed",
-                                         "isolation_unavailable", "execution_refused")
+                                         "isolation_unavailable", "execution_refused",
+                                         "policy_refused")          # SEC: the outbound or capability policy refused
 FINALIZE = "finalize"
 
 
@@ -115,10 +121,16 @@ class SupervisorState(TypedDict, total=False):
     events: Annotated[list, operator.add]
     lessons: Annotated[list, operator.add]
     timings: Annotated[list, operator.add]
+    run_id: str                                   # SEC: run identity (the thread id for interactive runs)
+    approval_binding: Optional[dict]
+    grant: Optional[dict]
+    state_tag: Optional[str]
+    tag_seq: int
+    security_events: Annotated[list, operator.add]
 
 
 _SCALARS = ("profile", "plan", "plan_attempts", "plan_feedback", "approved_task_ids", "approval_note",
-            "task_index", "tasks", "awaiting", "seq", "steps", "status")
+            "task_index", "tasks", "awaiting", "seq", "steps", "status", "approval_binding", "grant")
 _DEFAULTS = {"plan_attempts": 0, "plan_feedback": [], "task_index": 0, "tasks": {}, "seq": 0, "steps": 0}
 
 
@@ -126,15 +138,16 @@ def _new_task():
     return {"status": "pending", "stage": "needs_analysis", "attempts": 0, "insight_attempts": 0,
             "feedback": [], "insight_feedback": [], "analysis": None, "verification": None,
             "verified_claims": None, "candidate_insights": None, "insights": None, "failure": None,
-            "history": []}
+            "history": [], "insight_view": None}
 
 
 class Supervisor:
     def __init__(self, planning, analyst, verifier, insight, approval_port=None,
-                 clock=time.perf_counter, ds_loader=dsmod.load):
+                 clock=time.perf_counter, ds_loader=dsmod.load, authority=None):
         self.planning, self.analyst, self.verifier, self.insight = planning, analyst, verifier, insight
         self.approval_port = approval_port
         self.clock, self.ds_loader = clock, ds_loader
+        self.authority = authority or sec.RuntimeAuthority(clock=clock)     # SEC: the trusted runtime's policy engine
 
     # ── graph ────────────────────────────────────────────────────────────────
 
@@ -161,8 +174,9 @@ class Supervisor:
         return g.compile(checkpointer=checkpointer)
 
     @staticmethod
-    def initial_state(dataset_path, goal=DEFAULT_GOAL, limits=None):
-        return {"dataset_path": dataset_path, "goal": goal, "limits": {**DEFAULT_LIMITS, **(limits or {})}}
+    def initial_state(dataset_path, goal=DEFAULT_GOAL, limits=None, run_id=None):
+        return {"dataset_path": dataset_path, "goal": goal, "limits": {**DEFAULT_LIMITS, **(limits or {})},
+                "run_id": str(run_id) if run_id is not None else uuid.uuid4().hex}
 
     @staticmethod
     def run_config(limits=None, thread_id=None):
@@ -181,16 +195,43 @@ class Supervisor:
         from multi_agent.compat import in_memory_saver
         graph = self.build(checkpointer=in_memory_saver())
         cfg = self.run_config(limits, thread_id)
-        return graph, cfg, graph.invoke(self.initial_state(dataset_path, goal, limits), cfg)
+        return graph, cfg, graph.invoke(self.initial_state(dataset_path, goal, limits, run_id=thread_id), cfg)
+
+    @staticmethod
+    def pending_question(graph, cfg):
+        """The approval question currently waiting in this thread (with its binding), or None."""
+        for t in graph.get_state(cfg).tasks or ():
+            for intr in getattr(t, "interrupts", ()) or ():
+                return intr.value
+        return None
 
     @staticmethod
     def resume(graph, cfg, decision):
+        """Resume THIS thread with a human decision. A dict decision without a binding is bound to the question
+        currently waiting in this thread (the caller names the thread, so it can only approve what it was shown
+        there); a decision that quotes a binding must match it exactly. A raw Command(resume=...) without the
+        binding is refused by the approval gate."""
+        if isinstance(decision, dict) and "binding" not in decision:
+            q = Supervisor.pending_question(graph, cfg)
+            if isinstance(q, dict) and isinstance(q.get("binding"), dict):
+                decision = dict(decision, binding=copy.deepcopy(q["binding"]))
         return graph.invoke(Command(resume=decision), cfg)
 
     def _timed(self, name, fn):
         def node(state):
             t0 = self.clock()
-            out = dict(fn(state))
+            self.authority.current_run = state.get("run_id")
+            tag = self.authority.verify_state(state, name)      # SEC: refuse state not produced by this runtime
+            try:
+                out = dict(fn(state))
+            except BaseException:                               # interrupted or failed: the state stays usable
+                self.authority.release(tag)
+                raise
+            out["tag_seq"] = (state.get("tag_seq") or 0) + 1
+            out["state_tag"] = self.authority.state_tag({**state, **out})
+            ev = self.authority.drain()
+            if ev:
+                out["security_events"] = ev
             out["timings"] = [{"node": name, "seconds": self.clock() - t0}]
             return out
         return node
@@ -207,8 +248,19 @@ class Supervisor:
         def node(state):
             env = state.get("pending")
             c.check_envelope(env, recipient=me, kinds=kinds)        # a misrouted request is a supervisor bug: raise
+            if me == c.ANALYST:                  # SEC: authorize the operation at the boundary, immediately before it
+                try:
+                    token = self.authority.authorize_analysis(state, env)
+                except sec.PolicyRefused as e:   # a policy refusal ends the run (P5.1A), never retried or rerouted
+                    return self._reply(state, env, me, "execution_terminated", {
+                        "category": EXECUTION_REFUSED, "error_class": "PolicyRefused", "message": e.code})
+                env = dict(env, payload=dict(env["payload"], authorization=token))
             try:
                 payload, kind = call(env), c.REPLY_KIND[env["kind"]]
+            except sec.IntegrityViolation:
+                raise
+            except sec.PolicyRefused as e:                           # outbound / capability policy: no retry
+                payload, kind = {"error_type": "PolicyRefused", "message": e.code}, "agent_error"
             except Exception as e:                                   # agent failure -> typed error handoff
                 terminal = classify_execution_failure(e) if me == c.ANALYST else None
                 if terminal is not None:                             # infrastructure or policy: ends the run
@@ -222,18 +274,29 @@ class Supervisor:
     def approval_node(self, state, interactive):
         env = state.get("pending")
         c.check_envelope(env, recipient=c.APPROVAL, kinds={"approval_request"})
+        expected = state.get("approval_binding")
         if self.approval_port is not None:
             decision = self.approval_port(copy.deepcopy(env["payload"]))
+            if not isinstance(decision, dict):
+                decision = {"decision": decision}
+            if "binding" not in decision:          # an in-process approver answers exactly the question it was given
+                decision = dict(decision, binding=copy.deepcopy(expected))
         elif interactive:
             question = {"kind": "plan_approval", "plan": env["payload"]["plan"]}
             if "abandoned_tasks" in env["payload"]:                          # P6 selective recovery only
                 question["abandoned_tasks"] = env["payload"]["abandoned_tasks"]
+            question["binding"] = copy.deepcopy(expected)                    # SEC: the decision must quote it
             decision = interrupt(question)
         else:
             return self._reply(state, env, c.APPROVAL, "agent_error",
                                {"error_type": "NoApprover", "message": "no human approver configured; failing closed"})
         if not isinstance(decision, dict):
             decision = {"decision": decision}
+        decision, quoted = sec.without_binding(decision)
+        reason = self.authority.accept_decision(expected, quoted, state.get("plan"), state.get("run_id"))
+        if reason is not None:                   # wrong run, session, plan, dataset, policy or nonce: fail closed
+            return self._reply(state, env, c.APPROVAL, "agent_error",
+                               {"error_type": "ApprovalBindingRejected", "message": reason})
         return self._reply(state, env, c.APPROVAL, "approval_decision", decision)
 
     # ── supervisor ───────────────────────────────────────────────────────────
@@ -243,6 +306,7 @@ class Supervisor:
         s = {k: copy.deepcopy(state[k]) if state.get(k) is not None else copy.deepcopy(_DEFAULTS.get(k))
              for k in _SCALARS}
         s["dataset_path"], s["goal"] = state["dataset_path"], state.get("goal", DEFAULT_GOAL)
+        s["run_id"] = state.get("run_id")
         s["plan_recovery"] = copy.deepcopy(state.get("plan_recovery"))          # P6, opt-in; None when unused
         events, lessons = [], []
         env = state.get("pending")
@@ -290,6 +354,11 @@ class Supervisor:
                 self._step_failed(s, aw, ["invalid handoff: " + p for p in e.problems], lim, lessons)
             return
         payload, kind = env["payload"], env["kind"]
+        if kind == "plan":                               # SEC: signals on every planner reply, valid or not
+            for t in payload.get("tasks") or [] if isinstance(payload.get("tasks"), list) else []:
+                if isinstance(t, dict):
+                    sec_out.scan(self.authority, f"{t.get('title', '')} {t.get('description', '')}", "model_output",
+                                 task_id=t.get("id") if isinstance(t.get("id"), str) else None)
         if kind == "execution_terminated":
             problems = c.validate_execution_terminated(payload)
             category = payload.get("category") if not problems else ISOLATION_UNAVAILABLE   # malformed: fail closed
@@ -299,8 +368,12 @@ class Supervisor:
             self._terminate_execution(s, category, payload.get("error_class") if not problems else "malformed")
             return
         if kind == "agent_error":
-            problems = c.validate_agent_error(payload) or [f"{payload['error_type']}: {payload['message']}"]
+            invalid = c.validate_agent_error(payload)
+            problems = invalid or [f"{payload['error_type']}: {payload['message']}"]
             events.append({"type": "agent_error", "agent": env["sender"], "seq": env["seq"], "problems": problems})
+            if not invalid and payload["error_type"] == "PolicyRefused":     # SEC: deterministic refusal, no retry
+                s["status"] = "policy_refused"
+                return
             self._step_failed(s, aw, problems, lim, lessons)
             return
         if kind == "plan" and lim.get("selective_plan_recovery"):
@@ -341,6 +414,7 @@ class Supervisor:
             ids = [i for i in ids if i in keep]
         s["approved_task_ids"] = ids
         s["tasks"] = {i: _new_task() for i in ids}
+        s["grant"] = self.authority.grant(s["approval_binding"], s["plan"], ids)     # SEC: what may now run
 
     def _on_analysis_result(self, s, payload, lim, lessons):
         t = s["tasks"][self._current_id(s)]
@@ -356,14 +430,34 @@ class Supervisor:
     def _on_verification_report(self, s, payload, lim, lessons):
         t = s["tasks"][self._current_id(s)]
         t["verification"] = payload
+        if payload["verdict"] == "accepted" and not self._report_consistent(payload, t["analysis"]):
+            self.authority.emit("deny", "verification_inconsistent", "integrity", task_id=self._current_id(s))
+            self._fail_analysis(s, lim, lessons, ["verification report is inconsistent with the analysis"])
+            return
         if payload["verdict"] == "accepted":
             t["verified_claims"] = {k: t["analysis"]["claims"][k] for k in sorted(payload["claims"])}
             t["stage"] = "awaiting_insight"
         else:
             self._fail_analysis(s, lim, lessons, payload["feedback"] or ["verification rejected the analysis"])
 
+    @staticmethod
+    def _report_consistent(report, analysis):
+        """SEC defence in depth: an accepted report must show, for every claim, a recomputed value that matches the
+        reported one, and the reported value must be the analyst's own."""
+        for k, e in report["claims"].items():
+            if "recomputed" not in e or k not in (analysis or {}).get("claims", {}):
+                return False
+            if not (values_match(e["reported"], e["recomputed"]) and values_match(analysis["claims"][k], e["reported"])):
+                return False
+        return True
+
     def _on_insight_report(self, s, payload, lim, lessons):
         t = s["tasks"][self._current_id(s)]
+        unsafe = sec_out.unsafe_output(self.authority, payload["insights"], t.get("insight_view") or {},
+                                       task_id=self._current_id(s))
+        if unsafe:                                       # SEC output policy: links, markup, identifiers, controls
+            self._fail_insight(s, lim, lessons, unsafe)
+            return
         t["candidate_insights"] = payload["insights"]
         t["stage"] = "awaiting_insight_check"
 
@@ -572,6 +666,7 @@ class Supervisor:
                 events.append({"type": "profile_failed", "problems": [str(e)]})
                 s["status"] = "profile_failed"
                 return None
+            sec_out.scan_inputs(self.authority, s["goal"], s["profile"])          # SEC: signals only
         if s["steps"] >= lim["max_steps"]:
             events.append({"type": "budget_exhausted", "steps": s["steps"]})
             s["status"] = "budget_exhausted"
@@ -583,14 +678,19 @@ class Supervisor:
             s["plan_attempts"] += 1
             rec = s["plan_recovery"] if lim.get("selective_plan_recovery") else None
             max_tasks = len(rec["slots"]) if rec is not None and rec["slots"] else c.MAX_TASKS
-            request = {"goal": s["goal"], "profile": s["profile"], "attempt": s["plan_attempts"],
-                       "feedback": s["plan_feedback"], "max_tasks": max_tasks}
+            for f in s["plan_feedback"]:
+                sec_out.scan(self.authority, f, "feedback")
+            request = {"goal": s["goal"], "profile": sec_out.planner_profile(self.authority, s["profile"]),
+                       "attempt": s["plan_attempts"], "feedback": s["plan_feedback"], "max_tasks": max_tasks}
             if lim.get("schema_aware_planner"):          # P6 opt-in: argument-representation guidance in the prompt
                 request["op_schema"] = True
             if lim.get("semantic_planner"):              # P6 opt-in, independent: op-result / grouping semantics
                 request["op_semantics"] = True
             return self._dispatch(s, c.PLANNING, "plan_request", request, attempt=s["plan_attempts"])
         if s["approved_task_ids"] is None:
+            if s["approval_binding"] is None:
+                s["approval_binding"] = self.authority.new_binding(s["run_id"], s["plan"],
+                                                                   s["profile"]["dataset_sha256"])
             payload = {"plan": s["plan"], "dataset": {"file_name": s["profile"]["file_name"],
                                                       "row_count": s["profile"]["row_count"]}}
             if s["plan_recovery"] is not None and s["plan_recovery"]["abandoned"]:
@@ -613,15 +713,24 @@ class Supervisor:
                 "claim_errors": a["claim_errors"], "unplanned": a["unplanned"], "dataset_path": s["dataset_path"],
                 "dataset_sha256": s["profile"]["dataset_sha256"]}, tid, t["attempts"])
         if t["stage"] == "awaiting_insight":
+            if t.get("insight_view") is None:           # SEC: what may leave the application (local data unchanged)
+                t["insight_view"], _ = sec_out.insight_view(self.authority, t["verified_claims"], spec["claims"],
+                                                            lim.get("sensitive_columns"), task_id=tid)
+            if not t["insight_view"]:                   # every result is local-only: no provider call for this task
+                t["insights"], t["status"], t["stage"] = [], "completed", "done"
+                t["history"].append({"stage": "insight", "attempt": 0, "outcome": "local_only"})
+                s["task_index"] += 1
+                return self._decide(s, lim, events)
             t["insight_attempts"] += 1
             return self._dispatch(s, c.INSIGHT, "insight_request", {
-                "task_id": tid, "title": spec["title"], "description": spec["description"],
-                "attempt": t["insight_attempts"], "verified_claims": t["verified_claims"],
+                "task_id": tid, "title": sec_out.model_prose(self.authority, spec["title"], tid),
+                "description": sec_out.model_prose(self.authority, spec["description"], tid),
+                "attempt": t["insight_attempts"], "verified_claims": t["insight_view"],
                 "feedback": t["insight_feedback"]}, tid, t["insight_attempts"])
         if t["stage"] == "awaiting_insight_check":
             return self._dispatch(s, c.VERIFIER, "insight_check_request", {
-                "task_id": tid, "verified_claims": t["verified_claims"], "insights": t["candidate_insights"]},
-                tid, t["insight_attempts"])
+                "task_id": tid, "verified_claims": t.get("insight_view") or t["verified_claims"],
+                "insights": t["candidate_insights"]}, tid, t["insight_attempts"])
         raise AssertionError(f"task {tid} in unexpected stage {t['stage']!r}")   # pragma: no cover
 
     # ── finalize ─────────────────────────────────────────────────────────────
@@ -661,6 +770,8 @@ class Supervisor:
             "execution_terminations": sum(1 for e in events if e["type"] == "execution_terminated"),
             "lessons": len(state.get("lessons") or []),
             "approval_note": state.get("approval_note"),
+            "policy_version": POLICY_VERSION,
+            "security": _security_summary(state.get("security_events") or []),
         }
         if rec is not None:                              # P6 selective recovery only: what was kept, fixed, lost
             final["plan_recovery"] = {"kept_task_ids": [t["id"] for t in rec.get("kept") or []],
@@ -668,3 +779,15 @@ class Supervisor:
                                       "abandoned_tasks": abandoned,
                                       "triaged_at_attempt": rec.get("triaged_at_attempt")}
         return {"status": status, "final": final, "route": END, "pending": None}
+
+
+def _security_summary(events):
+    """Counts only (no payloads): decisions, refusal reason codes and signal locations of this run."""
+    out = {"events": len(events), "allow": 0, "deny": 0, "redact": 0, "signal": 0, "denied": {}, "signals": {}}
+    for e in events:
+        out[e["decision"]] = out.get(e["decision"], 0) + 1
+        if e["decision"] == "deny":
+            out["denied"][e["reason_code"]] = out["denied"].get(e["reason_code"], 0) + 1
+        if e["decision"] == "signal":
+            out["signals"][e["location"]] = out["signals"].get(e["location"], 0) + 1
+    return out

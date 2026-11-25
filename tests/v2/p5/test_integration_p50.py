@@ -155,6 +155,7 @@ def test_multi_agent_requires_no_new_dependency():
     third_party = imported - {"csv", "hashlib", "os", "re", "math", "collections", "dataclasses", "json", "copy",
                               "operator", "time", "typing", "enum", "sys", "importlib",
                               "threading", "types", "urllib", "random", "socket",    # P6: standard library
+                              "hmac", "secrets", "unicodedata", "base64", "binascii", "uuid", "io",   # SEC: stdlib
                               "multi_agent", "config", "sandbox", "sandbox_v2", "agent", "v2"}
     # P6: pandas (trusted-ops engine) and langchain_google_genai (live Gemini port) are existing V1
     # requirements, not new dependencies.

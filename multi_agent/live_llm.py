@@ -330,6 +330,11 @@ class BudgetedPort:
         self.spent_usd = 0.0
         self.exhausted = False
         self.records = []
+        # SEC: concurrent calls reserve their worst case atomically, so parallel callers cannot overspend the budget
+        # or the token limit (serial behaviour is unchanged: the reservation is zero when the next check runs).
+        self._acct_lock = threading.Lock()
+        self._reserved_usd = 0.0
+        self._reserved_tokens = 0
 
     def cost(self, tokens_in, tokens_out):
         return tokens_in / 1e6 * self.prices[0] + tokens_out / 1e6 * self.prices[1]
@@ -390,15 +395,26 @@ class BudgetedPort:
         if getattr(self, "stop_reason", None):
             raise BudgetExceeded(self.stop_reason)
         tin, tout, worst = self.worst_case(system, user)
-        if self.calls >= self.max_calls:
-            self._refuse(f"call limit {self.max_calls} reached")
-        if self.tokens + tin + tout > self.max_total_tokens:
-            self._refuse(f"token limit {self.max_total_tokens} could be exceeded")
-        prior = self.ledger.spent_usd()
-        if prior + worst > self.budget_usd:
-            self._refuse(f"budget ${self.budget_usd:.4f} could be exceeded (spent ${prior:.6f}, "
-                         f"worst case of this call ${worst:.6f})")
-        self.calls += 1
+        with self._acct_lock:                                     # check and reserve in one step
+            if self.calls >= self.max_calls:
+                self._refuse(f"call limit {self.max_calls} reached")
+            if self.tokens + self._reserved_tokens + tin + tout > self.max_total_tokens:
+                self._refuse(f"token limit {self.max_total_tokens} could be exceeded")
+            prior = self.ledger.spent_usd() + self._reserved_usd
+            if prior + worst > self.budget_usd:
+                self._refuse(f"budget ${self.budget_usd:.4f} could be exceeded (spent ${prior:.6f}, "
+                             f"worst case of this call ${worst:.6f})")
+            self.calls += 1
+            self._reserved_usd += worst
+            self._reserved_tokens += tin + tout
+        try:                                  # the reservation is released only after the ledger has the record
+            return self._call_and_record(skill, system, user, tin, tout, worst, retry_reason, provider_attempt)
+        finally:
+            with self._acct_lock:
+                self._reserved_usd -= worst
+                self._reserved_tokens -= tin + tout
+
+    def _call_and_record(self, skill, system, user, tin, tout, worst, retry_reason, provider_attempt):
         t0 = self.clock()
         try:
             response = self.inner.complete(skill, system, user)
@@ -407,9 +423,10 @@ class BudgetedPort:
             # except an HTTP 429 when the operator chose charge_429="zero" (rejected before any generation).
             status = getattr(e, "status", None)
             charge = 0.0 if (status == 429 and self.charge_429 == "zero") else worst
-            self.tokens += tin + tout
-            self.spent_usd += charge
-            self.failed_attempts += 1
+            with self._acct_lock:
+                self.tokens += tin + tout
+                self.spent_usd += charge
+                self.failed_attempts += 1
             record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                       "call_source": self.call_source, "input_tokens": tin, "output_tokens": tout,
                       "cost_usd": round(charge, 8), "charged_worst_case": charge > 0, "failed": type(e).__name__,
@@ -424,8 +441,9 @@ class BudgetedPort:
         charged_worst = usage is None
         i, o = (tin, tout) if charged_worst else usage
         cost = self.cost(i, o)
-        self.tokens += i + o
-        self.spent_usd += cost
+        with self._acct_lock:
+            self.tokens += i + o
+            self.spent_usd += cost
         record = {"ts": round(t0, 3), "run": self.run_label, "model": self.model, "skill": skill,
                   "call_source": self.call_source, "input_tokens": i, "output_tokens": o, "cost_usd": round(cost, 8),
                   "charged_worst_case": charged_worst, "failed": None, "seconds": round(self.clock() - t0, 3),

@@ -27,17 +27,30 @@ class LLMOutputError(ValueError):
 
 
 class RecordingLLM:
-    def __init__(self, inner, agent: str, calls: list, clock=time.perf_counter):
+    """With an `authority` (the trusted runtime's policy engine, set by team.build_team), every call is checked
+    BEFORE it reaches the provider: the agent (identity assigned here, never by a model) must hold the capability
+    llm:<skill>, and the serialized prompt must pass the outbound policy. Replies over MAX_REPLY_CHARS are refused
+    before anything parses them (always, with or without an authority)."""
+
+    def __init__(self, inner, agent: str, calls: list, clock=time.perf_counter, authority=None):
         self.inner, self.agent, self.calls, self.clock = inner, agent, calls, clock
         self.call_source = inner.call_source
         self.code_trust = CodeTrust(inner.code_trust)
+        self.authority = authority
 
     def complete(self, skill: str, system: str, user: str):
+        from multi_agent.security import outbound
+        if self.authority is not None:
+            self.authority.capability(self.agent, "llm:" + str(skill))
+            outbound.check_prompt(self.authority, self.agent, skill, system, user)
         t0 = self.clock()
         response = self.inner.complete(skill, system, user)
         content = getattr(response, "content", "")
         if not isinstance(content, str):
             raise LLMOutputError("model reply content is not text")
+        if len(content) > outbound.MAX_REPLY_CHARS or (
+                self.authority is not None and not outbound.check_reply(self.authority, self.agent, content)):
+            raise LLMOutputError(f"model reply is larger than {outbound.MAX_REPLY_CHARS} characters")
         self.calls.append({
             "agent": self.agent, "skill": skill, "call_source": self.call_source,
             "system_chars": len(system), "user_chars": len(user), "response_chars": len(content),

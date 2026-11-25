@@ -52,6 +52,7 @@ from typing import Optional
 
 from multi_agent import dataset as dsmod
 from multi_agent import live_llm, op_engine
+from multi_agent.security import POLICY_VERSION, RuntimeAuthority, SecurityViolation
 from multi_agent.supervisor import DEFAULT_LIMITS, Supervisor
 from multi_agent.team import build_team
 
@@ -71,6 +72,8 @@ USAGE_LABELS = {
     "mixed": "Mixed mock and provider calls: treat every figure as illustrative.",
     "none": "No provider calls recorded.",
 }
+SECURITY_MESSAGE = ("A security check stopped the analysis: the run's state, approval or data no longer matched what "
+                    "was approved. Nothing further was run; start a new analysis.")
 CONSERVATIVE_LABEL = ("Conservative charges: each failed attempt is counted at its worst case (full prompt + "
                       "maximum output) because a failed call may still be billed; not billing.")
 
@@ -103,9 +106,14 @@ class ServiceConfig:
     provider_retries: int = 0                    # transient HTTP 5xx / timeout retries (0 = off)
     max_steps: int = DEFAULT_LIMITS["max_steps"]
     limits: Limits = field(default_factory=Limits)
+    # SEC: columns whose values must never leave the application (computed and shown locally only). The email and
+    # credential heuristics supplement this list; they are not comprehensive PII detection.
+    sensitive_columns: tuple = ()
 
     def supervisor_limits(self) -> dict:
         lim = {"max_steps": int(self.max_steps)}
+        if self.sensitive_columns:
+            lim["sensitive_columns"] = [str(x) for x in self.sensitive_columns]
         if self.selective_recovery:
             lim["selective_plan_recovery"] = True
         if self.schema_guidance:
@@ -165,6 +173,8 @@ STATUS_MESSAGES = {      # Supervisor terminal status -> (phase, safe message)
     "profile_failed": (Phase.FAILED, "The dataset could not be read."),
     "isolation_unavailable": (Phase.FAILED, "Execution was refused for safety reasons."),
     "execution_refused": (Phase.FAILED, "Execution was refused for safety reasons."),
+    "policy_refused": (Phase.FAILED, "The data-protection policy refused to send this request to the AI provider "
+                                     "(it would include an email address, a credential-like string or too much data)."),
 }
 
 
@@ -220,6 +230,27 @@ class AbandonedTaskView:
 
 
 @dataclass(frozen=True)
+class SecuritySignalView:
+    """A detection SIGNAL (defence in depth; it never blocks or allows anything by itself)."""
+    location: str
+    signals: tuple
+
+
+@dataclass(frozen=True)
+class SecurityView:
+    """Measured security events of one analysis: counts and reason codes only (no payloads)."""
+    policy_version: str
+    events: int
+    allowed: int
+    denied: int
+    redacted: int
+    signals: int
+    refusals: tuple          # ((reason_code, count), ...)
+    signal_locations: tuple  # ((location, count), ...)
+    median_check_ms: Optional[float] = None
+
+
+@dataclass(frozen=True)
 class ApprovalView:
     run_id: str
     plan_id: str            # fingerprint of the exact plan shown; a decision must quote it
@@ -227,6 +258,7 @@ class ApprovalView:
     dataset: DatasetView
     tasks: tuple
     abandoned_tasks: tuple  # tasks dropped by selective recovery before approval (if enabled)
+    security_signals: tuple = ()   # SEC: injection or sensitive-pattern signals seen so far (for the reviewer)
 
 
 @dataclass(frozen=True)
@@ -294,6 +326,7 @@ class ResultView:
     activity: tuple
     usage: UsageView
     error_code: Optional[str] = None
+    security: Optional[SecurityView] = None
 
 
 @dataclass(frozen=True)
@@ -433,6 +466,8 @@ class AnalysisService:
         self._dataset_view = None
         self._runs_started = 0
         self._closed = False
+        self._session_id = uuid.uuid4().hex             # SEC: approvals and grants are bound to this session
+        self._security_log = []                         # SEC: this session's audit events (codes only), bounded
         self._clear_analysis()
 
     # ── public API ───────────────────────────────────────────────────────────────────────────────────
@@ -512,8 +547,10 @@ class AnalysisService:
             run_id = uuid.uuid4().hex
             self._run_id, self._goal, self._record_start = run_id, goal, len(self._port.records)
         try:
+            self._security_start = len(self._security_log)
+            authority = RuntimeAuthority(session_id=self._session_id, sink=self._record_security)
             sup, self._agent_calls = build_team(self._port, None, approval_port=None, clock=self.clock,
-                                                analyst=op_engine.TrustedOpsAnalyst(self.clock))
+                                                analyst=op_engine.TrustedOpsAnalyst(self.clock), authority=authority)
             thread_id = f"{run_id}-{uuid.uuid4().hex}"
             graph, cfg, state = sup.start_interactive(self._dataset_path, thread_id, goal=goal,
                                                       limits=self.config.supervisor_limits())
@@ -531,6 +568,8 @@ class AnalysisService:
         except MalformedPlan:
             return self._fail(run_id, "invalid_plan_payload", None,
                               "The planner returned a plan that cannot be shown for approval; nothing was analysed.")
+        except SecurityViolation:
+            return self._fail(run_id, "security_refused", None, SECURITY_MESSAGE)
         except Exception as e:                                       # unexpected: fail closed, no continuation
             return self._fail(run_id, "internal_error", e)
 
@@ -545,6 +584,8 @@ class AnalysisService:
             if run_id != self._approval.run_id or plan_id != self._approval.plan_id:
                 raise TransitionRefused("stale", "This decision refers to a different or outdated plan.")
             payload = self._decision_payload(decision, keep_task_ids, note)
+            if isinstance(self._pending, dict) and isinstance(self._pending.get("binding"), dict):
+                payload["binding"] = dict(self._pending["binding"])     # SEC: the exact question that was shown
             graph, cfg = self._graph, self._cfg
             self._transition(Phase.RUNNING)                  # under the lock: a second decision is now refused
         try:
@@ -554,8 +595,44 @@ class AnalysisService:
                 self._result = self._result_view(run_id, state)
                 self._transition(Phase(self._result.phase))
                 return self._result
+        except SecurityViolation:
+            return self._fail(run_id, "security_refused", None, SECURITY_MESSAGE)
         except Exception as e:
             return self._fail(run_id, "internal_error", e)
+
+    def security_events(self, limit=200) -> tuple:
+        """This session's most recent security events (ids, codes, timings only; never payloads)."""
+        return tuple(dict(e) for e in self._security_log[-limit:])
+
+    def _record_security(self, ev):
+        if len(self._security_log) >= 5000:
+            del self._security_log[:1000]
+            self._security_start = max(0, getattr(self, "_security_start", 0) - 1000)
+        self._security_log.append(ev)
+
+    def _security_view(self) -> SecurityView:
+        evs = self._security_log[getattr(self, "_security_start", 0):]
+        refusals, locations, ms = {}, {}, []
+        for e in evs:
+            if e["decision"] == "deny":
+                refusals[e["reason_code"]] = refusals.get(e["reason_code"], 0) + 1
+            if e["decision"] == "signal":
+                locations[e["location"]] = locations.get(e["location"], 0) + 1
+            if e.get("check_ms") is not None:
+                ms.append(e["check_ms"])
+        ms.sort()
+        return SecurityView(policy_version=POLICY_VERSION, events=len(evs),
+                            allowed=sum(e["decision"] == "allow" for e in evs),
+                            denied=sum(e["decision"] == "deny" for e in evs),
+                            redacted=sum(e["decision"] == "redact" for e in evs),
+                            signals=sum(e["decision"] == "signal" for e in evs),
+                            refusals=tuple(sorted(refusals.items())), signal_locations=tuple(sorted(locations.items())),
+                            median_check_ms=round(ms[len(ms) // 2], 4) if ms else None)
+
+    def _signal_views(self) -> tuple:
+        evs = self._security_log[getattr(self, "_security_start", 0):]
+        return tuple(SecuritySignalView(safe_text(e["location"], 40), tuple(e.get("signals") or ()))
+                     for e in evs if e["decision"] == "signal")[:20]
 
     def reset(self, clear_dataset: bool = False) -> None:
         """Discard the current analysis (graph, checkpoint, results). Refused while planning or running.
@@ -716,7 +793,8 @@ class AnalysisService:
                                       description=prose(t.get("description"), 2000),
                                       analysis_type=prose(t.get("analysis_type"), 40), claims=tuple(claims)))
         return ApprovalView(run_id=run_id, plan_id=plan_id, goal=goal, dataset=self._dataset_view, tasks=tuple(tasks),
-                            abandoned_tasks=_abandoned(payload.get("abandoned_tasks")))
+                            abandoned_tasks=_abandoned(payload.get("abandoned_tasks")),
+                            security_signals=self._signal_views())
 
     def _result_view(self, run_id, state) -> ResultView:
         final = state.get("final") or {}
@@ -761,13 +839,13 @@ class AnalysisService:
             review_only_insights=insights_of(final.get("insights_for_review")),
             tasks=tasks, recovered_task_ids=tuple(safe_text(x, 64) for x in rec.get("recovered_task_ids") or []),
             abandoned_tasks=_abandoned(rec.get("abandoned_tasks")), activity=self._activity(state),
-            usage=self._usage(state), error_code=code)
+            usage=self._usage(state), error_code=code, security=self._security_view())
 
     def _empty_result(self, run_id, phase, msg, code) -> ResultView:
         return ResultView(run_id=run_id, phase=phase.value, message=msg, complete=False,
                           verification_scope=VERIFICATION_SCOPE, verified_claims=(), review_only_claims=(),
                           insights=(), review_only_insights=(), tasks=(), recovered_task_ids=(), abandoned_tasks=(),
-                          activity=(), usage=self._usage({}), error_code=code)
+                          activity=(), usage=self._usage({}), error_code=code, security=self._security_view())
 
     def _provider_failed(self) -> bool:
         recs = self._port.records[self._record_start:]

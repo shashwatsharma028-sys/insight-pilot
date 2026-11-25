@@ -466,12 +466,25 @@ def test_a_full_run_never_reaches_a_v1_executor(tmp_path, monkeypatch):
     assert svc.decide(a.run_id, a.plan_id, "approve").phase == "completed"
 
 
+# SEC (isolated branch feature/v2-ai-security): the ONLY files under these protected paths that may differ from
+# ff618163 are the reviewed security-control files below. V1 folders, config, requirements.txt, sandbox_v2,
+# v2/launch_app.py and v2/execution must still be byte-identical.
+SEC_RUNTIME_FILES = {
+    "multi_agent/security/__init__.py", "multi_agent/security/audit.py", "multi_agent/security/detect.py",
+    "multi_agent/security/outbound.py", "multi_agent/security/policy.py", "multi_agent/supervisor.py",
+    "multi_agent/team.py", "multi_agent/llm.py", "multi_agent/op_engine.py", "multi_agent/prompts.py",
+    "multi_agent/live_llm.py", "multi_agent/execution.py",
+}
+
+
 def test_v1_and_protected_modules_are_unchanged_from_ff618163():
     paths = ["ui", "agent", "sandbox", "sandbox_v2", "utils", "config", "requirements.txt", "multi_agent",
              "v2/launch_app.py", "v2/execution"]
-    out = subprocess.run(["git", "diff", "--stat", "ff618163", "--"] + paths, capture_output=True, text=True,
+    out = subprocess.run(["git", "diff", "--name-only", "ff618163", "--"] + paths, capture_output=True, text=True,
                          cwd=ROOT, check=True).stdout
-    assert out.strip() == ""
+    changed = set(out.split())
+    assert changed <= SEC_RUNTIME_FILES, sorted(changed - SEC_RUNTIME_FILES)
+    assert not {f for f in changed if not f.startswith("multi_agent/")}
 
 
 def test_views_never_contain_paths_tracebacks_or_raw_state(tmp_path):
