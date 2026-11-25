@@ -1,0 +1,3944 @@
+{
+ "arch": "multi_agent",
+ "budget_usd": 0.3,
+ "experiment": "provider_resilience",
+ "harness_version": "p6.0-live-trusted-ops",
+ "model": "gemini-3.5-flash-lite",
+ "prices_usd_per_mtok": [
+  0.3,
+  2.5
+ ],
+ "provider": "gemini",
+ "results": [
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060263,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3021,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 1.195,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617845.126
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016439,
+     "failed": null,
+     "input_tokens": 988,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 2.109,
+     "skill": "planner",
+     "ts": 1795617852.127
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004715,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 167,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 2.927,
+     "skill": "business_insight",
+     "ts": 1795617859.127
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000373,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 3.809,
+     "skill": "business_insight",
+     "ts": 1795617866.127
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052664,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 488,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 1.127,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617873.127
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001664,
+     "failed": null,
+     "input_tokens": 213,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 41,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r1",
+     "seconds": 1.066,
+     "skill": "business_insight",
+     "ts": 1795617880.128
+    }
+   ],
+   "order": 0,
+   "pacing_wait_s": 23.547,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 1,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 2
+     }
+    }
+   },
+   "slot": 0,
+   "spent_usd": 0.0139475,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "control",
+   "wait_s": 23.546560060000004,
+   "wall_excl_wait_s": 19.560948983999992,
+   "wall_s": 43.107509044
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 5,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r1",
+     "seconds": 1.517,
+     "skill": "planner",
+     "ts": 1795617887.128
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000304,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 100,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r1",
+     "seconds": 0.774,
+     "skill": "business_insight",
+     "ts": 1795617894.128
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052952,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 584,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r1",
+     "seconds": 1.264,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617901.128
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000353,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 119,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/sales/r1",
+     "seconds": 2.606,
+     "skill": "business_insight",
+     "ts": 1795617908.128
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000152,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 44,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r1",
+     "seconds": 0.776,
+     "skill": "business_insight",
+     "ts": 1795617915.129
+    }
+   ],
+   "order": 1,
+   "pacing_wait_s": 25.178,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [],
+     "plan_problems": [],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 0,
+   "spent_usd": 0.007727400000000001,
+   "transient_given_up": 0,
+   "transient_retries": 1,
+   "transient_wait_s": 2.259,
+   "variant": "provider_retry",
+   "wait_s": 27.43710230877234,
+   "wall_excl_wait_s": 7.001098138227661,
+   "wall_s": 34.438200447
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 7,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 6,
+    "correct_hidden": 4,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 6,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 1.929,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617922.129
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 2.152,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617929.129
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 1.279,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617936.129
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 1.336,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617943.129
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0017005,
+     "failed": null,
+     "input_tokens": 1010,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 559,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 1.968,
+     "skill": "planner",
+     "ts": 1795617950.13
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003508,
+     "failed": null,
+     "input_tokens": 186,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 118,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 1.185,
+     "skill": "business_insight",
+     "ts": 1795617957.13
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002847,
+     "failed": null,
+     "input_tokens": 249,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 84,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r2",
+     "seconds": 0.78,
+     "skill": "business_insight",
+     "ts": 1795617964.13
+    }
+   ],
+   "order": 2,
+   "pacing_wait_s": 29.891,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 1,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"status\", \"value\": \"Present\"}, \"key\": \"present_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"status\"}, \"key\": \"status_counts\", \"op\": \"value_counts\"}], \"description\": \"Counts of Present / Late / Absent and the present rate.\", \"id\": \"att_t1\", \"title\": \"Attendance Status Breakdown\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"mean_hours_by_department\", \"op\": \"group_mean\"}, {\"args\": {\"column\": \"hours_worked\"}, \"key\": \"mean_hours_worked\", \"op\": \"mean\"}, {\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"top_department_by_mean_hours\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean hours worked overall and per department.\", \"id\": \"att_t2\", \"title\": \"Hours Worked by Department\"}, {\"analysis_type\": \"outlier\", \"claims\": [{\"args\": {\"column\": \"gps_location_match\", \"value\": false}, \"key\": \"gps_mismatch_count\", \"op\": \"count_where_equals\"}], \"description\": \"Count punches where GPS location did not match the site.\", \"id\": \"att_t3\", \"title\": \"GPS Location Mismatches\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [
+      {
+       "claim_keys": [
+        "gps_mismatch_count"
+       ],
+       "id": "att_t3",
+       "problems": [
+        "task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ],
+       "title": "GPS Location Mismatches"
+      }
+     ],
+     "kept_task_ids": [
+      "att_t1",
+      "att_t2"
+     ],
+     "recovered_task_ids": [],
+     "triaged_at_attempt": 2
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed_with_failures",
+    "tasks": {
+     "att_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 1,
+   "spent_usd": 0.026509599999999994,
+   "transient_given_up": 1,
+   "transient_retries": 3,
+   "transient_wait_s": 8.142,
+   "variant": "provider_retry",
+   "wait_s": 38.03327715605744,
+   "wall_excl_wait_s": 10.963012433942566,
+   "wall_s": 48.99628959
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 4,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 6,
+    "correct_hidden": 4,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 6,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/attendance/r2",
+     "seconds": 1.517,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795617971.13
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0017005,
+     "failed": null,
+     "input_tokens": 1010,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 559,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/attendance/r2",
+     "seconds": 1.797,
+     "skill": "planner",
+     "ts": 1795617978.131
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003233,
+     "failed": null,
+     "input_tokens": 186,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 107,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/attendance/r2",
+     "seconds": 0.725,
+     "skill": "business_insight",
+     "ts": 1795617985.131
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004347,
+     "failed": null,
+     "input_tokens": 249,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 144,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/attendance/r2",
+     "seconds": 0.822,
+     "skill": "business_insight",
+     "ts": 1795617992.131
+    }
+   ],
+   "order": 3,
+   "pacing_wait_s": 22.454,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 1,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"status\"}, \"key\": \"status_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"status\", \"value\": \"Present\"}, \"key\": \"present_rate\", \"op\": \"rate_where_equals\"}], \"description\": \"Counts of Present / Late / Absent and the present rate.\", \"id\": \"att_t1\", \"title\": \"Attendance Status Breakdown\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"column\": \"hours_worked\"}, \"key\": \"mean_hours_worked\", \"op\": \"mean\"}, {\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"mean_hours_by_department\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"top_department_by_mean_hours\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean hours worked overall and per department.\", \"id\": \"att_t2\", \"title\": \"Hours Worked by Department\"}, {\"analysis_type\": \"outlier\", \"claims\": [{\"args\": {\"column\": \"gps_location_match\", \"value\": false}, \"key\": \"gps_mismatch_count\", \"op\": \"count_where_equals\"}], \"description\": \"Count punches where GPS location did not match the site.\", \"id\": \"att_t3\", \"title\": \"GPS Location Mismatches\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [
+      {
+       "claim_keys": [
+        "gps_mismatch_count"
+       ],
+       "id": "att_t3",
+       "problems": [
+        "task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ],
+       "title": "GPS Location Mismatches"
+      }
+     ],
+     "kept_task_ids": [
+      "att_t1",
+      "att_t2"
+     ],
+     "recovered_task_ids": [],
+     "triaged_at_attempt": 2
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed_with_failures",
+    "tasks": {
+     "att_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 1,
+   "spent_usd": 0.008485099999999999,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "control",
+   "wait_s": 22.454319715000025,
+   "wall_excl_wait_s": 5.136660970999998,
+   "wall_s": 27.590980686000023
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 6,
+    "correct_hidden": 5,
+    "incorrect_reported": 1,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "correct",
+     "mean_revenue_weekend": "correct",
+     "row_count": "correct",
+     "top_month_by_revenue": "incorrect",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016251,
+     "failed": null,
+     "input_tokens": 817,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 552,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 1.629,
+     "skill": "planner",
+     "ts": 1795617999.131
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0007088,
+     "failed": null,
+     "input_tokens": 1171,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 143,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 1.195,
+     "skill": "planner",
+     "ts": 1795618006.131
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002203,
+     "failed": null,
+     "input_tokens": 151,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 70,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 0.911,
+     "skill": "business_insight",
+     "ts": 1795618013.132
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002106,
+     "failed": null,
+     "input_tokens": 152,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 66,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 0.716,
+     "skill": "business_insight",
+     "ts": 1795618020.132
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005282,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 540,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 1.225,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618027.132
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001998,
+     "failed": null,
+     "input_tokens": 166,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 60,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r1",
+     "seconds": 1.694,
+     "skill": "business_insight",
+     "ts": 1795618034.132
+    }
+   ],
+   "order": 4,
+   "pacing_wait_s": 32.754,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: claim 'mean_revenue_weekday': unexpected argument 'by' for op 'mean_where_equals'",
+        "task 1: claim 'mean_revenue_weekday': op 'mean_where_equals' requires argument 'where_column'",
+        "task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "task 1: claim 'mean_revenue_weekend': unexpected argument 'by' for op 'mean_where_equals'",
+        "task 1: claim 'mean_revenue_weekend': op 'mean_where_equals' requires argument 'where_column'",
+        "task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "invalid handoff: task 1: claim 'mean_revenue_weekday': unexpected argument 'by' for op 'mean_where_equals'",
+        "invalid handoff: task 1: claim 'mean_revenue_weekday': op 'mean_where_equals' requires argument 'where_column'",
+        "invalid handoff: task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "invalid handoff: task 1: claim 'mean_revenue_weekend': unexpected argument 'by' for op 'mean_where_equals'",
+        "invalid handoff: task 1: claim 'mean_revenue_weekend': op 'mean_where_equals' requires argument 'where_column'",
+        "invalid handoff: task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 1,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"orders\"}, \"key\": \"total_orders\", \"op\": \"sum\"}, {\"args\": {\"column\": \"revenue\"}, \"key\": \"total_revenue\", \"op\": \"sum\"}], \"description\": \"Total revenue and orders across the period.\", \"id\": \"eco_t1\", \"title\": \"Revenue Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"is_weekend\", \"column\": \"revenue\", \"value\": false}, \"key\": \"mean_revenue_weekday\", \"op\": \"mean_where_equals\"}, {\"args\": {\"by\": \"is_weekend\", \"column\": \"revenue\", \"value\": true}, \"key\": \"mean_revenue_weekend\", \"op\": \"mean_where_equals\"}], \"description\": \"Mean daily revenue on weekends versus weekdays.\", \"id\": \"eco_t2\", \"title\": \"Weekend vs Weekday Revenue\"}, {\"analysis_type\": \"trend\", \"claims\": [{\"args\": {\"x\": \"website_visitors\", \"y\": \"revenue\"}, \"key\": \"corr_visitors_revenue\", \"op\": \"pearson\"}, {\"args\": {\"by\": \"month\", \"column\": \"revenue\"}, \"key\": \"top_month_by_revenue\", \"op\": \"argmax_group_sum\"}], \"description\": \"Best revenue month and visitors-revenue correlation.\", \"id\": \"eco_t3\", \"title\": \"Monthly Revenue Trend\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [],
+     "kept_task_ids": [
+      "eco_t1",
+      "eco_t3",
+      "eco_t2"
+     ],
+     "recovered_task_ids": [
+      "eco_t2"
+     ],
+     "triaged_at_attempt": 1
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "eco_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "eco_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "eco_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 2,
+   "spent_usd": 0.0082466,
+   "transient_given_up": 0,
+   "transient_retries": 1,
+   "transient_wait_s": 2.259,
+   "variant": "provider_retry",
+   "wait_s": 35.01357671177229,
+   "wall_excl_wait_s": 7.43262095422773,
+   "wall_s": 42.44619766600002
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 4,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 4,
+    "correct_hidden": 3,
+    "incorrect_reported": 1,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "correct",
+     "top_month_by_revenue": "incorrect",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 5,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r1",
+     "seconds": 1.288,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618041.132
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016608,
+     "failed": null,
+     "input_tokens": 886,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 558,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r1",
+     "seconds": 2.755,
+     "skill": "planner",
+     "ts": 1795618048.133
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003003,
+     "failed": null,
+     "input_tokens": 151,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 102,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r1",
+     "seconds": 1.121,
+     "skill": "business_insight",
+     "ts": 1795618055.133
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002806,
+     "failed": null,
+     "input_tokens": 152,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 94,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r1",
+     "seconds": 1.14,
+     "skill": "business_insight",
+     "ts": 1795618062.133
+    }
+   ],
+   "order": 5,
+   "pacing_wait_s": 21.085,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 1,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "invalid handoff: task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"orders\"}, \"key\": \"total_orders\", \"op\": \"sum\"}, {\"args\": {\"column\": \"revenue\"}, \"key\": \"total_revenue\", \"op\": \"sum\"}], \"description\": \"Total revenue and orders across the period.\", \"id\": \"eco_t1\", \"title\": \"Revenue Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"column\": \"revenue\", \"value\": false, \"where_column\": \"is_weekend\"}, \"key\": \"mean_revenue_weekday\", \"op\": \"mean_where_equals\"}, {\"args\": {\"column\": \"revenue\", \"value\": true, \"where_column\": \"is_weekend\"}, \"key\": \"mean_revenue_weekend\", \"op\": \"mean_where_equals\"}], \"description\": \"Mean daily revenue on weekends versus weekdays.\", \"id\": \"eco_t2\", \"title\": \"Weekend vs Weekday Revenue\"}, {\"analysis_type\": \"trend\", \"claims\": [{\"args\": {\"x\": \"website_visitors\", \"y\": \"revenue\"}, \"key\": \"corr_visitors_revenue\", \"op\": \"pearson\"}, {\"args\": {\"by\": \"month\", \"column\": \"revenue\"}, \"key\": \"top_month_by_revenue\", \"op\": \"argmax_group_sum\"}], \"description\": \"Best revenue month and visitors-revenue correlation.\", \"id\": \"eco_t3\", \"title\": \"Monthly Revenue Trend\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [
+      {
+       "claim_keys": [
+        "mean_revenue_weekday",
+        "mean_revenue_weekend"
+       ],
+       "id": "eco_t2",
+       "problems": [
+        "task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ],
+       "title": "Weekend vs Weekday Revenue"
+      }
+     ],
+     "kept_task_ids": [
+      "eco_t1",
+      "eco_t3"
+     ],
+     "recovered_task_ids": [],
+     "triaged_at_attempt": 2
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed_with_failures",
+    "tasks": {
+     "eco_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "eco_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 2,
+   "spent_usd": 0.008179500000000001,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "control",
+   "wait_s": 21.08471691300008,
+   "wall_excl_wait_s": 6.347368756999913,
+   "wall_s": 27.432085669999992
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 5,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r2",
+     "seconds": 2.031,
+     "skill": "planner",
+     "ts": 1795618069.133
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005291,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 570,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r2",
+     "seconds": 1.1,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618076.134
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0053615,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 805,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r2",
+     "seconds": 1.69,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618083.134
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000353,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 119,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r2",
+     "seconds": 1.201,
+     "skill": "business_insight",
+     "ts": 1795618090.134
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002045,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 65,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/sales/r2",
+     "seconds": 15.657,
+     "skill": "business_insight",
+     "ts": 1795618097.134
+    }
+   ],
+   "order": 6,
+   "pacing_wait_s": 27.767,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [],
+     "rejected_plans": [],
+     "task_failures": {
+      "sales_t1": "no accepted insight after 2 attempt(s); verified claims kept"
+     }
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 1,
+    "run_complete": true,
+    "status": "completed_with_failures",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": false,
+      "insight_attempts": 2
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 3,
+   "spent_usd": 0.0128332,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "control",
+   "wait_s": 27.767481494000037,
+   "wall_excl_wait_s": 21.739657062999925,
+   "wall_s": 49.50713855699996
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 5,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r2",
+     "seconds": 1.621,
+     "skill": "planner",
+     "ts": 1795618112.82
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.005291,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 570,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r2",
+     "seconds": 1.363,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618119.821
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002915,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 95,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/sales/r2",
+     "seconds": 0.882,
+     "skill": "business_insight",
+     "ts": 1795618126.821
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000373,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r2",
+     "seconds": 0.784,
+     "skill": "business_insight",
+     "ts": 1795618133.821
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001445,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 41,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r2",
+     "seconds": 0.779,
+     "skill": "business_insight",
+     "ts": 1795618140.821
+    }
+   ],
+   "order": 7,
+   "pacing_wait_s": 21.05,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [],
+     "plan_problems": [],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 3,
+   "spent_usd": 0.0077231999999999995,
+   "transient_given_up": 0,
+   "transient_retries": 1,
+   "transient_wait_s": 2.259,
+   "variant": "provider_retry",
+   "wait_s": 23.308761678772356,
+   "wall_excl_wait_s": 5.484916148227654,
+   "wall_s": 28.79367782700001
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 2,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "missing",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r2",
+     "seconds": 1.636,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618147.821
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.006005,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2950,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "control/multi_agent/ecommerce/r2",
+     "seconds": 2.022,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618154.822
+    }
+   ],
+   "order": 8,
+   "pacing_wait_s": 11.564,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "slot": 4,
+   "spent_usd": 0.0119428,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "control",
+   "wait_s": 11.563996335000013,
+   "wall_excl_wait_s": 3.6694461700000147,
+   "wall_s": 15.233442505000028
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_visitors_revenue": "missing",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "missing",
+     "top_month_by_revenue": "missing",
+     "total_orders": "missing",
+     "total_revenue": "missing"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 1.164,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618161.822
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 1.707,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618168.822
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 1.429,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618175.822
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.006005,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2950,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 1.849,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618182.823
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.006005,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2950,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 1.744,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618189.823
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.006005,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2950,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r2",
+     "seconds": 17.894,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618196.823
+    }
+   ],
+   "order": 9,
+   "pacing_wait_s": 19.641,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "slot": 4,
+   "spent_usd": 0.035828399999999996,
+   "transient_given_up": 2,
+   "transient_retries": 4,
+   "transient_wait_s": 12.418,
+   "variant": "provider_retry",
+   "wait_s": 32.0582718279492,
+   "wall_excl_wait_s": 25.806675503050798,
+   "wall_s": 57.864947330999996
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "missing",
+     "mean_hours_worked": "missing",
+     "present_rate": "missing",
+     "row_count": "missing",
+     "status_counts": "missing",
+     "top_department_by_mean_hours": "missing"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 10.711,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618214.839
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 11.65,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618227.81
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 1.717,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618243.741
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 1.931,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618250.741
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 1.342,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618257.741
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r1",
+     "seconds": 16.986,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618264.742
+    }
+   ],
+   "order": 10,
+   "pacing_wait_s": 10.127,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "slot": 5,
+   "spent_usd": 0.036361199999999996,
+   "transient_given_up": 2,
+   "transient_retries": 4,
+   "transient_wait_s": 12.418,
+   "variant": "provider_retry",
+   "wait_s": 22.545198040949202,
+   "wall_excl_wait_s": 44.44645627505079,
+   "wall_s": 66.991654316
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 5,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "correct",
+     "mean_hours_by_department": "correct",
+     "mean_hours_worked": "correct",
+     "present_rate": "correct",
+     "row_count": "correct",
+     "status_counts": "correct",
+     "top_department_by_mean_hours": "correct"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016798,
+     "failed": null,
+     "input_tokens": 941,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 559,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 11.412,
+     "skill": "planner",
+     "ts": 1795618282.334
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0006935,
+     "failed": null,
+     "input_tokens": 1120,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 143,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 0.897,
+     "skill": "planner",
+     "ts": 1795618293.748
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003108,
+     "failed": null,
+     "input_tokens": 186,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 102,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 2.115,
+     "skill": "business_insight",
+     "ts": 1795618300.749
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0053297,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 699,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 0.99,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618307.749
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003647,
+     "failed": null,
+     "input_tokens": 249,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 116,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 1.27,
+     "skill": "business_insight",
+     "ts": 1795618314.749
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000144,
+     "failed": null,
+     "input_tokens": 130,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 42,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r4",
+     "seconds": 0.892,
+     "skill": "business_insight",
+     "ts": 1795618321.75
+    }
+   ],
+   "order": 11,
+   "pacing_wait_s": 20.152,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 4,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": "plan",
+       "problems": [
+        "task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "invalid handoff: task 2: claim 'gps_mismatch_count': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 1,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"status\", \"value\": \"Present\"}, \"key\": \"present_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {\"column\": \"status\"}, \"key\": \"status_counts\", \"op\": \"value_counts\"}], \"description\": \"Counts of Present / Late / Absent and the present rate.\", \"id\": \"att_t1\", \"title\": \"Attendance Status Breakdown\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"column\": \"hours_worked\"}, \"key\": \"mean_hours_worked\", \"op\": \"mean\"}, {\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"mean_hours_by_department\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"department\", \"column\": \"hours_worked\"}, \"key\": \"top_department_by_mean_hours\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean hours worked overall and per department.\", \"id\": \"att_t2\", \"title\": \"Hours Worked by Department\"}, {\"analysis_type\": \"outlier\", \"claims\": [{\"args\": {\"column\": \"gps_location_match\", \"value\": false}, \"key\": \"gps_mismatch_count\", \"op\": \"count_where_equals\"}], \"description\": \"Count punches where GPS location did not match the site.\", \"id\": \"att_t3\", \"title\": \"GPS Location Mismatches\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [],
+     "kept_task_ids": [
+      "att_t1",
+      "att_t2",
+      "att_t3"
+     ],
+     "recovered_task_ids": [
+      "att_t3"
+     ],
+     "triaged_at_attempt": 1
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "att_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "att_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 6,
+   "spent_usd": 0.0085225,
+   "transient_given_up": 0,
+   "transient_retries": 1,
+   "transient_wait_s": 2.259,
+   "variant": "provider_retry",
+   "wait_s": 22.41113058377252,
+   "wall_excl_wait_s": 17.9879803022275,
+   "wall_s": 40.39911088600002
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016174,
+     "failed": null,
+     "input_tokens": 833,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 547,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.801,
+     "skill": "planner",
+     "ts": 1795618328.749
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061676,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3492,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.925,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618335.75
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016932,
+     "failed": null,
+     "input_tokens": 1069,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 549,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.653,
+     "skill": "planner",
+     "ts": 1795618342.75
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004444,
+     "failed": null,
+     "input_tokens": 248,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 148,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.256,
+     "skill": "business_insight",
+     "ts": 1795618349.75
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001929,
+     "failed": null,
+     "input_tokens": 143,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 60,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.074,
+     "skill": "business_insight",
+     "ts": 1795618356.75
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003807,
+     "failed": null,
+     "input_tokens": 194,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 129,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r0",
+     "seconds": 1.224,
+     "skill": "business_insight",
+     "ts": 1795618363.751
+    }
+   ],
+   "order": 12,
+   "pacing_wait_s": 30.524,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 0,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": "plan",
+       "problems": [
+        "task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "invalid handoff: task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "invalid handoff: task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 1,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": true}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      },
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": \"True\"}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 2,
+    "plan_recovery": {
+     "abandoned_tasks": [],
+     "kept_task_ids": [
+      "stu_t2",
+      "stu_t3",
+      "stu_t1"
+     ],
+     "recovered_task_ids": [
+      "stu_t1"
+     ],
+     "triaged_at_attempt": 1
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "stu_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 7,
+   "spent_usd": 0.010496199999999997,
+   "transient_given_up": 0,
+   "transient_retries": 1,
+   "transient_wait_s": 2.259,
+   "variant": "provider_retry",
+   "wait_s": 32.7829426787724,
+   "wall_excl_wait_s": 9.034868291227582,
+   "wall_s": 41.81781096999998
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 7,
+   "dataset": "ecommerce",
+   "error": null,
+   "grade": {
+    "correct_all": 4,
+    "correct_hidden": 3,
+    "incorrect_reported": 1,
+    "per_key": {
+     "corr_visitors_revenue": "correct",
+     "mean_revenue_weekday": "missing",
+     "mean_revenue_weekend": "missing",
+     "row_count": "correct",
+     "top_month_by_revenue": "incorrect",
+     "total_orders": "correct",
+     "total_revenue": "correct"
+    },
+    "primary_keys": [
+     "total_revenue",
+     "total_orders",
+     "mean_revenue_weekend",
+     "mean_revenue_weekday",
+     "top_month_by_revenue",
+     "corr_visitors_revenue"
+    ],
+    "reported": 5,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 1.034,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618370.751
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 1.789,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618377.752
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059378,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2726,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 1.583,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618384.751
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.006005,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2950,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 1.742,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618391.751
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016608,
+     "failed": null,
+     "input_tokens": 886,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 558,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 2.065,
+     "skill": "planner",
+     "ts": 1795618398.752
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002228,
+     "failed": null,
+     "input_tokens": 151,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 71,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 12.19,
+     "skill": "business_insight",
+     "ts": 1795618405.752
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002731,
+     "failed": null,
+     "input_tokens": 152,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 91,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/ecommerce/r4",
+     "seconds": 0.691,
+     "skill": "business_insight",
+     "ts": 1795618417.958
+    }
+   ],
+   "order": 13,
+   "pacing_wait_s": 24.351,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 4,
+   "run": {
+    "agent_errors": 1,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "invalid handoff: task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}, {\"args\": {\"column\": \"orders\"}, \"key\": \"total_orders\", \"op\": \"sum\"}, {\"args\": {\"column\": \"revenue\"}, \"key\": \"total_revenue\", \"op\": \"sum\"}], \"description\": \"Total revenue and orders across the period.\", \"id\": \"eco_t1\", \"title\": \"Revenue Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"column\": \"revenue\", \"value\": false, \"where_column\": \"is_weekend\"}, \"key\": \"mean_revenue_weekday\", \"op\": \"mean_where_equals\"}, {\"args\": {\"column\": \"revenue\", \"value\": true, \"where_column\": \"is_weekend\"}, \"key\": \"mean_revenue_weekend\", \"op\": \"mean_where_equals\"}], \"description\": \"Mean daily revenue on weekends versus weekdays.\", \"id\": \"eco_t2\", \"title\": \"Weekend vs Weekday Revenue\"}, {\"analysis_type\": \"trend\", \"claims\": [{\"args\": {\"x\": \"website_visitors\", \"y\": \"revenue\"}, \"key\": \"corr_visitors_revenue\", \"op\": \"pearson\"}, {\"args\": {\"by\": \"month\", \"column\": \"revenue\"}, \"key\": \"top_month_by_revenue\", \"op\": \"argmax_group_sum\"}], \"description\": \"Best revenue month and visitors-revenue correlation.\", \"id\": \"eco_t3\", \"title\": \"Monthly Revenue Trend\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 1,
+    "plan_recovery": {
+     "abandoned_tasks": [
+      {
+       "claim_keys": [
+        "mean_revenue_weekday",
+        "mean_revenue_weekend"
+       ],
+       "id": "eco_t2",
+       "problems": [
+        "task 1: claim 'mean_revenue_weekday': 'value' must be a string of at most 200 characters",
+        "task 1: claim 'mean_revenue_weekend': 'value' must be a string of at most 200 characters"
+       ],
+       "title": "Weekend vs Weekday Revenue"
+      }
+     ],
+     "kept_task_ids": [
+      "eco_t1",
+      "eco_t3"
+     ],
+     "recovered_task_ids": [],
+     "triaged_at_attempt": 2
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed_with_failures",
+    "tasks": {
+     "eco_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "eco_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 8,
+   "spent_usd": 0.025975099999999997,
+   "transient_given_up": 1,
+   "transient_retries": 3,
+   "transient_wait_s": 8.142,
+   "variant": "provider_retry",
+   "wait_s": 32.493050722057376,
+   "wall_excl_wait_s": 21.148970692942555,
+   "wall_s": 53.64202141499993
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 4,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r4",
+     "seconds": 2.605,
+     "skill": "planner",
+     "ts": 1795618424.959
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002765,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 89,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r4",
+     "seconds": 0.766,
+     "skill": "business_insight",
+     "ts": 1795618431.959
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000373,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r4",
+     "seconds": 1.653,
+     "skill": "business_insight",
+     "ts": 1795618438.959
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001445,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 41,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r4",
+     "seconds": 2.016,
+     "skill": "business_insight",
+     "ts": 1795618445.959
+    }
+   ],
+   "order": 14,
+   "pacing_wait_s": 22.21,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 4,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [],
+     "plan_problems": [],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 9,
+   "spent_usd": 0.0024172,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "provider_retry",
+   "wait_s": 22.209946325000033,
+   "wall_excl_wait_s": 7.097440924000011,
+   "wall_s": 29.307387249000044
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 4,
+   "dataset": "sales",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "mean_customer_satisfaction": "correct",
+     "row_count": "correct",
+     "sales_by_region": "correct",
+     "target_attainment_pct": "correct",
+     "top_region": "correct",
+     "total_returns": "correct",
+     "total_sales_amount": "correct"
+    },
+    "primary_keys": [
+     "total_sales_amount",
+     "total_returns",
+     "mean_customer_satisfaction",
+     "sales_by_region",
+     "top_region",
+     "target_attainment_pct"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016232,
+     "failed": null,
+     "input_tokens": 919,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 539,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r0",
+     "seconds": 1.747,
+     "skill": "planner",
+     "ts": 1795618452.96
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0003165,
+     "failed": null,
+     "input_tokens": 180,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 105,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r0",
+     "seconds": 0.769,
+     "skill": "business_insight",
+     "ts": 1795618459.96
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.000373,
+     "failed": null,
+     "input_tokens": 185,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 127,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r0",
+     "seconds": 0.929,
+     "skill": "business_insight",
+     "ts": 1795618466.96
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001445,
+     "failed": null,
+     "input_tokens": 140,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 41,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/sales/r0",
+     "seconds": 23.561,
+     "skill": "business_insight",
+     "ts": 1795618473.96
+    }
+   ],
+   "order": 15,
+   "pacing_wait_s": 22.464,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 0,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [],
+     "plan_problems": [],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "sales_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "sales_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 10,
+   "spent_usd": 0.0024572,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "provider_retry",
+   "wait_s": 22.464130114,
+   "wall_excl_wait_s": 27.063872880999952,
+   "wall_s": 49.52800299499995
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 6,
+   "dataset": "attendance",
+   "error": null,
+   "grade": {
+    "correct_all": 0,
+    "correct_hidden": 0,
+    "incorrect_reported": 0,
+    "per_key": {
+     "gps_mismatch_count": "missing",
+     "mean_hours_by_department": "missing",
+     "mean_hours_worked": "missing",
+     "present_rate": "missing",
+     "row_count": "missing",
+     "status_counts": "missing",
+     "top_department_by_mean_hours": "missing"
+    },
+    "primary_keys": [
+     "present_rate",
+     "mean_hours_worked",
+     "mean_hours_by_department",
+     "top_department_by_mean_hours",
+     "gps_mismatch_count"
+    ],
+    "reported": 0,
+    "total_all": 7,
+    "total_hidden": 5
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 2.122,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618497.618
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 1.792,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618504.618
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060266,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3022,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 12.324,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618511.618
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 18.203,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618523.945
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 2.482,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618543.752
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0060938,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3246,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 3,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/attendance/r3",
+     "seconds": 1.22,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618550.752
+    }
+   ],
+   "order": 16,
+   "pacing_wait_s": 3.786,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 3,
+   "run": {
+    "agent_errors": 2,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "kind": null,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "ProviderError: HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n] []"
+       ]
+      }
+     ],
+     "rejected_plans": [],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 0,
+    "plan_recovery": null,
+    "retries": 0,
+    "run_complete": false,
+    "status": "plan_invalid",
+    "tasks": {}
+   },
+   "slot": 11,
+   "spent_usd": 0.036361199999999996,
+   "transient_given_up": 2,
+   "transient_retries": 4,
+   "transient_wait_s": 12.418,
+   "variant": "provider_retry",
+   "wait_s": 16.203605635949227,
+   "wall_excl_wait_s": 38.23724707605081,
+   "wall_s": 54.44085271200004
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 5,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 7,
+    "correct_hidden": 6,
+    "incorrect_reported": 0,
+    "per_key": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "correct",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016174,
+     "failed": null,
+     "input_tokens": 833,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 547,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r1",
+     "seconds": 2.613,
+     "skill": "planner",
+     "ts": 1795618557.752
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016932,
+     "failed": null,
+     "input_tokens": 1069,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 549,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r1",
+     "seconds": 17.928,
+     "skill": "planner",
+     "ts": 1795618564.752
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002769,
+     "failed": null,
+     "input_tokens": 248,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 81,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r1",
+     "seconds": 2.769,
+     "skill": "business_insight",
+     "ts": 1795618582.707
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0001929,
+     "failed": null,
+     "input_tokens": 143,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 60,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r1",
+     "seconds": 0.661,
+     "skill": "business_insight",
+     "ts": 1795618589.708
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004307,
+     "failed": null,
+     "input_tokens": 194,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 149,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r1",
+     "seconds": 1.125,
+     "skill": "business_insight",
+     "ts": 1795618596.708
+    }
+   ],
+   "order": 17,
+   "pacing_wait_s": 20.04,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 1,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": "plan",
+       "problems": [
+        "task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "invalid handoff: task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "invalid handoff: task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 1,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": true}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      },
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": \"True\"}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 2,
+    "plan_recovery": {
+     "abandoned_tasks": [],
+     "kept_task_ids": [
+      "stu_t2",
+      "stu_t3",
+      "stu_t1"
+     ],
+     "recovered_task_ids": [
+      "stu_t1"
+     ],
+     "triaged_at_attempt": 1
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "stu_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 12,
+   "spent_usd": 0.0042111,
+   "transient_given_up": 0,
+   "transient_retries": 0,
+   "transient_wait_s": 0.0,
+   "variant": "provider_retry",
+   "wait_s": 20.04014093399985,
+   "wall_excl_wait_s": 25.18871459500008,
+   "wall_s": 45.22885552899993
+  },
+  {
+   "arch": "multi_agent",
+   "call_source": "provider",
+   "calls": 8,
+   "dataset": "student",
+   "error": null,
+   "grade": {
+    "correct_all": 6,
+    "correct_hidden": 5,
+    "incorrect_reported": 1,
+    "per_key": {
+     "corr_study_hours_score": "correct",
+     "grade_letter_counts": "correct",
+     "mean_score": "correct",
+     "mean_score_by_subject": "correct",
+     "pass_rate": "incorrect",
+     "row_count": "correct",
+     "top_subject_by_mean_score": "correct"
+    },
+    "primary_keys": [
+     "pass_rate",
+     "grade_letter_counts",
+     "mean_score",
+     "mean_score_by_subject",
+     "top_subject_by_mean_score",
+     "corr_study_hours_score"
+    ],
+    "reported": 7,
+    "total_all": 7,
+    "total_hidden": 6
+   },
+   "llm_records": [
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0059375,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 2725,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 2.407,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618603.708
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0016174,
+     "failed": null,
+     "input_tokens": 833,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 547,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 37.776,
+     "skill": "planner",
+     "ts": 1795618610.708
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0061676,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 3492,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 1.307,
+     "skill": "planner",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618648.486
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0012107,
+     "failed": null,
+     "input_tokens": 1069,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 356,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 28.108,
+     "skill": "planner",
+     "ts": 1795618655.487
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002969,
+     "failed": null,
+     "input_tokens": 248,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 89,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 1.142,
+     "skill": "business_insight",
+     "ts": 1795618683.623
+    },
+    {
+     "billing_status": "conservative_worst_case",
+     "call_source": "provider",
+     "charged_worst_case": true,
+     "cost_usd": 0.0052709,
+     "failed": "ProviderError",
+     "http_status": 503,
+     "input_tokens": 503,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 2048,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 2.36,
+     "skill": "business_insight",
+     "timeout": false,
+     "transient": true,
+     "ts": 1795618690.623
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0002529,
+     "failed": null,
+     "input_tokens": 143,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 84,
+     "provider_attempt": 2,
+     "retry_reason": "transient_503",
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 0.67,
+     "skill": "business_insight",
+     "ts": 1795618697.623
+    },
+    {
+     "call_source": "provider",
+     "charged_worst_case": false,
+     "cost_usd": 0.0004182,
+     "failed": null,
+     "input_tokens": 194,
+     "model": "gemini-3.5-flash-lite",
+     "output_tokens": 144,
+     "provider_attempt": 1,
+     "retry_reason": null,
+     "run": "provider_retry/multi_agent/student/r2",
+     "seconds": 1.394,
+     "skill": "business_insight",
+     "ts": 1795618704.623
+    }
+   ],
+   "order": 18,
+   "pacing_wait_s": 26.869,
+   "rate_limit_wait_s": 0.0,
+   "rate_limited": 0,
+   "rep": 2,
+   "run": {
+    "agent_errors": 0,
+    "diagnostics": {
+     "handoff_problems": [
+      {
+       "kind": "plan",
+       "problems": [
+        "task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "kind": "plan",
+       "problems": [
+        "task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "plan_problems": [
+      {
+       "attempt": 1,
+       "problems": [
+        "invalid handoff: task 0: claim 'pass_rate': 'value' must be a string of at most 200 characters"
+       ]
+      },
+      {
+       "attempt": 2,
+       "problems": [
+        "invalid handoff: task 1: id 'stu_t2' is not one of the tasks to repair ['stu_t1']",
+        "invalid handoff: task 2: id 'stu_t3' is not one of the tasks to repair ['stu_t1']"
+       ]
+      }
+     ],
+     "rejected_plans": [
+      {
+       "attempt": 1,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": true}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      },
+      {
+       "attempt": 2,
+       "plan_json": "{\"tasks\": [{\"analysis_type\": \"descriptive\", \"claims\": [{\"args\": {\"column\": \"grade_letter\"}, \"key\": \"grade_letter_counts\", \"op\": \"value_counts\"}, {\"args\": {\"column\": \"score\"}, \"key\": \"mean_score\", \"op\": \"mean\"}, {\"args\": {\"column\": \"passed\", \"value\": \"true\"}, \"key\": \"pass_rate\", \"op\": \"rate_where_equals\"}, {\"args\": {}, \"key\": \"row_count\", \"op\": \"count_rows\"}], \"description\": \"Mean score, pass rate and grade distribution.\", \"id\": \"stu_t1\", \"title\": \"Score Overview\"}, {\"analysis_type\": \"comparative\", \"claims\": [{\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"mean_score_by_subject\", \"op\": \"group_mean\"}, {\"args\": {\"by\": \"subject\", \"column\": \"score\"}, \"key\": \"top_subject_by_mean_score\", \"op\": \"argmax_group_mean\"}], \"description\": \"Mean score per subject and the strongest subject.\", \"id\": \"stu_t2\", \"title\": \"Scores by Subject\"}, {\"analysis_type\": \"correlation\", \"claims\": [{\"args\": {\"x\": \"study_hours_per_day\", \"y\": \"score\"}, \"key\": \"corr_study_hours_score\", \"op\": \"pearson\"}], \"description\": \"Pearson correlation between daily study hours and score.\", \"id\": \"stu_t3\", \"title\": \"Study Hours vs Score\"}]}"
+      }
+     ],
+     "task_failures": {}
+    },
+    "handoffs_rejected": 2,
+    "plan_recovery": {
+     "abandoned_tasks": [],
+     "kept_task_ids": [
+      "stu_t2",
+      "stu_t3",
+      "stu_t1"
+     ],
+     "recovered_task_ids": [
+      "stu_t1"
+     ],
+     "triaged_at_attempt": 1
+    },
+    "retries": 0,
+    "run_complete": true,
+    "status": "completed",
+    "tasks": {
+     "stu_t1": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t2": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     },
+     "stu_t3": {
+      "attempts": 1,
+      "completed": true,
+      "insight_attempts": 1
+     }
+    }
+   },
+   "slot": 13,
+   "spent_usd": 0.0211721,
+   "transient_given_up": 0,
+   "transient_retries": 3,
+   "transient_wait_s": 6.002,
+   "variant": "provider_retry",
+   "wait_s": 32.87128666388096,
+   "wall_excl_wait_s": 75.26958221911909,
+   "wall_s": 108.14086888300005
+  }
+ ],
+ "seed": 20261124,
+ "skipped_controls": [
+  "control/multi_agent/attendance/r1",
+  "control/multi_agent/attendance/r4",
+  "control/multi_agent/student/r0",
+  "control/multi_agent/ecommerce/r4",
+  "control/multi_agent/sales/r4",
+  "control/multi_agent/sales/r0",
+  "control/multi_agent/attendance/r3",
+  "control/multi_agent/student/r1",
+  "control/multi_agent/student/r2",
+  "control/multi_agent/ecommerce/r3"
+ ],
+ "slots": [
+  [
+   "sales",
+   1
+  ],
+  [
+   "attendance",
+   2
+  ],
+  [
+   "ecommerce",
+   1
+  ],
+  [
+   "sales",
+   2
+  ],
+  [
+   "ecommerce",
+   2
+  ],
+  [
+   "attendance",
+   1
+  ],
+  [
+   "attendance",
+   4
+  ],
+  [
+   "student",
+   0
+  ],
+  [
+   "ecommerce",
+   4
+  ],
+  [
+   "sales",
+   4
+  ],
+  [
+   "sales",
+   0
+  ],
+  [
+   "attendance",
+   3
+  ],
+  [
+   "student",
+   1
+  ],
+  [
+   "student",
+   2
+  ],
+  [
+   "ecommerce",
+   3
+  ],
+  [
+   "sales",
+   3
+  ],
+  [
+   "student",
+   3
+  ],
+  [
+   "ecommerce",
+   0
+  ],
+  [
+   "student",
+   4
+  ],
+  [
+   "attendance",
+   0
+  ]
+ ],
+ "stopped": "provider_retry/multi_agent/ecommerce/r3: budget or limit reached (run excluded)",
+ "summary": {
+  "control": {
+   "abandoned_tasks": 2,
+   "accuracy_hidden": 0.6552,
+   "agent_output_errors": 0,
+   "agent_retries_task": 2,
+   "agent_validation_rejections": 2,
+   "call_source": [
+    "provider"
+   ],
+   "complete_planner_failure_rate": 0.2,
+   "complete_planner_failures": 1,
+   "correct_hidden": 19,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000502,
+   "cost_usd_provider_reported": 0.009536,
+   "cost_usd_total_estimate": 0.055388,
+   "cost_usd_worst_case_failed_attempts": 0.045852,
+   "incorrect_claims_reported": 1,
+   "latency_excl_wait_s": {
+    "max_ms": 21739.7,
+    "median_ms": 6347.4,
+    "min_ms": 3669.4,
+    "n": 5,
+    "p95_ms": 21739.7
+   },
+   "latency_s": {
+    "max_ms": 49507.1,
+    "median_ms": 27591.0,
+    "min_ms": 15233.4,
+    "n": 5,
+    "p95_ms": 49507.1
+   },
+   "planner_calls": 9,
+   "provider_attempts": 21,
+   "provider_calls_given_up": 0,
+   "provider_failures": 8,
+   "provider_failures_by_status": {
+    "503": 8
+   },
+   "provider_retries_429": 0,
+   "provider_retries_transient": 0,
+   "provider_tokens_in": 5444,
+   "provider_tokens_out": 3161,
+   "provider_tokens_per_correct_hidden": 452.9,
+   "provider_tokens_total": 8605,
+   "recovered_tasks": 0,
+   "required_task_completion_rate": 0.6667,
+   "required_tasks": 15,
+   "required_tasks_completed": 10,
+   "run_errors": 0,
+   "runs": 5,
+   "runs_with_recovery_triggered": 2,
+   "successful_calls": 13,
+   "total_hidden": 29,
+   "wait_s_pacing": 106.42,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 0.0
+  },
+  "matched_pairs": 5,
+  "paired_hidden_correct": {
+   "control": 19,
+   "of": 29,
+   "provider_retry": 21
+  },
+  "paired_hidden_effect": {
+   "ci95": [
+    0.0,
+    1.2
+   ],
+   "losses": 0,
+   "mean_diff": 0.4,
+   "n": 5,
+   "sign_test_p": 1.0,
+   "ties": 4,
+   "wins": 1
+  },
+  "paired_latency_control_vs_provider_retry": {
+   "ci95_median_diff_ms": [
+    -20713.46,
+    42631.5
+   ],
+   "median_a_ms": 27590.98,
+   "median_b_ms": 42446.2,
+   "median_diff_ms": 15014.11,
+   "n": 5,
+   "relative_change_of_medians": 0.5384,
+   "relative_median_paired_diff": 0.5442,
+   "sign_test_p": 1.0,
+   "verdict": "no significant difference"
+  },
+  "paired_latency_excl_wait_control_vs_provider_retry": {
+   "ci95_median_diff_ms": [
+    -16254.74,
+    22137.23
+   ],
+   "median_a_ms": 6347.37,
+   "median_b_ms": 7432.62,
+   "median_diff_ms": 1085.25,
+   "n": 5,
+   "relative_change_of_medians": 0.171,
+   "relative_median_paired_diff": 0.171,
+   "sign_test_p": 1.0,
+   "verdict": "no significant difference"
+  },
+  "provider_retry": {
+   "abandoned_tasks": 2,
+   "accuracy_hidden": 0.725,
+   "agent_output_errors": 0,
+   "agent_retries_task": 0,
+   "agent_validation_rejections": 10,
+   "call_source": [
+    "provider"
+   ],
+   "complete_planner_failure_rate": 0.2143,
+   "complete_planner_failures": 3,
+   "correct_hidden": 58,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000564,
+   "cost_usd_provider_reported": 0.032725,
+   "cost_usd_total_estimate": 0.234009,
+   "cost_usd_worst_case_failed_attempts": 0.201284,
+   "incorrect_claims_reported": 3,
+   "latency_excl_wait_s": {
+    "max_ms": 75269.6,
+    "median_ms": 19568.5,
+    "min_ms": 5484.9,
+    "n": 14,
+    "p95_ms": 75269.6
+   },
+   "latency_s": {
+    "max_ms": 108140.9,
+    "median_ms": 47112.6,
+    "min_ms": 28793.7,
+    "n": 14,
+    "p95_ms": 108140.9
+   },
+   "planner_calls": 45,
+   "provider_attempts": 81,
+   "provider_calls_given_up": 8,
+   "provider_failures": 34,
+   "provider_failures_by_status": {
+    "503": 34
+   },
+   "provider_retries_429": 0,
+   "provider_retries_transient": 26,
+   "provider_tokens_in": 20874,
+   "provider_tokens_out": 10585,
+   "provider_tokens_per_correct_hidden": 542.4,
+   "provider_tokens_total": 31459,
+   "recovered_tasks": 5,
+   "required_task_completion_rate": 0.7381,
+   "required_tasks": 42,
+   "required_tasks_completed": 31,
+   "run_errors": 0,
+   "runs": 14,
+   "runs_with_recovery_triggered": 7,
+   "successful_calls": 47,
+   "total_hidden": 80,
+   "wait_s_pacing": 309.04,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 70.83
+  }
+ },
+ "v1_executor_tripwire_hits": 0
+}

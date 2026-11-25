@@ -1,0 +1,337 @@
+{
+ "matched": {
+  "control": {
+   "runs": 5,
+   "run_errors": 0,
+   "accuracy_hidden": 0.6552,
+   "correct_hidden": 19,
+   "total_hidden": 29,
+   "complete_planner_failures": 1,
+   "complete_planner_failure_rate": 0.2,
+   "required_tasks_completed": 10,
+   "required_tasks": 15,
+   "required_task_completion_rate": 0.6667,
+   "incorrect_claims_reported": 1,
+   "recovered_tasks": 0,
+   "abandoned_tasks": 2,
+   "runs_with_recovery_triggered": 2,
+   "agent_retries_task": 2,
+   "planner_calls": 9,
+   "provider_failures": 8,
+   "provider_failures_by_status": {
+    "503": 8
+   },
+   "agent_validation_rejections": 2,
+   "agent_output_errors": 0,
+   "successful_calls": 13,
+   "provider_tokens_in": 5444,
+   "provider_tokens_out": 3161,
+   "provider_tokens_total": 8605,
+   "cost_usd_total_estimate": 0.055388,
+   "cost_usd_provider_reported": 0.009536,
+   "cost_usd_worst_case_failed_attempts": 0.045852,
+   "latency_s": {
+    "n": 5,
+    "median_ms": 27591.0,
+    "p95_ms": 49507.1,
+    "min_ms": 15233.4,
+    "max_ms": 49507.1
+   },
+   "latency_excl_wait_s": {
+    "n": 5,
+    "median_ms": 6347.4,
+    "p95_ms": 21739.7,
+    "min_ms": 3669.4,
+    "max_ms": 21739.7
+   },
+   "provider_attempts": 21,
+   "provider_retries_transient": 0,
+   "provider_retries_429": 0,
+   "provider_calls_given_up": 0,
+   "wait_s_pacing": 106.42,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 0.0,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000502,
+   "provider_tokens_per_correct_hidden": 452.9,
+   "call_source": [
+    "provider"
+   ]
+  },
+  "provider_retry": {
+   "runs": 5,
+   "run_errors": 0,
+   "accuracy_hidden": 0.7241,
+   "correct_hidden": 21,
+   "total_hidden": 29,
+   "complete_planner_failures": 1,
+   "complete_planner_failure_rate": 0.2,
+   "required_tasks_completed": 11,
+   "required_tasks": 15,
+   "required_task_completion_rate": 0.7333,
+   "incorrect_claims_reported": 1,
+   "recovered_tasks": 1,
+   "abandoned_tasks": 1,
+   "runs_with_recovery_triggered": 2,
+   "agent_retries_task": 0,
+   "planner_calls": 15,
+   "provider_failures": 13,
+   "provider_failures_by_status": {
+    "503": 13
+   },
+   "agent_validation_rejections": 2,
+   "agent_output_errors": 0,
+   "successful_calls": 16,
+   "provider_tokens_in": 6750,
+   "provider_tokens_out": 3256,
+   "provider_tokens_total": 10006,
+   "cost_usd_total_estimate": 0.086035,
+   "cost_usd_provider_reported": 0.010165,
+   "cost_usd_worst_case_failed_attempts": 0.07587,
+   "latency_s": {
+    "n": 5,
+    "median_ms": 42446.2,
+    "p95_ms": 57864.9,
+    "min_ms": 28793.7,
+    "max_ms": 57864.9
+   },
+   "latency_excl_wait_s": {
+    "n": 5,
+    "median_ms": 7432.6,
+    "p95_ms": 25806.7,
+    "min_ms": 5484.9,
+    "max_ms": 25806.7
+   },
+   "provider_attempts": 29,
+   "provider_retries_transient": 10,
+   "provider_retries_429": 0,
+   "provider_calls_given_up": 3,
+   "wait_s_pacing": 128.51,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 27.34,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000484,
+   "provider_tokens_per_correct_hidden": 476.5,
+   "call_source": [
+    "provider"
+   ]
+  }
+ },
+ "unmatched_provider_retry_only": {
+  "runs": 9,
+  "run_errors": 0,
+  "accuracy_hidden": 0.7255,
+  "correct_hidden": 37,
+  "total_hidden": 51,
+  "complete_planner_failures": 2,
+  "complete_planner_failure_rate": 0.2222,
+  "required_tasks_completed": 20,
+  "required_tasks": 27,
+  "required_task_completion_rate": 0.7407,
+  "incorrect_claims_reported": 2,
+  "recovered_tasks": 4,
+  "abandoned_tasks": 1,
+  "runs_with_recovery_triggered": 5,
+  "agent_retries_task": 0,
+  "planner_calls": 30,
+  "provider_failures": 21,
+  "provider_failures_by_status": {
+   "503": 21
+  },
+  "agent_validation_rejections": 8,
+  "agent_output_errors": 0,
+  "successful_calls": 31,
+  "provider_tokens_in": 14124,
+  "provider_tokens_out": 7329,
+  "provider_tokens_total": 21453,
+  "cost_usd_total_estimate": 0.147974,
+  "cost_usd_provider_reported": 0.02256,
+  "cost_usd_worst_case_failed_attempts": 0.125414,
+  "latency_s": {
+   "n": 9,
+   "median_ms": 49528.0,
+   "p95_ms": 108140.9,
+   "min_ms": 29307.4,
+   "max_ms": 108140.9
+  },
+  "latency_excl_wait_s": {
+   "n": 9,
+   "median_ms": 25188.7,
+   "p95_ms": 75269.6,
+   "min_ms": 7097.4,
+   "max_ms": 75269.6
+  },
+  "provider_attempts": 52,
+  "provider_retries_transient": 16,
+  "provider_retries_429": 0,
+  "provider_calls_given_up": 5,
+  "wait_s_pacing": 180.52,
+  "wait_s_rate_limit": 0.0,
+  "wait_s_transient": 43.5,
+  "cost_usd_per_correct_hidden_provider_reported": 0.00061,
+  "provider_tokens_per_correct_hidden": 579.8,
+  "call_source": [
+   "provider"
+  ]
+ },
+ "paired": {
+  "provider_retry": {
+   "runs": 14,
+   "run_errors": 0,
+   "accuracy_hidden": 0.725,
+   "correct_hidden": 58,
+   "total_hidden": 80,
+   "complete_planner_failures": 3,
+   "complete_planner_failure_rate": 0.2143,
+   "required_tasks_completed": 31,
+   "required_tasks": 42,
+   "required_task_completion_rate": 0.7381,
+   "incorrect_claims_reported": 3,
+   "recovered_tasks": 5,
+   "abandoned_tasks": 2,
+   "runs_with_recovery_triggered": 7,
+   "agent_retries_task": 0,
+   "planner_calls": 45,
+   "provider_failures": 34,
+   "provider_failures_by_status": {
+    "503": 34
+   },
+   "agent_validation_rejections": 10,
+   "agent_output_errors": 0,
+   "successful_calls": 47,
+   "provider_tokens_in": 20874,
+   "provider_tokens_out": 10585,
+   "provider_tokens_total": 31459,
+   "cost_usd_total_estimate": 0.234009,
+   "cost_usd_provider_reported": 0.032725,
+   "cost_usd_worst_case_failed_attempts": 0.201284,
+   "latency_s": {
+    "n": 14,
+    "median_ms": 47112.6,
+    "p95_ms": 108140.9,
+    "min_ms": 28793.7,
+    "max_ms": 108140.9
+   },
+   "latency_excl_wait_s": {
+    "n": 14,
+    "median_ms": 19568.5,
+    "p95_ms": 75269.6,
+    "min_ms": 5484.9,
+    "max_ms": 75269.6
+   },
+   "provider_attempts": 81,
+   "provider_retries_transient": 26,
+   "provider_retries_429": 0,
+   "provider_calls_given_up": 8,
+   "wait_s_pacing": 309.04,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 70.83,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000564,
+   "provider_tokens_per_correct_hidden": 542.4,
+   "call_source": [
+    "provider"
+   ]
+  },
+  "control": {
+   "runs": 5,
+   "run_errors": 0,
+   "accuracy_hidden": 0.6552,
+   "correct_hidden": 19,
+   "total_hidden": 29,
+   "complete_planner_failures": 1,
+   "complete_planner_failure_rate": 0.2,
+   "required_tasks_completed": 10,
+   "required_tasks": 15,
+   "required_task_completion_rate": 0.6667,
+   "incorrect_claims_reported": 1,
+   "recovered_tasks": 0,
+   "abandoned_tasks": 2,
+   "runs_with_recovery_triggered": 2,
+   "agent_retries_task": 2,
+   "planner_calls": 9,
+   "provider_failures": 8,
+   "provider_failures_by_status": {
+    "503": 8
+   },
+   "agent_validation_rejections": 2,
+   "agent_output_errors": 0,
+   "successful_calls": 13,
+   "provider_tokens_in": 5444,
+   "provider_tokens_out": 3161,
+   "provider_tokens_total": 8605,
+   "cost_usd_total_estimate": 0.055388,
+   "cost_usd_provider_reported": 0.009536,
+   "cost_usd_worst_case_failed_attempts": 0.045852,
+   "latency_s": {
+    "n": 5,
+    "median_ms": 27591.0,
+    "p95_ms": 49507.1,
+    "min_ms": 15233.4,
+    "max_ms": 49507.1
+   },
+   "latency_excl_wait_s": {
+    "n": 5,
+    "median_ms": 6347.4,
+    "p95_ms": 21739.7,
+    "min_ms": 3669.4,
+    "max_ms": 21739.7
+   },
+   "provider_attempts": 21,
+   "provider_retries_transient": 0,
+   "provider_retries_429": 0,
+   "provider_calls_given_up": 0,
+   "wait_s_pacing": 106.42,
+   "wait_s_rate_limit": 0.0,
+   "wait_s_transient": 0.0,
+   "cost_usd_per_correct_hidden_provider_reported": 0.000502,
+   "provider_tokens_per_correct_hidden": 452.9,
+   "call_source": [
+    "provider"
+   ]
+  },
+  "matched_pairs": 5,
+  "paired_latency_control_vs_provider_retry": {
+   "n": 5,
+   "median_a_ms": 27590.98,
+   "median_b_ms": 42446.2,
+   "median_diff_ms": 15014.11,
+   "relative_change_of_medians": 0.5384,
+   "relative_median_paired_diff": 0.5442,
+   "ci95_median_diff_ms": [
+    -20713.46,
+    42631.5
+   ],
+   "sign_test_p": 1.0,
+   "verdict": "no significant difference"
+  },
+  "paired_latency_excl_wait_control_vs_provider_retry": {
+   "n": 5,
+   "median_a_ms": 6347.37,
+   "median_b_ms": 7432.62,
+   "median_diff_ms": 1085.25,
+   "relative_change_of_medians": 0.171,
+   "relative_median_paired_diff": 0.171,
+   "ci95_median_diff_ms": [
+    -16254.74,
+    22137.23
+   ],
+   "sign_test_p": 1.0,
+   "verdict": "no significant difference"
+  },
+  "paired_hidden_correct": {
+   "control": 19,
+   "provider_retry": 21,
+   "of": 29
+  },
+  "paired_hidden_effect": {
+   "n": 5,
+   "mean_diff": 0.4,
+   "ci95": [
+    0.0,
+    1.2
+   ],
+   "wins": 1,
+   "losses": 0,
+   "ties": 4,
+   "sign_test_p": 1.0
+  }
+ }
+}

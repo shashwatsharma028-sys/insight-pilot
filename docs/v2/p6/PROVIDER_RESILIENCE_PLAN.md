@@ -72,3 +72,56 @@ mistake and used up one of its two chances, so two busy signals in a row meant t
 connection layer waits a moment and tries again, a strictly limited number of times, with a little randomness so
 retries don't pile up, and within the money and time limits. The agents only see real mistakes. Busy signals are
 counted separately, so we can show exactly how often they happened and what retrying cost.
+
+## 5. Live result (run 2026-11-25, after the quota reset; command exactly as in section 3)
+
+**Outcome: stopped early by the $0.30 budget cap.**
+- **The provider was unusually unstable:** HTTP 503 on 34 of the 81 retry-arm attempts and 8 of 21 control attempts.
+- **Cost:** every failed attempt is charged its conservative worst case, so the ledger reached $0.2953 (estimated, not billing) after 19 runs.
+- **Missing controls:** the pre-registered budget reserve skipped 10 controls so the retry arm could finish.
+- **Result:** **5 matched pairs** of the 20 planned, plus 9 unmatched retry-arm runs.
+- **Evidence:**
+  - `provider_experiment/runs.jsonl` (19 runs), `provider_experiment/provider_resilience_experiment.json`;
+  - `provider_experiment/matched_summary.json` (matched and unmatched, computed by `evaluation.live.variant_metrics` / `summarize_variants`);
+  - ledger `~/.local/state/insightpilot/live_llm_ledger_p6_provider.jsonl` (104 attempts, outside the repository).
+- **V1 executor tripwire hits:** 0.
+
+**Matched pairs (5 per arm), the only comparison used for the decision:**
+
+| Metric | Control (no retries) | Transient retries 2 |
+|---|---|---|
+| Hidden-answer accuracy | 19/29 = 65.5% | 21/29 = 72.4% |
+| Paired hidden-answer difference | | +0.4 per run, 95% CI [0.0, +1.2], 1 win / 0 losses / 4 ties, sign test p = 1.0 |
+| Required-task completion | 10/15 | 11/15 |
+| Complete planner failures (all provider-caused, HTTP 503) | 1/5 | 1/5 |
+| Provider attempts / failed attempts | 21 / 8 | 29 / 13 |
+| Transient retries / calls that succeeded after a retry / calls given up | 0 / 0 / 0 | 10 / 4 / 3 |
+| Total wall time, median | 27.6 s | 42.4 s |
+| Wall time excluding waits, median / p95 (nearest rank = maximum at n = 5) | 6.3 s / 21.7 s | 7.4 s / 25.8 s |
+| Paired latency excluding waits | | median +1.1 s, CI [−16.3 s, +22.1 s], not significant |
+| Provider backoff time (transient retries) | 0 s | 27.3 s |
+| Pacing wait | 106.4 s | 128.5 s |
+| Estimated cost of successful calls / per correct hidden answer | $0.009536 / $0.000502 | $0.010165 / $0.000484 |
+| Conservative worst-case charges for failed attempts | $0.045852 | $0.075870 |
+
+**Unmatched retry-arm runs (9; descriptive only, not compared):**
+- 37/51 hidden answers;
+- 2 complete planner failures, both provider-caused;
+- 16 transient retries, 6 calls succeeded after a retry, 5 given up;
+- 43.5 s of backoff.
+
+**Pre-registered decision rule (section 3), applied to the matched pairs:**
+
+| Criterion | Result |
+|---|---|
+| No loss of accuracy beyond noise (CI lower bound > −1 answer per run) | Met: 0.0 |
+| Fewer provider-caused complete failures | **Not met: 1 vs 1** |
+| p95 latency excluding waits not worse by more than 30 s | Met: +4.1 s |
+| Inconclusive only if no transient failure occurred | Does not apply: 34 transient failures occurred |
+
+**Decision: NOT RETAINED.**
+- Provider retries stay off by default (`transient_retries=0`); the code stays available as an opt-in.
+- This is **not evidence that retries are harmful**. With 5 of 20 planned pairs the test is underpowered. On the day's 503 storm, a planner call often failed even after 2 retries (3 given up in matched runs).
+- No further live run was made, and no claim of a latency, cost or reliability benefit is made.
+- **Consequence for the combined guidance experiment:** its shared setting is `--transient-retries 0` (section 3 of `FINAL_EVIDENCE_PACKAGE.md`).
+- **Spend:** overall estimated P6 spend is now $1.289 of the $5 cap (678 ledger rows).
