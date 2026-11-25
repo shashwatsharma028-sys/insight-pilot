@@ -577,7 +577,10 @@ APPROVED_P6 = {
     "tests/v2/p6/test_semantic_accuracy_p6.py",
     # UI-1 (approved, isolated branch): UI-agnostic V2 application service, not wired to any entry point
     "v2/app_service.py", "tests/v2/ui1/__init__.py", "tests/v2/ui1/test_app_service_ui1.py",
-    "tests/v2/p3/test_contract_purity.py",  # UI-1: registers v2/app_service.py as a reviewed module
+    "tests/v2/p3/test_contract_purity.py",  # UI-1/UI-2: registers v2/app_service.py and v2/app_page.py as reviewed
+    # UI-2 (approved, isolated branch): V2 Streamlit page (no entry point) and its offline tests
+    "v2/app_page.py", "tests/v2/ui2/__init__.py", "tests/v2/ui2/offline_app.py",
+    "tests/v2/ui2/test_service_corrections_ui2.py", "tests/v2/ui2/test_v2_page_ui2.py",
 }
 
 

@@ -254,7 +254,7 @@ P36_P3_FILES = {
 }
 # UI-1 (approved, isolated branch): a NEW UI-agnostic application service under v2/; it changes no P3 file and is
 # not wired to any entry point (tests/v2/ui1, tests/v2/p3/test_contract_purity.py).
-UI1_FILES = {"v2/app_service.py"}
+UI1_FILES = {"v2/app_service.py", "v2/app_page.py"}       # + UI-2: the V2 Streamlit page
 
 
 def test_p3_lineage_is_fully_contained_and_only_reviewed_p3_files_changed():
