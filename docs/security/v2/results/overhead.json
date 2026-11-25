@@ -1,0 +1,61 @@
+{
+ "method": "4 golden datasets x 10 reps per round, real Supervisor + TrustedOpsAnalyst, scripted models, alternating rounds baseline/secured; every run asserted completed with golden answers",
+ "baseline_runtime_sha256": "67d06107e8fb6429c3c0f0dd7a7b03cd88f85db5dc5d771c204fa7977117fe29",
+ "secured_runtime_sha256": "3133883d800535e6b9078397becb213aad3e515b0ebec5f6bf50060c40625bca",
+ "rounds": {
+  "baseline": [
+   {
+    "median_ms": 64.135,
+    "p95_ms": 377.541,
+    "runs": 40,
+    "median_ms_by_dataset": {
+     "sales": 44.916,
+     "attendance": 361.542,
+     "student": 71.112,
+     "ecommerce": 41.394
+    }
+   },
+   {
+    "median_ms": 52.465,
+    "p95_ms": 360.086,
+    "runs": 40,
+    "median_ms_by_dataset": {
+     "sales": 40.366,
+     "attendance": 337.26,
+     "student": 69.105,
+     "ecommerce": 38.039
+    }
+   }
+  ],
+  "secured": [
+   {
+    "median_ms": 81.506,
+    "p95_ms": 398.563,
+    "runs": 40,
+    "median_ms_by_dataset": {
+     "sales": 62.818,
+     "attendance": 366.854,
+     "student": 83.285,
+     "ecommerce": 53.346
+    }
+   },
+   {
+    "median_ms": 73.007,
+    "p95_ms": 409.124,
+    "runs": 40,
+    "median_ms_by_dataset": {
+     "sales": 60.1,
+     "attendance": 370.312,
+     "student": 82.918,
+     "ecommerce": 53.585
+    }
+   }
+  ]
+ },
+ "mean_of_round_medians_ms": {
+  "baseline": 58.3,
+  "secured": 77.26,
+  "overhead_ms": 18.96,
+  "overhead_relative_pct": 32.5
+ }
+}
