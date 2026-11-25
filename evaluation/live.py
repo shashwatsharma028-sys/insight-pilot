@@ -562,6 +562,13 @@ EXPERIMENTS = {
     # Optimisation 4: semantic planner guidance (op results and grouping). Selective recovery ON in both arms;
     # schema-aware guidance and the provider policy are set ONCE for both arms (--schema-aware-guidance,
     # --transient-retries), so only the semantics section differs.
+    # Final combined benchmark: BOTH guidance sections vs neither. Selective recovery ON in both arms; the provider
+    # policy (--transient-retries) is shared. This measures the combination only, not each section's contribution.
+    "combined_guidance": {"arms": ("optimized", "control"),
+                          "run": {"optimized": {"selective_recovery": True, "schema_aware": True,
+                                                "semantic_guidance": True},
+                                  "control": {"selective_recovery": True}},
+                          "port": {"optimized": {}, "control": {}}},
     "semantic_planner": {"arms": ("semantic", "control"),
                          "run": {"semantic": {"selective_recovery": True, "semantic_guidance": True},
                                  "control": {"selective_recovery": True, "semantic_guidance": False}},
@@ -914,7 +921,7 @@ def main(argv=None):
     ap.add_argument("--i-understand-this-makes-live-calls", action="store_true")
     ap.add_argument("--out", required=True)
     ap.add_argument("--experiment", choices=("none", "selective_recovery", "provider_resilience", "schema_aware_planner",
-                                             "semantic_planner"),
+                                             "semantic_planner", "combined_guidance"),
                     default="none",
                     help="selective_recovery: the 20 baseline multi-agent slots with recovery ON vs OFF; "
                          "provider_resilience: transient-provider retries ON vs OFF (selective recovery ON in both); "

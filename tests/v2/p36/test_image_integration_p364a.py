@@ -581,6 +581,8 @@ APPROVED_P6 = {
     # UI-2 (approved, isolated branch): V2 Streamlit page (no entry point) and its offline tests
     "v2/app_page.py", "tests/v2/ui2/__init__.py", "tests/v2/ui2/offline_app.py",
     "tests/v2/ui2/test_service_corrections_ui2.py", "tests/v2/ui2/test_v2_page_ui2.py",
+    # P6 final optimisation (approved): independent evidence script and its tests (offline only)
+    "scripts/p6/evidence_package.py", "scripts/p6/compact_guidance.py", "tests/v2/p6/test_final_optimization_p6.py",
 }
 
 
